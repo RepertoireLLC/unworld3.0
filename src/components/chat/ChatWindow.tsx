@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Send } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
@@ -14,25 +14,32 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((state) => state.user);
   const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
-  const { sendMessage, getMessagesForChat } = useChatStore();
+  const { sendMessage, getMessagesForChat, fetchMessages } = useChatStore();
 
-  const messages = currentUser 
-    ? getMessagesForChat(currentUser.id, userId)
-    : [];
+  const messages = useMemo(
+    () => (currentUser ? getMessagesForChat(currentUser.id, userId) : []),
+    [currentUser, getMessagesForChat, userId],
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
+    if (currentUser) {
+      void fetchMessages(userId);
+    }
+  }, [currentUser, fetchMessages, userId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !currentUser) return;
 
-    sendMessage(currentUser.id, userId, message.trim());
+    await sendMessage(userId, message.trim());
     setMessage('');
   };
 

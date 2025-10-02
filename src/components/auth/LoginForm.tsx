@@ -2,21 +2,22 @@ import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { LogIn } from 'lucide-react';
 
-export function LoginForm({ onToggle }: { onToggle: () => void }) {
+interface LoginFormProps {
+  onToggle: () => void;
+  isSubmitting?: boolean;
+}
+
+export function LoginForm({ onToggle, isSubmitting = false }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const login = useAuthStore((state) => state.login);
+  const error = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    const success = login({ email, password });
-    
-    if (!success) {
-      setError('Invalid email or password');
-    }
+    clearError();
+    await login({ email, password });
   };
 
   return (
@@ -37,7 +38,10 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) clearError();
+            }}
             placeholder="Email"
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
             required
@@ -47,7 +51,10 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (error) clearError();
+            }}
             placeholder="Password"
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
             required
@@ -55,9 +62,10 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
         </div>
         <button
           type="submit"
-          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+          disabled={isSubmitting}
+          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign In
+          {isSubmitting ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
       <p className="mt-6 text-center text-white/60">

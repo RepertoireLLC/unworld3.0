@@ -2,39 +2,47 @@ import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { UserPlus } from 'lucide-react';
 
-export function RegisterForm({ onToggle }: { onToggle: () => void }) {
+interface RegisterFormProps {
+  onToggle: () => void;
+  isSubmitting?: boolean;
+}
+
+export function RegisterForm({ onToggle, isSubmitting = false }: RegisterFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#' + Math.floor(Math.random()*16777215).toString(16));
-  const [error, setError] = useState('');
+  const [color, setColor] = useState('#' + Math.floor(Math.random() * 16777215).toString(16));
+  const [localError, setLocalError] = useState('');
   const register = useAuthStore((state) => state.register);
+  const error = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetErrors = () => {
+    if (localError) setLocalError('');
+    if (error) clearError();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    resetErrors();
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setLocalError('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setLocalError('Password must be at least 6 characters long');
       return;
     }
 
-    const success = register({
+    await register({
       email,
       password,
       name: name || email.split('@')[0],
-      color
+      color,
     });
-
-    if (!success) {
-      setError('Email already registered');
-    }
   };
 
   return (
@@ -45,9 +53,9 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
         </div>
       </div>
       <h2 className="text-2xl font-bold text-white text-center mb-8">Create Account</h2>
-      {error && (
+      {(error || localError) && (
         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
-          {error}
+          {error || localError}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -55,7 +63,10 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              resetErrors();
+            }}
             placeholder="Email"
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
             required
@@ -65,7 +76,10 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
           <input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              resetErrors();
+            }}
             placeholder="Display Name (optional)"
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
           />
@@ -74,7 +88,10 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              resetErrors();
+            }}
             placeholder="Password (min. 6 characters)"
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
             required
@@ -85,7 +102,10 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
           <input
             type="password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              resetErrors();
+            }}
             placeholder="Confirm Password"
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
             required
@@ -96,15 +116,19 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
           <input
             type="color"
             value={color}
-            onChange={(e) => setColor(e.target.value)}
+            onChange={(e) => {
+              setColor(e.target.value);
+              resetErrors();
+            }}
             className="w-full h-12 rounded-lg cursor-pointer"
           />
         </div>
         <button
           type="submit"
-          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+          disabled={isSubmitting}
+          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign Up
+          {isSubmitting ? 'Creating account...' : 'Sign Up'}
         </button>
       </form>
       <p className="mt-6 text-center text-white/60">
