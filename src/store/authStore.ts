@@ -1,132 +1,133 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { api } from '../services/api';
+import type { ApiUser } from '../types';
 import { useUserStore } from './userStore';
-
-interface User {
-  id: string;
-  name: string;
-  color: string;
-  email: string;
-  password: string;
-  profilePicture?: string;
-  bio?: string;
-}
+import { useFriendStore } from './friendStore';
+import { useStoryStore } from './storyStore';
+import { useChatStore } from './chatStore';
 
 interface AuthState {
-  user: User | null;
+  user: ApiUser | null;
+  token: string | null;
   isAuthenticated: boolean;
-  registeredUsers: User[];
-  login: (credentials: { email: string; password: string }) => boolean;
-  register: (userData: { email: string; password: string; name: string; color: string }) => boolean;
-  logout: () => void;
-  updateProfile: (updates: Partial<User>) => void;
+  initialized: boolean;
+  loading: boolean;
+  error: string | null;
+  initialize: () => Promise<void>;
+  login: (credentials: { email: string; password: string }) => Promise<boolean>;
+  register: (payload: { email: string; password: string; name?: string; color?: string }) => Promise<boolean>;
+  logout: () => Promise<void>;
+  updateProfile: (updates: Partial<Pick<ApiUser, 'name' | 'color' | 'bio' | 'profilePicture'>>) => Promise<void>;
+  clearError: () => void;
 }
+
+const initialState = {
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  initialized: false,
+  loading: false,
+  error: null as string | null,
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      registeredUsers: [],
+      ...initialState,
 
-      register: (userData) => {
-        const { registeredUsers } = get();
-        const existingUser = registeredUsers.find(u => u.email === userData.email);
-        
-        if (existingUser) {
+      initialize: async () => {
+        const { initialized, token } = get();
+        if (initialized) return;
+
+        if (!token) {
+          set({ initialized: true });
+          return;
+        }
+
+        try {
+          const user = await api.getSession(token);
+          set({ user, isAuthenticated: true, initialized: true });
+        } catch (error) {
+          console.error('Session check failed', error);
+          set({ token: null, user: null, isAuthenticated: false, initialized: true });
+        }
+      },
+
+      login: async (credentials) => {
+        set({ loading: true, error: null });
+        try {
+          const { token, user } = await api.login(credentials);
+          set({ token, user, isAuthenticated: true, loading: false });
+          await Promise.all([
+            useUserStore.getState().fetchUsers(),
+            useFriendStore.getState().fetchFriendRequests(),
+            useStoryStore.getState().fetchStories(),
+          ]);
+          useChatStore.getState().reset();
+          return true;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to sign in';
+          set({ error: message, loading: false, isAuthenticated: false });
           return false;
         }
-
-        const newUser = {
-          id: `user_${Date.now()}`,
-          name: userData.name || userData.email.split('@')[0],
-          email: userData.email,
-          password: userData.password,
-          color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
-        };
-
-        set(state => ({
-          registeredUsers: [...state.registeredUsers, newUser],
-          user: newUser,
-          isAuthenticated: true
-        }));
-
-        // Add user to the online users
-        const { addUser, setOnlineStatus } = useUserStore.getState();
-        addUser({
-          id: newUser.id,
-          name: newUser.name,
-          color: newUser.color,
-          online: true
-        });
-        setOnlineStatus(newUser.id, true);
-
-        return true;
       },
 
-      login: (credentials) => {
-        const { registeredUsers } = get();
-        const user = registeredUsers.find(
-          u => u.email === credentials.email && u.password === credentials.password
-        );
-
-        if (user) {
-          set({ user, isAuthenticated: true });
-          
-          // Set user as online
-          const { addUser, setOnlineStatus } = useUserStore.getState();
-          addUser({
-            id: user.id,
-            name: user.name,
-            color: user.color,
-            online: true
-          });
-          setOnlineStatus(user.id, true);
-
+      register: async (payload) => {
+        set({ loading: true, error: null });
+        try {
+          const { token, user } = await api.register(payload);
+          set({ token, user, isAuthenticated: true, loading: false });
+          await Promise.all([
+            useUserStore.getState().fetchUsers(),
+            useFriendStore.getState().fetchFriendRequests(),
+            useStoryStore.getState().fetchStories(),
+          ]);
+          useChatStore.getState().reset();
           return true;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unable to register';
+          set({ error: message, loading: false, isAuthenticated: false });
+          return false;
         }
-
-        return false;
       },
 
-      logout: () => {
-        const { user } = get();
-        if (user) {
-          // Set user as offline before logging out
-          const { setOnlineStatus } = useUserStore.getState();
-          setOnlineStatus(user.id, false);
-        }
-        set({ user: null, isAuthenticated: false });
-      },
-
-      updateProfile: (updates) =>
-        set((state) => {
-          if (!state.user) return state;
-
-          const updatedUser = { ...state.user, ...updates };
-
-          // Update in registered users list
-          const updatedRegisteredUsers = state.registeredUsers.map(u =>
-            u.id === updatedUser.id ? updatedUser : u
-          );
-
-          // Update in user store
-          const { updateUserColor } = useUserStore.getState();
-          if (updates.color) {
-            updateUserColor(updatedUser.id, updates.color);
+      logout: async () => {
+        const { token } = get();
+        try {
+          if (token) {
+            await api.logout(token);
           }
+        } catch (error) {
+          console.warn('Failed to logout cleanly', error);
+        }
 
-          return {
-            user: updatedUser,
-            registeredUsers: updatedRegisteredUsers
-          };
-        }),
+        set({ ...initialState, initialized: true });
+        useUserStore.getState().reset();
+        useFriendStore.getState().reset();
+        useStoryStore.getState().reset();
+        useChatStore.getState().reset();
+      },
+
+      updateProfile: async (updates) => {
+        const { user, token } = get();
+        if (!user || !token) return;
+
+        try {
+          const updated = await api.updateProfile(token, user.id, updates);
+          set({ user: updated });
+          useUserStore.getState().updateUser(updated);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Profile update failed';
+          set({ error: message });
+        }
+      },
+
+      clearError: () => set({ error: null }),
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({
-        registeredUsers: state.registeredUsers,
-      }),
-    }
-  )
+      partialize: (state) => ({ token: state.token }),
+    },
+  ),
 );

@@ -25,10 +25,10 @@ export function StoryCreator({ onClose }: StoryCreatorProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentUser && content.trim()) {
-      addStory(currentUser.id, content.trim(), imagePreview || undefined);
+      await addStory(content.trim(), imagePreview || undefined);
       onClose();
     }
   };

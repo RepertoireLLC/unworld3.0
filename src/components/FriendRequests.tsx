@@ -57,13 +57,13 @@ export function FriendRequests() {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => acceptFriendRequest(request.id)}
+                        onClick={() => void acceptFriendRequest(request.id)}
                         className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded hover:bg-emerald-500/30 transition-colors"
                       >
                         Accept
                       </button>
                       <button
-                        onClick={() => rejectFriendRequest(request.id)}
+                        onClick={() => void rejectFriendRequest(request.id)}
                         className="px-3 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 transition-colors"
                       >
                         Reject

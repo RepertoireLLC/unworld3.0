@@ -34,7 +34,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
 
   const handleFriendRequest = () => {
     if (!hasPending) {
-      sendFriendRequest(currentUser.id, userId);
+      void sendFriendRequest(userId);
     }
   };
 
@@ -48,7 +48,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateProfile({ profilePicture: reader.result as string });
+        void updateProfile({ profilePicture: reader.result as string });
       };
       reader.readAsDataURL(file);
     }
@@ -56,7 +56,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
 
   const handleNameUpdate = () => {
     if (editName.trim()) {
-      updateProfile({ name: editName.trim() });
+      void updateProfile({ name: editName.trim() });
       setIsEditing(false);
     }
   };
