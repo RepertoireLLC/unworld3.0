@@ -151,7 +151,8 @@ export const useNotepadStore = create<NotepadState>()(
       },
       isPanelOpen: (userId) => {
         const { panelOpenByUser } = get();
-        return panelOpenByUser[userId] ?? false;
+        const storedValue = panelOpenByUser[userId];
+        return storedValue === undefined ? true : storedValue;
       },
       setPanelOpen: (userId, open) => {
         set((state) => ({

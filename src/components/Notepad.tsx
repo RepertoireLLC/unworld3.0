@@ -36,15 +36,6 @@ export function Notepad() {
   const togglePanel = useNotepadStore((state) => state.togglePanel);
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-    return () => {
-      setPanelOpen(user.id, false);
-    };
-  }, [user, setPanelOpen]);
-
-  useEffect(() => {
     if (user && !activeNoteId && notes[0]) {
       setActiveNote(user.id, notes[0].id);
     }

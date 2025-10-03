@@ -104,11 +104,11 @@ const testDeleteNoteReassignsActive = async () => {
 const testPanelStateToggles = async () => {
   await resetState();
   const store = useNotepadStore.getState();
-  assert.equal(store.isPanelOpen(userId), false);
-  store.setPanelOpen(userId, true);
-  assert.equal(useNotepadStore.getState().isPanelOpen(userId), true);
+  assert.equal(store.isPanelOpen(userId), true);
   store.togglePanel(userId);
   assert.equal(useNotepadStore.getState().isPanelOpen(userId), false);
+  store.setPanelOpen(userId, true);
+  assert.equal(useNotepadStore.getState().isPanelOpen(userId), true);
 };
 
 const run = async () => {
