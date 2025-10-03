@@ -14,12 +14,16 @@ type ActiveMap = Record<string, string | null>;
 interface NotepadState {
   notesByUser: NotesByUser;
   activeNoteIdByUser: ActiveMap;
+  panelOpenByUser: Record<string, boolean>;
   createNote: (userId: string) => Note;
   updateNote: (userId: string, noteId: string, updates: Partial<Omit<Note, 'id'>>) => void;
   deleteNote: (userId: string, noteId: string) => void;
   setActiveNote: (userId: string, noteId: string | null) => void;
   getNotesForUser: (userId: string) => Note[];
   getActiveNoteId: (userId: string) => string | null;
+  isPanelOpen: (userId: string) => boolean;
+  setPanelOpen: (userId: string, open: boolean) => void;
+  togglePanel: (userId: string) => void;
 }
 
 const generateId = () => {
@@ -35,6 +39,7 @@ export const useNotepadStore = create<NotepadState>()(
     (set, get) => ({
       notesByUser: {},
       activeNoteIdByUser: {},
+      panelOpenByUser: {},
       createNote: (userId) => {
         const newNote: Note = {
           id: generateId(),
@@ -144,12 +149,34 @@ export const useNotepadStore = create<NotepadState>()(
         const { activeNoteIdByUser } = get();
         return activeNoteIdByUser[userId] ?? null;
       },
+      isPanelOpen: (userId) => {
+        const { panelOpenByUser } = get();
+        return panelOpenByUser[userId] ?? false;
+      },
+      setPanelOpen: (userId, open) => {
+        set((state) => ({
+          panelOpenByUser: {
+            ...state.panelOpenByUser,
+            [userId]: open,
+          },
+        }));
+      },
+      togglePanel: (userId) => {
+        const { isPanelOpen } = get();
+        set((state) => ({
+          panelOpenByUser: {
+            ...state.panelOpenByUser,
+            [userId]: !isPanelOpen(userId),
+          },
+        }));
+      },
     }),
     {
       name: 'notepad-storage',
       partialize: (state) => ({
         notesByUser: state.notesByUser,
         activeNoteIdByUser: state.activeNoteIdByUser,
+        panelOpenByUser: state.panelOpenByUser,
       }),
     }
   )

@@ -5,14 +5,16 @@ import { useNotepadStore } from '../store/notepadStore';
 
 export function Notepad() {
   const user = useAuthStore((state) => state.user);
-  const [isOpen, setIsOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftContent, setDraftContent] = useState('');
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const latestDraftRef = useRef({ title: '', content: '' });
-
+  const isOpen = useNotepadStore((state) =>
+    user ? state.isPanelOpen(user.id) : false
+  );
+  
   const notes = useNotepadStore((state) =>
     user ? state.getNotesForUser(user.id) : []
   );
@@ -24,12 +26,17 @@ export function Notepad() {
   const updateNote = useNotepadStore((state) => state.updateNote);
   const deleteNote = useNotepadStore((state) => state.deleteNote);
   const setActiveNote = useNotepadStore((state) => state.setActiveNote);
+  const setPanelOpen = useNotepadStore((state) => state.setPanelOpen);
+  const togglePanel = useNotepadStore((state) => state.togglePanel);
 
   useEffect(() => {
     if (!user) {
-      setIsOpen(false);
+      return;
     }
-  }, [user]);
+    return () => {
+      setPanelOpen(user.id, false);
+    };
+  }, [user, setPanelOpen]);
 
   useEffect(() => {
     if (user && !activeNoteId && notes[0]) {
@@ -146,7 +153,7 @@ export function Notepad() {
 
   const handleCreateNote = () => {
     const newNote = createNote(user.id);
-    setIsOpen(true);
+    setPanelOpen(user.id, true);
     setActiveNote(user.id, newNote.id);
   };
 
@@ -155,7 +162,7 @@ export function Notepad() {
   };
 
   const handlePanelToggle = () => {
-    setIsOpen((previous) => !previous);
+    togglePanel(user.id);
   };
 
   const statusMessage = useMemo(() => {
@@ -186,7 +193,7 @@ export function Notepad() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <h2 className="text-sm font-semibold tracking-wide uppercase">Notepad</h2>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => setPanelOpen(user.id, false)}
               className="p-1 rounded-md hover:bg-white/10 transition-colors"
               aria-label="Close notepad"
             >
@@ -214,7 +221,7 @@ export function Notepad() {
                     <button
                       onClick={() => {
                         setActiveNote(user.id, note.id);
-                        setIsOpen(true);
+                        setPanelOpen(user.id, true);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                         note.id === activeNote?.id
