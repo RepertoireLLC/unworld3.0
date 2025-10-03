@@ -2,6 +2,49 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
 
+const DEFAULT_USERS: User[] = [
+  {
+    id: 'user_astra',
+    name: 'Astra Nyx',
+    color: '#8B5CF6',
+    email: 'astra@sphere.io',
+    password: 'nebula',
+    bio: 'Navigator of the outer relays and curator of encrypted lore.',
+  },
+  {
+    id: 'user_orion',
+    name: 'Orion Vance',
+    color: '#0EA5E9',
+    email: 'orion@sphere.io',
+    password: 'starlight',
+    bio: 'Ops tactician keeping the strike grid synchronized.',
+  },
+  {
+    id: 'user_lyra',
+    name: 'Lyra Solace',
+    color: '#22C55E',
+    email: 'lyra@sphere.io',
+    password: 'harmonics',
+    bio: 'Diplomatic envoy bridging alliances across the sphere.',
+  },
+  {
+    id: 'user_rhett',
+    name: 'Rhett Calder',
+    color: '#F97316',
+    email: 'rhett@sphere.io',
+    password: 'ember',
+    bio: 'Engineering sentinel reinforcing containment shields.',
+  },
+  {
+    id: 'user_vexa',
+    name: 'Vexa Quill',
+    color: '#EC4899',
+    email: 'vexa@sphere.io',
+    password: 'cipher',
+    bio: 'Signal analyst mapping sentiment tides in real-time.',
+  },
+];
+
 interface User {
   id: string;
   name: string;
@@ -27,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
-      registeredUsers: [],
+      registeredUsers: DEFAULT_USERS,
 
       register: (userData) => {
         const { registeredUsers } = get();
