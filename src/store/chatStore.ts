@@ -1,36 +1,60 @@
 import { create } from 'zustand';
 
-interface Message {
+export interface EncryptedAttachment {
+  id: string;
+  name: string;
+  type: 'image' | 'video' | 'file';
+  size: number;
+  mimeType: string;
+  encryptedData: string;
+  iv: string;
+}
+
+export interface EncryptedMessage {
   id: string;
   fromUserId: string;
   toUserId: string;
-  content: string;
+  encryptedContent: string;
+  iv: string;
+  attachments: EncryptedAttachment[];
+  algorithm: 'AES-GCM';
   timestamp: number;
 }
 
 interface ChatState {
   activeChat: string | null;
-  messages: Message[];
+  messages: EncryptedMessage[];
   setActiveChat: (userId: string | null) => void;
-  sendMessage: (fromUserId: string, toUserId: string, content: string) => void;
-  getMessagesForChat: (userId1: string, userId2: string) => Message[];
+  sendMessage: (message: Omit<EncryptedMessage, 'id' | 'timestamp'> & { id?: string }) => void;
+  getMessagesForChat: (userId1: string, userId2: string) => EncryptedMessage[];
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   activeChat: null,
   messages: [],
-  
+
   setActiveChat: (userId) => set({ activeChat: userId }),
-  
-  sendMessage: (fromUserId, toUserId, content) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
+
+  sendMessage: ({
+    id,
+    fromUserId,
+    toUserId,
+    encryptedContent,
+    iv,
+    attachments,
+    algorithm,
+  }) => {
+    const newMessage: EncryptedMessage = {
+      id: id ?? Date.now().toString(),
       fromUserId,
       toUserId,
-      content,
+      encryptedContent,
+      iv,
+      attachments,
+      algorithm: algorithm ?? 'AES-GCM',
       timestamp: Date.now(),
     };
-    
+
     set((state) => ({
       messages: [...state.messages, newMessage],
     }));

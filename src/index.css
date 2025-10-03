@@ -11,6 +11,1163 @@ body {
   overflow: hidden;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 canvas {
   touch-action: none;
+}
+
+.chat-shell {
+  @apply relative flex h-full w-full gap-6 text-white;
+}
+
+.chat-shell__skip-link {
+  @apply absolute left-[-999px] top-4 z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-sm font-semibold text-white transition;
+}
+
+.chat-shell__skip-link:focus {
+  @apply left-6 outline-none ring-2 ring-emerald-400/70;
+}
+
+.glass-panel {
+  @apply rounded-[32px] border border-white/10 bg-white/10 bg-clip-padding backdrop-blur-2xl shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)];
+}
+
+.chat-shell__nav {
+  @apply glass-panel flex w-28 flex-col items-center gap-6 px-4 py-8;
+}
+
+.enclypse-logo {
+  @apply flex flex-col items-center gap-2 text-white;
+}
+
+.enclypse-logo__mark {
+  @apply relative flex h-16 w-16 items-center justify-center rounded-[24px];
+  background: radial-gradient(circle at 30% 30%, rgba(173, 255, 255, 0.6), transparent 55%),
+    radial-gradient(circle at 70% 70%, rgba(129, 140, 248, 0.5), transparent 60%),
+    linear-gradient(135deg, rgba(16, 185, 129, 0.65), rgba(59, 130, 246, 0.75));
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.enclypse-logo__orb {
+  @apply absolute h-9 w-9 rounded-[22px];
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.85), rgba(59, 130, 246, 0.35));
+  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.enclypse-logo__arc {
+  @apply absolute h-14 w-14 rounded-full border border-white/40;
+  box-shadow: 0 0 25px rgba(129, 140, 248, 0.45);
+  mask: radial-gradient(circle, transparent 58%, black 62%);
+}
+
+.enclypse-logo__flare {
+  @apply absolute h-3 w-3 rounded-full;
+  top: 18%;
+  right: 20%;
+  background: radial-gradient(circle, rgba(244, 244, 255, 0.9), rgba(59, 130, 246, 0.2));
+  box-shadow: 0 0 12px rgba(244, 244, 255, 0.9);
+}
+
+.enclypse-logo__wordmark {
+  @apply text-xs font-semibold uppercase tracking-[0.6em] text-white/80;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+}
+
+.chat-shell__nav-buttons {
+  @apply flex flex-1 flex-col items-stretch gap-3;
+}
+
+.chat-shell__nav-button {
+  @apply flex flex-col items-center gap-2 rounded-2xl border border-transparent px-3 py-4 text-xs font-medium uppercase tracking-wide text-white/70 transition duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white focus:outline-none;
+}
+
+.chat-shell__nav-button svg {
+  @apply h-5 w-5;
+}
+
+.chat-shell__nav-button.active {
+  @apply border-white/60 bg-white/10 text-white;
+}
+
+.chat-shell__nav-button:focus-visible {
+  @apply ring-2 ring-emerald-400/60;
+}
+
+.chat-shell__nav-button.logout {
+  @apply mt-auto border-white/10 text-white/60 hover:border-white/40 hover:text-white;
+}
+
+.chat-shell__layout {
+  @apply flex flex-1 gap-6;
+}
+
+.chat-shell__sidebar {
+  @apply glass-panel flex w-80 flex-col overflow-hidden px-6 py-6;
+}
+
+.chat-shell__sidebar-header {
+  @apply flex items-center justify-between gap-4;
+}
+
+.chat-shell__eyebrow {
+  @apply text-xs font-semibold uppercase tracking-[0.3em] text-white/40;
+}
+
+.chat-shell__sidebar-header h2 {
+  @apply text-xl font-semibold text-white;
+}
+
+.chat-shell__sidebar-action {
+  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
+}
+
+.chat-shell__search-field {
+  @apply mt-6 flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70;
+}
+
+.chat-shell__search-field input {
+  @apply w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-0;
+}
+
+.chat-shell__contacts {
+  @apply mt-6 flex-1 space-y-2 overflow-y-auto pr-1;
+}
+
+.chat-shell__contact {
+  @apply flex w-full items-center gap-3 rounded-2xl border border-white/5 bg-white/5 px-3 py-3 text-sm text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white;
+}
+
+.chat-shell__contact.active {
+  @apply border-white/60 bg-white/10 text-white;
+}
+
+.chat-shell__contact-main {
+  @apply flex flex-1 items-center gap-3 rounded-2xl bg-transparent px-1 py-1 text-left text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-shell__contact-profile {
+  @apply flex h-8 w-8 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
+}
+
+.chat-shell__contact-avatar {
+  @apply h-10 w-10 shrink-0 rounded-2xl border border-white/20 shadow-[0_10px_20px_rgba(0,0,0,0.35)];
+}
+
+.chat-shell__contact-meta {
+  @apply flex flex-col;
+}
+
+.chat-shell__contact-name {
+  @apply text-sm font-medium text-white;
+}
+
+.chat-shell__contact-status {
+  @apply flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white/50;
+}
+
+.chat-shell__status-dot {
+  @apply h-2 w-2 rounded-full bg-white/30;
+}
+
+.chat-shell__status-dot.online {
+  @apply bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)];
+}
+
+.chat-shell__status-dot.online.focus {
+  @apply bg-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.6)];
+}
+
+.chat-shell__status-dot.online.away {
+  @apply bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.6)];
+}
+
+.chat-shell__contact-status-message {
+  @apply text-xs text-white/50;
+}
+
+.chat-shell__contact-languages {
+  @apply mt-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white/30;
+}
+
+.chat-shell__empty-state {
+  @apply mt-12 flex flex-col items-start gap-2 rounded-3xl border border-white/10 bg-white/5 px-5 py-6 text-left;
+}
+
+.chat-shell__empty-state h3 {
+  @apply text-lg font-semibold text-white;
+}
+
+.chat-shell__empty-state p {
+  @apply text-sm text-white/50;
+}
+
+.chat-shell__main {
+  @apply glass-panel flex flex-1 flex-col overflow-hidden p-8;
+}
+
+.chat-shell__scene {
+  @apply relative h-full w-full overflow-hidden rounded-[28px] border border-white/10 bg-black/30;
+}
+
+.chat-shell__scene > div,
+.chat-shell__scene canvas {
+  @apply h-full w-full;
+}
+
+.chat-shell__main-header {
+  @apply flex items-center justify-between gap-6;
+}
+
+.chat-shell__main-search {
+  @apply relative flex flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70;
+}
+
+.chat-shell__main-search input {
+  @apply w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
+}
+
+.chat-shell__main-search input {
+  @apply w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
+}
+
+.chat-shell__search-clear {
+  @apply absolute right-4 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 transition hover:border-white/40 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
+}
+
+.chat-shell__search-results {
+  @apply absolute left-0 top-14 z-10 flex w-full flex-col gap-2 rounded-3xl border border-white/10 bg-black/80 p-3 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.9)] backdrop-blur-2xl;
+}
+
+.chat-shell__search-result {
+  @apply flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-white/80 transition hover:border-white/40 hover:bg-white/10 hover:text-white;
+}
+
+.chat-shell__search-result-meta {
+  @apply flex items-center gap-3;
+}
+
+.chat-shell__search-result-meta p {
+  @apply text-sm font-medium text-white;
+}
+
+.chat-shell__search-status {
+  @apply flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white/50;
+}
+
+.chat-shell__search-status-message {
+  @apply text-xs text-white/50;
+}
+
+.chat-shell__search-languages {
+  @apply text-[11px] font-semibold uppercase tracking-[0.25em] text-white/30;
+}
+
+.chat-shell__search-result-actions {
+  @apply flex items-center gap-2;
+}
+
+.chat-shell__search-result-actions button {
+  @apply rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
+}
+
+.chat-shell__search-empty {
+  @apply rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-white/50;
+}
+
+.chat-shell__main-actions {
+  @apply flex items-center gap-4;
+}
+
+.chat-shell__action-group {
+  @apply relative;
+}
+
+.chat-shell__action-button {
+  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
+}
+
+.chat-shell__action-button.active {
+  @apply border-white/60 text-white;
+}
+
+.chat-shell__badge {
+  @apply flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-emerald-500/80 px-1 text-[10px] font-bold text-emerald-950;
+}
+
+.chat-shell__dropdown {
+  @apply absolute right-0 z-20 mt-3 w-56 rounded-2xl border border-white/10 bg-black/80 p-2 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.9)] backdrop-blur-2xl;
+}
+
+.chat-shell__dropdown--right {
+  @apply right-0 w-72;
+}
+
+.chat-shell__dropdown--wide {
+  @apply left-auto right-0 w-[28rem] max-w-[90vw] space-y-4 p-4;
+}
+
+.chat-shell__dropdown header {
+  @apply mb-2 px-2;
+}
+
+.chat-shell__dropdown header h3 {
+  @apply text-sm font-semibold text-white;
+}
+
+.chat-shell__dropdown ul {
+  @apply flex flex-col gap-2;
+}
+
+.chat-shell__dropdown ul li {
+  list-style: none;
+}
+
+.chat-shell__dropdown-item {
+  @apply flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-white/70 transition hover:bg-white/10 hover:text-white;
+}
+
+.chat-shell__dropdown-item.active {
+  @apply text-white;
+}
+
+.chat-shell__dropdown-divider {
+  @apply my-2 h-px bg-white/10;
+}
+
+.chat-shell__dropdown-section {
+  @apply space-y-3 rounded-2xl bg-white/5 p-4;
+}
+
+.chat-shell__dropdown-title {
+  @apply text-xs font-semibold uppercase tracking-[0.2em] text-white/50;
+}
+
+.chat-shell__availability-grid {
+  @apply grid gap-2 md:grid-cols-3;
+}
+
+.chat-shell__availability-card {
+  @apply flex items-start gap-3 rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-left text-sm text-white/70 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-shell__availability-card.active {
+  @apply border-emerald-400/80 text-white shadow-[0_0_25px_rgba(16,185,129,0.35)];
+}
+
+.chat-shell__availability-card span {
+  @apply text-sm font-semibold text-white;
+}
+
+.chat-shell__availability-card p {
+  @apply text-xs text-white/50;
+}
+
+.chat-shell__dropdown-section textarea {
+  @apply min-h-[64px] w-full resize-none rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-shell__status-presets {
+  @apply flex flex-wrap gap-2;
+}
+
+.chat-shell__status-chip {
+  @apply rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition hover:border-emerald-400/80 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-shell__dropdown-actions {
+  @apply flex justify-end;
+}
+
+.chat-shell__dropdown-save {
+  @apply rounded-full border border-emerald-400/60 bg-emerald-400/20 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300 hover:bg-emerald-400/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300;
+}
+
+.chat-shell__color-picker {
+  @apply rounded-xl border border-white/10 bg-white/5 p-3;
+}
+
+.chat-shell__color-picker input {
+  @apply h-9 w-full cursor-pointer rounded-lg border-0 bg-transparent;
+}
+
+.chat-shell__request {
+  @apply flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white/80;
+}
+
+.chat-shell__request-meta {
+  @apply flex items-center gap-3;
+}
+
+.chat-shell__request-meta p {
+  @apply text-sm font-semibold text-white;
+}
+
+.chat-shell__request-meta span {
+  @apply text-xs uppercase tracking-wide text-white/40;
+}
+
+.chat-shell__request-actions {
+  @apply flex items-center gap-2;
+}
+
+.chat-shell__request-actions button {
+  @apply rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
+}
+
+.chat-shell__empty-dropdown {
+  @apply rounded-xl border border-dashed border-white/10 bg-white/5 px-3 py-6 text-center text-sm text-white/50;
+}
+
+.chat-shell__user-button {
+  @apply flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
+}
+
+.chat-shell__user-avatar {
+  @apply h-8 w-8 rounded-full border border-white/20 shadow-[0_10px_20px_rgba(0,0,0,0.35)];
+}
+
+.chat-shell__user-meta {
+  @apply flex flex-col items-start text-left text-white;
+}
+
+.chat-shell__user-header {
+  @apply flex items-center gap-2;
+}
+
+.chat-shell__user-name {
+  @apply text-sm font-semibold;
+}
+
+.chat-shell__availability-pill {
+  @apply rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+}
+
+.chat-shell__availability-pill.available {
+  @apply border-emerald-300/70 bg-emerald-300/15 text-emerald-100;
+}
+
+.chat-shell__availability-pill.focus {
+  @apply border-cyan-300/70 bg-cyan-300/15 text-cyan-100;
+}
+
+.chat-shell__availability-pill.away {
+  @apply border-amber-300/70 bg-amber-300/15 text-amber-100;
+}
+
+.chat-shell__user-status {
+  @apply text-xs text-white/50;
+}
+
+.chat-shell__main-content {
+  @apply mt-8 flex flex-1 overflow-hidden;
+}
+
+.chat-window {
+  @apply flex h-full w-full flex-col;
+}
+
+.chat-window__header {
+  @apply flex items-center justify-between gap-6 border-b border-white/10 pb-6;
+}
+
+.chat-window__eyebrow {
+  @apply text-xs font-semibold uppercase tracking-[0.3em] text-white/40;
+}
+
+.chat-window__header h1 {
+  @apply text-3xl font-semibold text-white;
+}
+
+.chat-window__header-status {
+  @apply flex flex-col items-start gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs uppercase tracking-wide text-white/60 shadow-[0_10px_30px_rgba(15,23,42,0.35)];
+}
+
+.chat-window__link-indicator {
+  @apply flex items-center gap-2 text-white;
+}
+
+.chat-window__signal {
+  @apply flex items-center gap-3 text-[10px] text-white/60;
+}
+
+.chat-window__signal-bars {
+  @apply flex items-end gap-1;
+}
+
+.chat-window__signal-bar {
+  @apply h-2 w-1 rounded-full bg-white/20 transition-all duration-500 ease-out;
+}
+
+.chat-window__signal-bar:nth-child(2) {
+  @apply h-3;
+}
+
+.chat-window__signal-bar:nth-child(3) {
+  @apply h-4;
+}
+
+.chat-window__signal-bar:nth-child(4) {
+  @apply h-5;
+}
+
+.chat-window__signal-bar.active {
+  @apply bg-emerald-400;
+}
+
+.chat-window__signal-metric {
+  @apply text-[11px] font-semibold text-white/70;
+}
+
+.chat-window__encryption {
+  @apply flex items-center gap-2 text-[11px] font-semibold text-emerald-200;
+}
+
+.chat-window__recipient {
+  @apply flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2;
+}
+
+.chat-window__recipient.ghost {
+  @apply border-dashed text-white/40;
+}
+
+.chat-window__recipient-avatar {
+  @apply h-10 w-10 rounded-full border border-white/20 shadow-[0_10px_25px_rgba(0,0,0,0.45)];
+}
+
+.chat-window__recipient-name {
+  @apply text-sm font-medium text-white;
+}
+
+.chat-window__recipient-status {
+  @apply text-xs uppercase tracking-wide text-white/40;
+}
+
+.chat-window__recipient-status.online {
+  @apply text-emerald-300;
+}
+
+.chat-window__channels {
+  @apply mt-6;
+}
+
+.chat-window__utilities {
+  @apply mt-4 flex flex-wrap items-center gap-3;
+}
+
+.chat-window__utility {
+  @apply relative flex flex-col gap-2;
+}
+
+.chat-window__utility-toggle {
+  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30;
+}
+
+.chat-window__utility-toggle.active {
+  @apply border-emerald-400/60 text-white;
+}
+
+.chat-window__utility-label {
+  @apply rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/40;
+}
+
+.chat-window__utility-options {
+  @apply flex flex-wrap gap-2;
+}
+
+.chat-window__utility-option {
+  @apply rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-window__utility-option.active {
+  @apply border-emerald-400/60 text-emerald-100;
+}
+
+.chat-window__channel-list {
+  @apply flex flex-wrap gap-3;
+}
+
+.chat-window__channel {
+  @apply rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 transition hover:border-white/40 hover:text-white focus:outline-none;
+}
+
+.chat-window__channel.active {
+  @apply border-white/60 bg-white/10 text-white;
+}
+
+.chat-window__channel:focus-visible {
+  @apply ring-2 ring-emerald-400/60;
+}
+
+.chat-window__body {
+  @apply mt-6 flex flex-1 gap-6;
+}
+
+.chat-window__conversation {
+  @apply flex flex-1 flex-col rounded-[28px] border border-white/10 bg-black/30 p-6 backdrop-blur-xl;
+}
+
+.chat-window__pinned {
+  @apply mb-4 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-4 text-sm text-emerald-50 shadow-[0_12px_40px_-20px_rgba(16,185,129,0.65)];
+}
+
+.chat-window__pinned-header {
+  @apply flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-100;
+}
+
+.chat-window__pinned ul {
+  @apply mt-3 flex flex-col gap-2;
+}
+
+.chat-window__pinned li button {
+  @apply flex w-full flex-col items-start gap-1 rounded-xl border border-emerald-200/20 bg-emerald-200/10 px-3 py-2 text-left text-xs text-emerald-100 transition hover:border-emerald-200/60 hover:bg-emerald-200/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/80;
+}
+
+.chat-window__pinned-meta {
+  @apply text-[10px] uppercase tracking-wide text-emerald-200/70;
+}
+
+.chat-window__messages {
+  @apply flex-1 space-y-4 overflow-y-auto pr-2;
+}
+
+.chat-window__alert {
+  @apply mb-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-100 shadow-[0_10px_30px_rgba(251,191,36,0.25)];
+}
+
+.chat-window__status {
+  @apply mb-3 flex items-center gap-2 text-xs uppercase tracking-wide text-white/60;
+}
+
+.chat-window__message {
+  @apply flex flex-col items-start gap-2 text-sm text-white/80;
+}
+
+.chat-window__message.self {
+  @apply items-end text-emerald-100;
+}
+
+.chat-window__message-toolbar {
+  @apply flex w-full justify-end;
+}
+
+.chat-window__pin-button {
+  @apply flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-window__pin-button.active {
+  @apply border-emerald-300/60 bg-emerald-400/10 text-emerald-100;
+}
+
+.chat-window__message.pinned .chat-window__bubble {
+  @apply border-emerald-300/60 bg-emerald-400/10;
+}
+
+.chat-window__translation {
+  @apply max-w-[80%] rounded-2xl border border-white/5 bg-white/5 px-4 py-2 text-xs text-white/70;
+}
+
+.chat-window__bubble {
+  @apply max-w-[80%] rounded-3xl border border-white/10 bg-white/10 px-5 py-3 text-sm leading-relaxed text-white shadow-[0_15px_40px_-20px_rgba(0,0,0,0.8)];
+}
+
+.chat-window__attachments {
+  @apply mt-4 grid gap-3;
+}
+
+.chat-window__attachment {
+  @apply flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-3;
+}
+
+.chat-window__attachment-meta {
+  @apply flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/60;
+}
+
+.chat-window__attachment img,
+.chat-window__attachment video {
+  @apply max-h-64 w-full rounded-xl border border-white/10 object-cover shadow-[0_20px_40px_rgba(15,23,42,0.45)];
+}
+
+.chat-window__attachment video {
+  @apply bg-black;
+}
+
+.chat-window__attachment a {
+  @apply inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:text-white;
+}
+
+.chat-window__message.self .chat-window__bubble {
+  @apply border-emerald-400/40 bg-emerald-500/10 text-emerald-100;
+}
+
+.chat-window__timestamp {
+  @apply text-xs uppercase tracking-wide text-white/30;
+}
+
+.chat-window__placeholder {
+  @apply flex h-full flex-col items-start justify-center gap-2 rounded-3xl border border-dashed border-white/20 bg-white/5 px-6 py-10 text-left;
+}
+
+.chat-window__placeholder h2 {
+  @apply text-xl font-semibold text-white;
+}
+
+.chat-window__placeholder p {
+  @apply text-sm text-white/60;
+}
+
+.chat-window__composer {
+  @apply mt-6 flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3;
+}
+
+.chat-window__composer-attachment {
+  @apply flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40;
+}
+
+.chat-window__composer input {
+  @apply flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
+}
+
+.chat-window__composer button[type='submit'] {
+  @apply flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-emerald-500/20 text-emerald-200 transition hover:border-emerald-300/60 hover:bg-emerald-400/30;
+}
+
+.chat-window__composer button[type='submit']:disabled {
+  @apply cursor-not-allowed border-white/10 bg-white/5 text-white/30;
+}
+
+.chat-window__file-input {
+  @apply sr-only;
+}
+
+.chat-window__pending-attachments {
+  @apply mt-4 flex flex-wrap gap-3;
+}
+
+.chat-window__pending-attachment {
+  @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70;
+}
+
+.chat-window__pending-preview {
+  @apply flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/60;
+}
+
+.chat-window__pending-preview img,
+.chat-window__pending-preview video {
+  @apply h-full w-full object-cover;
+}
+
+.chat-window__pending-meta {
+  @apply flex flex-col;
+}
+
+.chat-window__pending-meta p {
+  @apply max-w-[160px] truncate text-xs font-medium text-white;
+}
+
+.chat-window__pending-meta span {
+  @apply text-[10px] uppercase tracking-wide text-white/40;
+}
+
+.chat-window__pending-remove {
+  @apply flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/50 transition hover:border-rose-400/60 hover:bg-rose-500/20 hover:text-rose-200;
+}
+
+.chat-window__composer-hint {
+  @apply mt-2 text-xs text-white/40;
+}
+
+.chat-window__composer-hint kbd {
+  @apply rounded border border-white/20 bg-white/10 px-1 py-0.5 font-semibold text-white/70;
+}
+
+.chat-window__tools {
+  @apply flex w-80 shrink-0 flex-col rounded-[28px] border border-white/10 bg-black/40 p-6 backdrop-blur-xl;
+}
+
+.chat-window__notepad {
+  @apply gap-5;
+}
+
+.chat-window__intel {
+  @apply flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-4;
+}
+
+.chat-window__intel-header {
+  @apply flex items-start gap-3;
+}
+
+.chat-window__intel-header h2 {
+  @apply text-base font-semibold text-white;
+}
+
+.chat-window__intel-header p {
+  @apply text-xs text-white/50;
+}
+
+.chat-window__intel-body {
+  @apply text-sm leading-relaxed text-white/70;
+}
+
+.chat-window__intel-refresh {
+  @apply inline-flex items-center gap-2 self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30;
+}
+
+.chat-window__notepad-header {
+  @apply flex items-start gap-3 text-left;
+}
+
+.chat-window__notepad-header h2 {
+  @apply text-lg font-semibold text-white;
+}
+
+.chat-window__notepad-header p {
+  @apply mt-0.5 text-sm text-white/50;
+}
+
+.chat-window__notepad-actions {
+  @apply flex items-center gap-3;
+}
+
+.chat-window__note-action {
+  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white;
+}
+
+.chat-window__note-action.primary {
+  @apply border-emerald-300/60 bg-emerald-400/20 text-emerald-100 hover:border-emerald-300 hover:bg-emerald-400/30 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/40;
+}
+
+.chat-window__note-grid {
+  @apply grid gap-4;
+}
+
+.chat-window__note-list {
+  @apply flex max-h-60 flex-col gap-2 overflow-y-auto pr-1;
+}
+
+.chat-window__note {
+  @apply flex w-full items-start justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/40 hover:bg-white/10;
+}
+
+.chat-window__note.active {
+  @apply border-emerald-400/60 bg-emerald-400/10;
+}
+
+.chat-window__note-title {
+  @apply text-sm font-medium text-white;
+}
+
+.chat-window__note-meta {
+  @apply mt-1 block text-xs uppercase tracking-wide text-white/40;
+}
+
+.chat-window__note-delete {
+  @apply rounded-full border border-transparent p-1 text-white/50 transition hover:border-white/30 hover:bg-white/10 hover:text-white;
+}
+
+.chat-window__note-empty {
+  @apply rounded-2xl border border-dashed border-white/20 bg-white/5 px-4 py-6 text-center text-sm text-white/50;
+}
+
+.chat-window__note-editor {
+  @apply grid gap-2;
+}
+
+.chat-window__note-label {
+  @apply text-xs font-medium uppercase tracking-wide text-white/50;
+}
+
+.chat-window__note-editor input,
+.chat-window__note-editor textarea {
+  @apply w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 transition focus:border-emerald-300/60 focus:outline-none focus:ring-2 focus:ring-emerald-300/30;
+}
+
+.chat-window__note-editor textarea {
+  @apply resize-none leading-relaxed;
+}
+
+.chat-window__empty {
+  @apply flex h-full w-full flex-col items-center justify-center gap-3 rounded-[32px] border border-dashed border-white/20 bg-white/5 text-center;
+}
+
+.chat-window__empty h2 {
+  @apply text-xl font-semibold text-white;
+}
+
+.chat-window__empty p {
+  @apply text-sm text-white/50;
+}
+
+.alexandria-workspace {
+  @apply flex h-full w-full flex-col gap-6 text-white;
+}
+
+.alexandria-workspace--empty {
+  @apply flex h-full items-center justify-center rounded-[32px] border border-dashed border-white/20 bg-white/5 text-sm text-white/50;
+}
+
+.alexandria-workspace__tabs {
+  @apply flex flex-wrap items-center gap-2 rounded-3xl border border-white/10 bg-white/5 p-2 backdrop-blur-xl;
+}
+
+.alexandria-workspace__tab-wrapper {
+  @apply flex items-center gap-1 rounded-2xl bg-transparent px-1;
+}
+
+.alexandria-workspace__tab {
+  @apply flex items-center gap-2 rounded-2xl px-3 py-2 text-sm text-white/60 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40;
+}
+
+.alexandria-workspace__tab.active {
+  @apply bg-emerald-400/20 text-white shadow-[0_0_25px_rgba(45,212,191,0.25)];
+}
+
+.alexandria-workspace__tab--new {
+  @apply inline-flex items-center gap-2 rounded-2xl border border-dashed border-white/20 px-3 py-2 text-sm text-white/50 transition hover:border-emerald-300/60 hover:text-emerald-100;
+}
+
+.alexandria-workspace__tab-close {
+  @apply flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-white/50 transition hover:border-rose-400/60 hover:bg-rose-500/20 hover:text-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40;
+}
+
+.alexandria-workspace__toolbar {
+  @apply flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl;
+}
+
+.alexandria-workspace__toolbar-main {
+  @apply flex flex-1 items-center gap-3;
+}
+
+.alexandria-workspace__icon-button {
+  @apply flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40;
+}
+
+.alexandria-workspace__url-form {
+  @apply flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-2;
+}
+
+.alexandria-workspace__url-input {
+  @apply flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
+}
+
+.alexandria-workspace__url-form button {
+  @apply rounded-full border border-emerald-400/50 bg-emerald-400/20 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300 hover:bg-emerald-400/30;
+}
+
+.alexandria-workspace__toolbar-actions {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.alexandria-workspace__chip {
+  @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/30;
+}
+
+.alexandria-workspace__chip.active {
+  @apply border-emerald-400/60 bg-emerald-400/20 text-emerald-100 shadow-[0_0_25px_rgba(45,212,191,0.2)];
+}
+
+.alexandria-workspace__status {
+  @apply grid gap-4 rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-xl md:grid-cols-[auto,1fr,auto];
+}
+
+.alexandria-workspace__signal {
+  @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70;
+}
+
+.alexandria-workspace__signal p {
+  @apply text-xs uppercase tracking-wide text-white/40;
+}
+
+.alexandria-workspace__signal span {
+  @apply text-sm font-semibold text-white;
+}
+
+.alexandria-workspace__wifi {
+  @apply flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/70;
+}
+
+.alexandria-workspace__wifi-heading {
+  @apply flex items-center justify-between gap-3;
+}
+
+.alexandria-workspace__wifi-label {
+  @apply text-xs font-semibold uppercase tracking-wide text-white/40;
+}
+
+.alexandria-workspace__wifi-speed {
+  @apply text-sm font-semibold text-emerald-100;
+}
+
+.alexandria-workspace__wifi-latency {
+  @apply text-[11px] uppercase tracking-wide text-white/40;
+}
+
+.alexandria-workspace__wifi-note {
+  @apply text-xs text-white/60;
+}
+
+.alexandria-workspace__wifi-options {
+  @apply flex flex-wrap gap-2;
+}
+
+.alexandria-workspace__chip--wifi {
+  @apply flex grow basis-[calc(50%-0.5rem)] flex-col items-start gap-1 text-left text-white/60;
+}
+
+.alexandria-workspace__chip--wifi.active {
+  @apply text-emerald-100;
+}
+
+.alexandria-workspace__wifi-name {
+  @apply text-sm font-semibold text-white;
+}
+
+.alexandria-workspace__wifi-meta {
+  @apply text-[11px] uppercase tracking-wide text-white/50;
+}
+
+.alexandria-workspace__keywords {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.alexandria-workspace__keyword {
+  @apply rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-white/70;
+}
+
+.alexandria-workspace__upload {
+  @apply flex flex-col items-end gap-2 text-right;
+}
+
+.alexandria-workspace__status-note {
+  @apply max-w-sm text-right text-xs text-white/50;
+}
+
+.alexandria-workspace__discovery {
+  @apply flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl;
+}
+
+.alexandria-workspace__search {
+  @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3;
+}
+
+.alexandria-workspace__search input {
+  @apply flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
+}
+
+.alexandria-workspace__search button {
+  @apply rounded-full border border-emerald-400/40 bg-emerald-400/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300 hover:bg-emerald-400/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/40;
+}
+
+.alexandria-workspace__alert {
+  @apply rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-xs text-amber-100;
+}
+
+.alexandria-workspace__alert--quiet {
+  @apply border-slate-500/40 bg-slate-500/10 text-slate-200;
+}
+
+.alexandria-workspace__results {
+  @apply grid gap-3;
+}
+
+.alexandria-workspace__result {
+  @apply flex flex-col gap-2 rounded-3xl border border-white/10 bg-black/30 p-4 transition hover:border-white/40;
+}
+
+.alexandria-workspace__result header {
+  @apply flex items-center justify-between gap-3;
+}
+
+.alexandria-workspace__result header h3 {
+  @apply text-base font-semibold text-white;
+}
+
+.alexandria-workspace__result header button {
+  @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-emerald-400/40 hover:bg-emerald-400/20 hover:text-emerald-100;
+}
+
+.alexandria-workspace__result p {
+  @apply text-sm text-white/70;
+}
+
+.alexandria-workspace__result footer {
+  @apply flex flex-wrap items-center gap-3;
+}
+
+.alexandria-workspace__result-meta {
+  @apply text-[11px] uppercase tracking-wide text-white/40;
+}
+
+.alexandria-workspace__result--loading {
+  @apply flex items-center gap-3 rounded-3xl border border-white/10 bg-black/30 p-4 text-sm text-white/60;
+}
+
+.alexandria-workspace__result--empty {
+  @apply rounded-3xl border border-dashed border-white/20 bg-black/20 p-4 text-sm text-white/50;
+}
+
+.alexandria-workspace__content {
+  @apply grid gap-6 lg:grid-cols-[minmax(0,2fr),minmax(240px,360px)];
+}
+
+.alexandria-workspace__frame {
+  @apply relative min-h-[320px] overflow-hidden rounded-[32px] border border-white/10 bg-black/40 backdrop-blur-xl;
+}
+
+.alexandria-workspace__frame-loading {
+  @apply absolute inset-0 z-10 flex items-center justify-center gap-3 bg-black/60 text-sm text-white/70;
+}
+
+.alexandria-workspace__iframe {
+  @apply h-full min-h-[320px] w-full rounded-[32px] border-0 bg-white/5;
+}
+
+.alexandria-workspace__intel {
+  @apply flex flex-col gap-4;
+}
+
+.alexandria-workspace__panel {
+  @apply flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-4;
+}
+
+.alexandria-workspace__panel header {
+  @apply flex items-center gap-2 text-sm font-semibold text-white;
+}
+
+.alexandria-workspace__panel ul {
+  @apply flex max-h-60 flex-col gap-3 overflow-y-auto pr-1;
+}
+
+.alexandria-workspace__panel li {
+  @apply flex flex-col gap-2 rounded-2xl border border-white/5 bg-black/20 px-3 py-3;
+}
+
+.alexandria-workspace__panel li button:first-of-type {
+  @apply text-left text-sm font-medium text-white transition hover:text-emerald-200;
+}
+
+.alexandria-workspace__panel-actions {
+  @apply flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/40;
+}
+
+.alexandria-workspace__download-meta {
+  @apply text-[11px] uppercase tracking-wide text-white/40;
+}
+
+.alexandria-workspace__download-source {
+  @apply break-all text-[10px] text-white/30;
+}
+
+.alexandria-workspace__empty {
+  @apply rounded-2xl border border-dashed border-white/20 bg-black/20 px-4 py-6 text-center text-sm text-white/50;
 }

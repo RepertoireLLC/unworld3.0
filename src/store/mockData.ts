@@ -1,5 +1,6 @@
 import { useUserStore } from './userStore';
 import { useAuthStore } from './authStore';
+import { useFriendStore } from './friendStore';
 
 // Helper function to get random position on a sphere
 function getRandomSpherePosition(radius: number = 3): [number, number, number] {
@@ -18,6 +19,7 @@ export function initializeMockData() {
   const updateUserPosition = useUserStore.getState().updateUserPosition;
   const currentUser = useAuthStore.getState().user;
   const registeredUsers = useAuthStore.getState().registeredUsers;
+  const { friendRequests, sendFriendRequest } = useFriendStore.getState();
 
   // Add current user to the sphere
   if (currentUser) {
@@ -32,13 +34,34 @@ export function initializeMockData() {
 
   // Add all registered users except current user
   registeredUsers
-    .filter(user => user.id !== currentUser?.id)
-    .forEach(user => {
+    .filter((user) => user.id !== currentUser?.id)
+    .forEach((user, index) => {
       addUser({
         ...user,
         position: getRandomSpherePosition(),
         online: false,
       });
       updateUserPosition(user.id, getRandomSpherePosition());
+
+      // Mark the first two contacts as online to populate the sphere
+      if (index < 2) {
+        setOnlineStatus(user.id, true);
+      }
     });
+
+  if (currentUser) {
+    const firstContact = registeredUsers.find((user) => user.id !== currentUser.id);
+
+    if (
+      firstContact &&
+      !friendRequests.some(
+        (request) =>
+          request.fromUserId === firstContact.id &&
+          request.toUserId === currentUser.id &&
+          request.status === 'pending'
+      )
+    ) {
+      sendFriendRequest(firstContact.id, currentUser.id);
+    }
+  }
 }
