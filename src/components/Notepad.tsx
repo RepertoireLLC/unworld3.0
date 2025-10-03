@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import {
+  ArrowUpRight,
+  NotebookPen,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useNotepadStore } from '../store/notepadStore';
 
@@ -187,110 +193,209 @@ export function Notepad() {
   const characterCount = draftContent.length;
 
   return (
-    <div className="absolute bottom-4 left-4 z-10">
+    <div className="fixed bottom-6 right-6 z-30">
       {isOpen ? (
-        <div className="w-80 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl shadow-xl text-white overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <h2 className="text-sm font-semibold tracking-wide uppercase">Notepad</h2>
-            <button
-              onClick={() => setPanelOpen(user.id, false)}
-              className="p-1 rounded-md hover:bg-white/10 transition-colors"
-              aria-label="Close notepad"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="px-4 py-3 border-b border-white/10">
-            <button
-              onClick={handleCreateNote}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New note
-            </button>
-          </div>
-
-          <div className="px-4 py-3 border-b border-white/10 max-h-32 overflow-y-auto">
-            {notes.length === 0 ? (
-              <p className="text-xs text-white/70">No notes yet. Create one to get started.</p>
-            ) : (
-              <ul className="space-y-1">
-                {notes.map((note) => (
-                  <li key={note.id}>
-                    <button
-                      onClick={() => {
-                        setActiveNote(user.id, note.id);
-                        setPanelOpen(user.id, true);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        note.id === activeNote?.id
-                          ? 'bg-white/20 text-white'
-                          : 'bg-white/5 text-white/80 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="font-medium truncate">{note.title || 'Untitled note'}</div>
-                      <div className="flex justify-between text-[11px] text-white/60">
-                        <span>
-                          {new Date(note.updatedAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                        {note.content && (
-                          <span className="truncate max-w-[120px] text-right block">
-                            {note.content}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="p-4 space-y-3">
-            {activeNote ? (
-              <>
-                <input
-                  ref={titleInputRef}
-                  value={draftTitle}
-                  onChange={(event) => setDraftTitle(event.target.value)}
-                  placeholder="Note title"
-                  className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/15 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
-                />
-                <textarea
-                  value={draftContent}
-                  onChange={(event) => setDraftContent(event.target.value)}
-                  placeholder="Write your thoughts..."
-                  className="w-full min-h-[140px] resize-none px-3 py-2 rounded-lg bg-white/10 border border-white/15 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-white/30"
-                />
-                <div className="flex items-center justify-between text-xs text-white/60">
-                  <div className="flex flex-col">
-                    <span aria-live="polite">{statusMessage}</span>
-                    <span>{characterCount} characters</span>
-                  </div>
+        <div className="w-[900px] max-w-[95vw] rounded-[32px] border border-white/10 bg-slate-900/90 shadow-2xl backdrop-blur-xl text-slate-100">
+          <div className="px-8 pt-7">
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.5em] text-sky-300/70">
+                  Encrypted Relay • Broadcast
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                  Quantum Link Console
+                </h2>
+                <p className="mt-2 max-w-sm text-sm text-slate-300/80">
+                  A secure notepad for tactical annotations. Capture what matters and sync it across your sphere.
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-3 text-right">
+                <span className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
+                  Select an operator to begin
+                </span>
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={() => handleDeleteNote(activeNote.id)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-white/15 hover:bg-white/10 transition-colors"
+                    onClick={handleCreateNote}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-500/60 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
                   >
-                    <Trash2 className="w-3 h-3" />
-                    Delete
+                    <Plus className="h-4 w-4" />
+                    New Entry
+                  </button>
+                  <button
+                    onClick={() => setPanelOpen(user.id, false)}
+                    className="rounded-full border border-transparent bg-white/5 p-2 text-slate-300 transition hover:border-white/20 hover:bg-white/15"
+                    aria-label="Close notepad"
+                  >
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
-              </>
-            ) : (
-              <p className="text-sm text-white/70">
-                Create or select a note from the list to start writing.
-              </p>
-            )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center gap-3 px-8 text-sm text-slate-300/80">
+            {['Broadcast', 'Alliances', 'Operations', 'Research'].map((label, index) => (
+              <span
+                key={label}
+                className={`rounded-full border px-3 py-1 transition ${
+                  index === 0
+                    ? 'border-sky-400/60 bg-sky-400/10 text-sky-200'
+                    : 'border-white/10 bg-white/5 text-slate-400'
+                }`}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+
+          <div className="px-8 pb-8 pt-6">
+            <div className="grid gap-6 lg:grid-cols-[260px,minmax(0,1fr),220px]">
+              <section className="flex flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
+                  <span>Note Index</span>
+                  <span className="text-slate-500">{notes.length.toString().padStart(2, '0')}</span>
+                </div>
+                <div className="mt-4 flex-1 space-y-2 overflow-y-auto pr-1 text-sm">
+                  {notes.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-3 py-6 text-center text-xs text-slate-400">
+                      No entries logged. Launch a new note to begin your field report.
+                    </div>
+                  ) : (
+                    notes.map((note) => {
+                      const isActive = note.id === activeNote?.id;
+                      return (
+                        <button
+                          key={note.id}
+                          onClick={() => {
+                            setActiveNote(user.id, note.id);
+                            setPanelOpen(user.id, true);
+                          }}
+                          className={`w-full rounded-2xl border px-3 py-3 text-left transition ${
+                            isActive
+                              ? 'border-sky-400/70 bg-sky-400/10 text-sky-100'
+                              : 'border-white/5 bg-white/[0.02] text-slate-200 hover:border-white/15 hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 text-xs uppercase tracking-[0.25em]">
+                            <span>{note.title ? 'Active Note' : 'Untitled'}</span>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(note.updatedAt).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          <p className="mt-2 truncate text-sm font-medium text-white/90">
+                            {note.title || 'Untitled note'}
+                          </p>
+                          {note.content && (
+                            <p className="mt-1 truncate text-xs text-slate-300/80">{note.content}</p>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-transparent p-6">
+                {activeNote ? (
+                  <div className="flex h-full flex-col">
+                    <div className="flex items-center gap-3 text-xs uppercase tracking-[0.35em] text-slate-400">
+                      <NotebookPen className="h-4 w-4 text-sky-300" />
+                      <span>Compose Entry</span>
+                    </div>
+                    <input
+                      ref={titleInputRef}
+                      value={draftTitle}
+                      onChange={(event) => setDraftTitle(event.target.value)}
+                      placeholder="Mission headline"
+                      className="mt-4 w-full rounded-2xl border border-white/10 bg-white/[0.07] px-4 py-3 text-lg font-semibold text-white placeholder:text-slate-500 focus:border-sky-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
+                    />
+                    <textarea
+                      value={draftContent}
+                      onChange={(event) => setDraftContent(event.target.value)}
+                      placeholder="Log tactical intel, mission learnings, or quick reminders for your squad."
+                      className="mt-4 h-[260px] flex-1 resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-sm leading-relaxed text-slate-100 placeholder:text-slate-500 focus:border-sky-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/30"
+                    />
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+                      <span aria-live="polite" className="rounded-full bg-white/[0.05] px-3 py-1 text-slate-200">
+                        {statusMessage}
+                      </span>
+                      <span className="rounded-full bg-white/[0.05] px-3 py-1 text-slate-300">
+                        {characterCount} characters
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] text-center text-slate-400">
+                    <div className="rounded-full border border-white/10 bg-white/[0.03] p-5 text-slate-300">
+                      <NotebookPen className="h-6 w-6" />
+                    </div>
+                    <h3 className="mt-5 text-lg font-semibold text-white">No transmissions yet</h3>
+                    <p className="mt-2 max-w-sm text-sm text-slate-400">
+                      Create a new note or select an entry from the index to start your secure channel.
+                    </p>
+                    <button
+                      onClick={handleCreateNote}
+                      className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white transition hover:border-sky-400/60 hover:bg-sky-400/10"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Launch notepad entry
+                    </button>
+                  </div>
+                )}
+              </section>
+
+              <aside className="flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.45em] text-slate-400">Field Notes</p>
+                    <h3 className="mt-2 text-lg font-semibold text-white">Operator Brief</h3>
+                  </div>
+                  {activeNote && (
+                    <button
+                      onClick={() => handleDeleteNote(activeNote.id)}
+                      className="rounded-full border border-white/10 bg-white/[0.05] p-2 text-slate-300 transition hover:border-rose-400/60 hover:text-rose-200"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="mt-4 space-y-4 text-slate-300/90">
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Compose Notes</p>
+                    <p className="mt-2 text-sm text-slate-200">
+                      Draft mission intel, quick reminders, or alliance updates. Entries auto-sync after each pause in typing.
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Saved Logs</p>
+                    <p className="mt-2 text-sm text-slate-200">
+                      Recent updates bubble to the top of the index so your freshest intel is always within reach.
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Tag with Operator</p>
+                    <p className="mt-2 text-sm text-slate-200">
+                      Mention teammates and include signal codes so your squad can align quickly when reviewing logs.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-auto pt-5 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    <span>Sync to Sphere • Auto uplink enabled</span>
+                  </div>
+                </div>
+              </aside>
+            </div>
           </div>
         </div>
       ) : (
         <button
           onClick={handlePanelToggle}
-          className="px-4 py-2 rounded-lg bg-white/15 text-sm font-medium text-white hover:bg-white/25 transition-colors"
+          className="rounded-full border border-white/15 bg-white/10 px-5 py-2 text-sm font-medium text-white transition hover:bg-white/20"
         >
           Open Notepad
         </button>
