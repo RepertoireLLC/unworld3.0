@@ -85,6 +85,9 @@ const TRANSLATION_LANGUAGES = [
   { id: 'ja', label: 'Japanese' },
 ];
 
+const bluetoothConnectionKey = (peerA: string, peerB: string) =>
+  [peerA, peerB].sort().join('::');
+
 const translationDictionary: Record<string, Record<string, string>> = {
   es: {
     hello: 'hola',
@@ -216,32 +219,54 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   const [pinnedMessageIds, setPinnedMessageIds] = useState<string[]>([]);
 
   const currentUser = useAuthStore((state) => state.user);
+  const currentUserId = currentUser?.id ?? null;
   const otherUser = useUserStore((state) =>
     state.users.find((user) => user.id === activeChatId)
   );
-  const { sendMessage, getMessagesForChat } = useChatStore();
-  const { ensureConnection, updateSignalStrength, connections, getConnection } = useBluetoothStore((state) => ({
+  const { sendMessage, messages } = useChatStore((state) => ({
+    sendMessage: state.sendMessage,
+    messages: state.messages,
+  }));
+  const { ensureConnection, updateSignalStrength, connections } = useBluetoothStore((state) => ({
     ensureConnection: state.ensureConnection,
     updateSignalStrength: state.updateSignalStrength,
     connections: state.connections,
-    getConnection: state.getConnection,
   }));
 
   const connection = useMemo(() => {
-    if (!currentUser || !activeChatId) return undefined;
-    return getConnection(currentUser.id, activeChatId);
-  }, [getConnection, currentUser?.id, activeChatId, connections]);
+    if (!currentUserId || !activeChatId) return undefined;
+    const key = bluetoothConnectionKey(currentUserId, activeChatId);
+    return connections[key];
+  }, [connections, currentUserId, activeChatId]);
 
   const encryptedMessages = useMemo(() => {
-    if (!currentUser || !activeChatId) return [];
-    return getMessagesForChat(currentUser.id, activeChatId);
-  }, [currentUser, activeChatId, getMessagesForChat]);
+    if (!currentUserId || !activeChatId) return [];
+    return messages
+      .filter(
+        (msg) =>
+          (msg.fromUserId === currentUserId && msg.toUserId === activeChatId) ||
+          (msg.fromUserId === activeChatId && msg.toUserId === currentUserId)
+      )
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }, [messages, currentUserId, activeChatId]);
 
   const [displayMessages, setDisplayMessages] = useState<DecryptedMessage[]>([]);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [linkAlert, setLinkAlert] = useState<string | null>(null);
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const translationLabel = useMemo(() => {
+    const selected = TRANSLATION_LANGUAGES.find((language) => language.id === translationLanguage);
+    return selected?.label ?? 'Translation';
+  }, [translationLanguage]);
+  const signalStrength = Math.max(0, Math.min(100, Math.round(connection?.signalStrength ?? 0)));
+  const signalQuality = useMemo(() => {
+    if (signalStrength >= 80) return 'Excellent';
+    if (signalStrength >= 60) return 'Strong';
+    if (signalStrength >= 40) return 'Moderate';
+    if (signalStrength >= 20) return 'Weak';
+    return 'Critical';
+  }, [signalStrength]);
 
   const pinnedMessages = useMemo(() => {
     if (!pinnedMessageIds.length) return [];
@@ -253,13 +278,13 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   }, [displayMessages, activeChannel]);
 
   useEffect(() => {
-    if (!currentUser || !activeChatId || typeof window === 'undefined') {
+    if (!currentUserId || !activeChatId || typeof window === 'undefined') {
       setPinnedMessageIds([]);
       return;
     }
 
     const storedPins = window.localStorage.getItem(
-      `enclypse-pins-${currentUser.id}-${activeChatId}`
+      `enclypse-pins-${currentUserId}-${activeChatId}`
     );
     if (storedPins) {
       try {
@@ -272,36 +297,37 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     } else {
       setPinnedMessageIds([]);
     }
-  }, [currentUser?.id, activeChatId]);
+  }, [currentUserId, activeChatId]);
 
   useEffect(() => {
-    if (!currentUser || !activeChatId || typeof window === 'undefined') {
+    if (!currentUserId || !activeChatId || typeof window === 'undefined') {
       return;
     }
 
     window.localStorage.setItem(
-      `enclypse-pins-${currentUser.id}-${activeChatId}`,
+      `enclypse-pins-${currentUserId}-${activeChatId}`,
       JSON.stringify(pinnedMessageIds)
     );
-  }, [pinnedMessageIds, currentUser?.id, activeChatId]);
+  }, [pinnedMessageIds, currentUserId, activeChatId]);
 
   useEffect(() => {
-    if (!currentUser || !activeChatId) return;
+    if (!currentUserId || !activeChatId) return;
     setLinkAlert(null);
-    ensureConnection(currentUser.id, activeChatId);
-  }, [currentUser?.id, activeChatId, ensureConnection]);
+    ensureConnection(currentUserId, activeChatId);
+  }, [currentUserId, activeChatId, ensureConnection]);
 
   useEffect(() => {
-    if (!currentUser || !activeChatId) return;
+    if (!currentUserId || !activeChatId) return;
     const interval = window.setInterval(() => {
-      const latest = getConnection(currentUser.id, activeChatId);
+      const key = bluetoothConnectionKey(currentUserId, activeChatId);
+      const latest = connections[key];
       const baseStrength = latest?.signalStrength ?? 80;
       const variation = Math.random() * 14 - 7;
-      updateSignalStrength(currentUser.id, activeChatId, baseStrength + variation);
+      updateSignalStrength(currentUserId, activeChatId, baseStrength + variation);
     }, 6000);
 
     return () => window.clearInterval(interval);
-  }, [currentUser?.id, activeChatId, updateSignalStrength, getConnection]);
+  }, [currentUserId, activeChatId, updateSignalStrength, connections]);
 
   useEffect(() => {
     let isActive = true;
@@ -369,7 +395,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   }, [encryptedMessages, connection?.key]);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUserId) {
       setNotes([]);
       setSelectedNoteId(null);
       setNoteTitle('');
@@ -381,7 +407,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
       return;
     }
 
-    const stored = window.localStorage.getItem(`enclypse-notes-${currentUser.id}`);
+    const stored = window.localStorage.getItem(`enclypse-notes-${currentUserId}`);
     if (stored) {
       try {
         const parsed: Note[] = JSON.parse(stored);
@@ -405,18 +431,18 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
       setNoteTitle('');
       setNoteContent('');
     }
-  }, [currentUser?.id]);
+  }, [currentUserId]);
 
   useEffect(() => {
-    if (!currentUser || typeof window === 'undefined') {
+    if (!currentUserId || typeof window === 'undefined') {
       return;
     }
 
     window.localStorage.setItem(
-      `enclypse-notes-${currentUser.id}`,
+      `enclypse-notes-${currentUserId}`,
       JSON.stringify(notes)
     );
-  }, [notes, currentUser?.id]);
+  }, [notes, currentUserId]);
 
   useEffect(() => {
     if (!selectedNoteId) {
@@ -465,7 +491,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     }
   };
 
-  if (!currentUser) {
+  if (!currentUserId) {
     return (
       <div className="chat-window h-full w-full">
         <div className="chat-window__empty">
@@ -552,7 +578,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   };
 
   const handleTransmit = async () => {
-    if (!currentUser || !activeChatId || !connection?.key) {
+    if (!currentUserId || !activeChatId || !connection?.key) {
       setLinkAlert('Secure the Bluetooth pairing before transmitting.');
       return;
     }
@@ -593,7 +619,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
       }
 
       await sendMessage({
-        fromUserId: currentUser.id,
+        fromUserId: currentUserId,
         toUserId: activeChatId,
         encryptedContent: ciphertext,
         iv,
@@ -679,10 +705,10 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   };
 
   const handleGenerateRecap = () => {
-    if (!currentUser) return;
+    if (!currentUserId) return;
     setIsGeneratingRecap(true);
     const finalize = () => {
-      setRecap(generateRecap(displayMessages, currentUser.id));
+      setRecap(generateRecap(displayMessages, currentUserId));
       setLastRecapAt(Date.now());
       setIsGeneratingRecap(false);
     };
@@ -695,19 +721,6 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     window.setTimeout(finalize, 500);
   };
 
-  const translationLabel = useMemo(() => {
-    const selected = TRANSLATION_LANGUAGES.find((language) => language.id === translationLanguage);
-    return selected?.label ?? 'Translation';
-  }, [translationLanguage]);
-
-  const signalStrength = Math.max(0, Math.min(100, Math.round(connection?.signalStrength ?? 0)));
-  const signalQuality = useMemo(() => {
-    if (signalStrength >= 80) return 'Excellent';
-    if (signalStrength >= 60) return 'Strong';
-    if (signalStrength >= 40) return 'Moderate';
-    if (signalStrength >= 20) return 'Weak';
-    return 'Critical';
-  }, [signalStrength]);
   const signalBars = [25, 50, 75, 100];
 
   return (
@@ -881,7 +894,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
           <div className="chat-window__messages" role="log" aria-live="polite">
             {activeChatId && displayMessages.length > 0 ? (
               displayMessages.map((msg) => {
-                const isOwn = msg.fromUserId === currentUser.id;
+                const isOwn = msg.fromUserId === currentUserId;
                 const isPinned = pinnedMessageIds.includes(msg.id);
                 return (
                   <div
