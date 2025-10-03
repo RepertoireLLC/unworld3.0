@@ -7,14 +7,31 @@
   </head>
   <body>
     <main>
-      <nav>
-        <a href="sphere.html">Sphere</a>
-        <a href="contacts.html">Contacts</a>
-        <a href="search.html">Search</a>
-        <a href="chat.html" class="active">Chat</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" id="logout-link">Logout</a>
+      <nav id="app-nav" class="app-nav">
+        <button type="button" data-view="sphere">Sphere</button>
+        <button type="button" data-view="contacts">Contacts</button>
+        <button type="button" data-view="search">Search</button>
+        <button type="button" class="active" data-view="chat">Chat</button>
+        <button type="button" data-view="profile">Profile</button>
+        <button type="button" id="logout-link" data-action="logout">Logout</button>
       </nav>
+      <div class="module-overlay" id="module-overlay" hidden>
+        <div class="module-overlay__backdrop" id="module-backdrop"></div>
+        <div class="module-overlay__panel" role="dialog" aria-modal="true" aria-labelledby="module-title">
+          <header class="module-overlay__header">
+            <h2 id="module-title">Enclypse module</h2>
+            <button
+              type="button"
+              class="module-overlay__dismiss"
+              id="module-dismiss"
+              aria-label="Close module"
+            >
+              ×
+            </button>
+          </header>
+          <iframe id="module-frame" title="Enclypse module viewer"></iframe>
+        </div>
+      </div>
       <section class="card chat-card">
         <header class="chat-header">
           <div class="chat-header__primary">
@@ -274,6 +291,13 @@
       const chatToolsBackdrop = document.getElementById('chat-tools-backdrop');
       const chatToolsDismiss = document.getElementById('chat-tools-dismiss');
       const channelButtons = Array.from(document.querySelectorAll('.channel-chip[data-channel]'));
+      const appNav = document.getElementById('app-nav');
+      const navButtons = Array.from(appNav.querySelectorAll('[data-view]'));
+      const moduleOverlay = document.getElementById('module-overlay');
+      const moduleBackdrop = document.getElementById('module-backdrop');
+      const moduleDismiss = document.getElementById('module-dismiss');
+      const moduleFrame = document.getElementById('module-frame');
+      const moduleTitle = document.getElementById('module-title');
       const transportStatus = document.getElementById('transport-status');
       const bluetoothHandshake = document.getElementById('bluetooth-handshake');
       const bluetoothHandshakeStatus = document.getElementById('bluetooth-handshake-status');
@@ -318,6 +342,91 @@
       const treasureCode = document.getElementById('treasure-code');
       const treasureHint = document.getElementById('treasure-hint');
       const treasurePayload = document.getElementById('treasure-payload');
+
+      const moduleViewMap = {
+        chat: { title: 'Chat', url: null },
+        sphere: { title: 'Presence sphere', url: 'sphere.html' },
+        contacts: { title: 'Contacts', url: 'contacts.html' },
+        search: { title: 'Search', url: 'search.html' },
+        profile: { title: 'Profile', url: 'profile.html' },
+      };
+
+      function setNavActive(view) {
+        navButtons.forEach((button) => {
+          button.classList.toggle('active', button.dataset.view === view);
+        });
+      }
+
+      function showModule(view) {
+        const config = moduleViewMap[view];
+        if (!config || !config.url) {
+          return;
+        }
+        moduleOverlay.hidden = false;
+        moduleOverlay.dataset.view = view;
+        moduleOverlay.setAttribute('aria-hidden', 'false');
+        moduleTitle.textContent = config.title;
+        if (moduleFrame.src !== config.url) {
+          moduleFrame.src = config.url;
+        }
+        document.body.classList.add('module-open');
+        setNavActive(view);
+      }
+
+      function hideModule() {
+        moduleOverlay.hidden = true;
+        moduleOverlay.dataset.view = '';
+        moduleOverlay.setAttribute('aria-hidden', 'true');
+        moduleFrame.src = 'about:blank';
+        document.body.classList.remove('module-open');
+        setNavActive('chat');
+      }
+
+      moduleOverlay.dataset.view = '';
+      moduleOverlay.setAttribute('aria-hidden', 'true');
+      setNavActive('chat');
+
+      appNav.addEventListener('click', (event) => {
+        const target = event.target.closest('[data-view],[data-action]');
+        if (!target) return;
+        const { action, view } = target.dataset;
+        if (action === 'logout') {
+          event.preventDefault();
+          logout();
+          return;
+        }
+        if (!view) return;
+        event.preventDefault();
+        if (view === 'chat') {
+          if (!moduleOverlay.hidden) {
+            hideModule();
+          } else {
+            setNavActive('chat');
+          }
+          return;
+        }
+        if (!moduleOverlay.hidden && moduleOverlay.dataset.view === view) {
+          hideModule();
+          return;
+        }
+        showModule(view);
+      });
+
+      moduleBackdrop.addEventListener('click', () => {
+        if (!moduleOverlay.hidden) {
+          hideModule();
+        }
+      });
+      moduleDismiss.addEventListener('click', () => {
+        if (!moduleOverlay.hidden) {
+          hideModule();
+        }
+      });
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !moduleOverlay.hidden) {
+          hideModule();
+        }
+      });
       const treasureClaimCode = document.getElementById('treasure-claim-code');
       const treasureClaimButton = document.getElementById('treasure-claim');
       const treasureList = document.getElementById('treasure-list');
@@ -1453,11 +1562,6 @@
             console.warn('Failed to update game', error);
           }
         }
-      });
-
-      document.getElementById('logout-link').addEventListener('click', (event) => {
-        event.preventDefault();
-        logout();
       });
 
       await refreshTransport();

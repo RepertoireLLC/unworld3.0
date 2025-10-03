@@ -197,8 +197,28 @@ nav a {
   transition: color 0.2s ease, background 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
 }
 
+.app-nav button {
+  padding: 0.65rem 1.45rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: none;
+  transition: color 0.2s ease, background 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+}
+
 nav a:hover {
   text-decoration: none;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--text);
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 12px 30px rgba(56, 189, 248, 0.25);
+}
+
+.app-nav button:hover {
   background: rgba(56, 189, 248, 0.12);
   color: var(--text);
   border-color: rgba(56, 189, 248, 0.3);
@@ -210,6 +230,98 @@ nav a.active {
   border-color: rgba(56, 189, 248, 0.55);
   color: #e0f2fe;
   box-shadow: 0 22px 55px rgba(37, 99, 235, 0.35);
+}
+
+.app-nav button.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(37, 99, 235, 0.35));
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #e0f2fe;
+  box-shadow: 0 22px 55px rgba(37, 99, 235, 0.35);
+}
+
+.app-nav button:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.55);
+  outline-offset: 2px;
+}
+
+body.module-open {
+  overflow: hidden;
+}
+
+.module-overlay[hidden] {
+  display: none !important;
+}
+
+.module-overlay {
+  position: fixed;
+  inset: 0;
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+}
+
+.module-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.module-overlay__panel {
+  position: relative;
+  width: min(960px, 95vw);
+  height: min(640px, 90vh);
+  background: linear-gradient(160deg, rgba(17, 24, 39, 0.95), rgba(6, 11, 24, 0.92));
+  border-radius: 32px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 45px 90px rgba(2, 6, 23, 0.65);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.module-overlay__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem 1rem;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.18);
+}
+
+.module-overlay__header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #e2e8f0;
+}
+
+.module-overlay__dismiss {
+  background: rgba(15, 23, 42, 0.45);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 1.5rem;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.module-overlay__dismiss:hover {
+  background: rgba(56, 189, 248, 0.18);
+  color: white;
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: none;
+  box-shadow: 0 18px 45px rgba(56, 189, 248, 0.32);
+}
+
+.module-overlay__panel iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
 }
 
 .badge {
