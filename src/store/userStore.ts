@@ -7,6 +7,9 @@ interface User {
   online: boolean;
   lastSeen?: number;
   position?: [number, number, number];
+  profilePicture?: string;
+  bio?: string;
+  status?: string;
 }
 
 interface UserState {
@@ -17,6 +20,7 @@ interface UserState {
   setOnlineStatus: (userId: string, online: boolean) => void;
   updateUserPosition: (userId: string, position: [number, number, number]) => void;
   updateUserColor: (userId: string, color: string) => void;
+  updateUserProfile: (userId: string, updates: Partial<Pick<User, 'name' | 'color' | 'profilePicture' | 'bio' | 'status'>>) => void;
   getOnlineUsers: () => User[];
 }
 
@@ -65,6 +69,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     set((state) => ({
       users: state.users.map((user) =>
         user.id === userId ? { ...user, color } : user
+      ),
+    })),
+
+  updateUserProfile: (userId, updates) =>
+    set((state) => ({
+      users: state.users.map((user) =>
+        user.id === userId
+          ? {
+              ...user,
+              ...updates,
+            }
+          : user
       ),
     })),
 
