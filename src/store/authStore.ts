@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
+import type { WifiNetwork } from '../types/network';
 
 const DEFAULT_USERS: User[] = [
   {
@@ -13,6 +14,10 @@ const DEFAULT_USERS: User[] = [
     statusMessage: 'Mapping the aurora corridor.',
     availability: 'available',
     languages: ['en', 'es'],
+    wifiNetworks: [
+      { id: 'wifi_astra_core', ssid: 'Astra Halo Mesh', bandwidthMbps: 920, security: 'WPA3', shareable: true },
+      { id: 'wifi_astra_field', ssid: 'Aurora Field Relay', bandwidthMbps: 450, security: 'WPA2', shareable: false },
+    ],
   },
   {
     id: 'user_orion',
@@ -24,6 +29,9 @@ const DEFAULT_USERS: User[] = [
     statusMessage: 'Coordinating orbital briefings.',
     availability: 'focus',
     languages: ['en', 'fr'],
+    wifiNetworks: [
+      { id: 'wifi_orion_ops', ssid: 'Orion Ops Lattice', bandwidthMbps: 780, security: 'WPA3', shareable: true },
+    ],
   },
   {
     id: 'user_lyra',
@@ -35,6 +43,10 @@ const DEFAULT_USERS: User[] = [
     statusMessage: 'Routing peace accords.',
     availability: 'available',
     languages: ['en', 'de'],
+    wifiNetworks: [
+      { id: 'wifi_lyra_embassy', ssid: 'Lyra Embassy Net', bandwidthMbps: 640, security: 'WPA3', shareable: true },
+      { id: 'wifi_lyra_secure', ssid: 'Solace Vault Link', bandwidthMbps: 520, security: 'WPA2', shareable: false },
+    ],
   },
   {
     id: 'user_rhett',
@@ -46,6 +58,9 @@ const DEFAULT_USERS: User[] = [
     statusMessage: 'Fortifying shield harmonics.',
     availability: 'away',
     languages: ['en', 'pt'],
+    wifiNetworks: [
+      { id: 'wifi_rhett_foundry', ssid: 'Rhett Foundry Grid', bandwidthMbps: 880, security: 'WPA3', shareable: true },
+    ],
   },
   {
     id: 'user_vexa',
@@ -57,6 +72,10 @@ const DEFAULT_USERS: User[] = [
     statusMessage: 'Listening for anomalies.',
     availability: 'focus',
     languages: ['en', 'ja'],
+    wifiNetworks: [
+      { id: 'wifi_vexa_listening', ssid: 'Vexa Listening Post', bandwidthMbps: 700, security: 'WPA3', shareable: true },
+      { id: 'wifi_vexa_archive', ssid: 'Quill Archive Link', bandwidthMbps: 360, security: 'WPA2', shareable: false },
+    ],
   },
 ];
 
@@ -71,6 +90,7 @@ interface User {
   statusMessage?: string;
   availability?: 'available' | 'focus' | 'away';
   languages?: string[];
+  wifiNetworks?: WifiNetwork[];
 }
 
 interface AuthState {
@@ -98,6 +118,15 @@ export const useAuthStore = create<AuthState>()(
           return false;
         }
 
+        const nameSeed = userData.name || userData.email.split('@')[0];
+        const primaryNetwork: WifiNetwork = {
+          id: `wifi_${Date.now().toString(16)}_${Math.random().toString(16).slice(2, 6)}`,
+          ssid: `${nameSeed?.split(' ')[0] ?? 'Enclypse'} Relay`,
+          bandwidthMbps: 600 + Math.floor(Math.random() * 240),
+          security: 'WPA3',
+          shareable: true,
+        };
+
         const newUser = {
           id: `user_${Date.now()}`,
           name: userData.name || userData.email.split('@')[0],
@@ -107,6 +136,7 @@ export const useAuthStore = create<AuthState>()(
           statusMessage: 'Ready to collaborate.',
           availability: 'available',
           languages: ['en'],
+          wifiNetworks: [primaryNetwork],
         };
 
         set(state => ({
@@ -117,15 +147,16 @@ export const useAuthStore = create<AuthState>()(
 
         // Add user to the online users
         const { addUser, setOnlineStatus } = useUserStore.getState();
-          addUser({
-            id: newUser.id,
-            name: newUser.name,
-            color: newUser.color,
-            online: true,
-            statusMessage: newUser.statusMessage,
-            availability: newUser.availability,
-            languages: newUser.languages,
-          });
+        addUser({
+          id: newUser.id,
+          name: newUser.name,
+          color: newUser.color,
+          online: true,
+          statusMessage: newUser.statusMessage,
+          availability: newUser.availability,
+          languages: newUser.languages,
+          wifiNetworks: newUser.wifiNetworks,
+        });
         setOnlineStatus(newUser.id, true);
 
         return true;
@@ -142,15 +173,16 @@ export const useAuthStore = create<AuthState>()(
           
           // Set user as online
           const { addUser, setOnlineStatus } = useUserStore.getState();
-          addUser({
-            id: user.id,
-            name: user.name,
-            color: user.color,
-            online: true,
-            statusMessage: user.statusMessage,
-            availability: user.availability,
-            languages: user.languages,
-          });
+        addUser({
+          id: user.id,
+          name: user.name,
+          color: user.color,
+          online: true,
+          statusMessage: user.statusMessage,
+          availability: user.availability,
+          languages: user.languages,
+          wifiNetworks: user.wifiNetworks,
+        });
           setOnlineStatus(user.id, true);
 
           return true;

@@ -15,7 +15,7 @@ import {
   Sun,
   Moon,
   Coffee,
-  Flame,
+  Library,
 } from 'lucide-react';
 import { Scene } from '../Scene';
 import { ChatWindow } from './ChatWindow';
@@ -26,14 +26,14 @@ import { useChatStore } from '../../store/chatStore';
 import { useFriendStore } from '../../store/friendStore';
 import { useThemeStore, ThemeType } from '../../store/themeStore';
 import { EnclypseLogo } from './EnclypseLogo';
-import { BraveWorkspace } from './BraveWorkspace';
+import { AlexandriaWorkspace } from './AlexandriaWorkspace';
 
 const NAV_ITEMS = [
   { id: 'sphere', label: 'Sphere', icon: Globe2 },
   { id: 'contacts', label: 'Contacts', icon: Users2 },
   { id: 'search', label: 'Search', icon: Search },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'brave', label: 'Brave', icon: Flame },
+  { id: 'alexandria', label: 'Alexandria', icon: Library },
   { id: 'profile', label: 'Profile', icon: UserCircle2 },
 ] as const;
 
@@ -269,13 +269,13 @@ export function ChatShell() {
 
   const sidebarEyebrow = activeView === 'search'
     ? 'Signal Scan'
-    : activeView === 'brave'
+    : activeView === 'alexandria'
       ? 'Curated Streams'
       : 'Linked Operators';
 
   const sidebarHeading = activeView === 'search'
     ? 'Search the Sphere'
-    : activeView === 'brave'
+    : activeView === 'alexandria'
       ? 'Trusted Sources'
       : 'Contact Lattice';
 
@@ -760,8 +760,8 @@ export function ChatShell() {
               <div className="chat-shell__scene">
                 <Scene />
               </div>
-            ) : activeView === 'brave' ? (
-              <BraveWorkspace />
+            ) : activeView === 'alexandria' ? (
+              <AlexandriaWorkspace />
             ) : (
               <ChatWindow activeChatId={activeChat} />
             )}

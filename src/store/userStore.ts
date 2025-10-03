@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { WifiNetwork } from '../types/network';
 
 interface User {
   id: string;
@@ -10,6 +11,7 @@ interface User {
   statusMessage?: string;
   availability?: 'available' | 'focus' | 'away';
   languages?: string[];
+  wifiNetworks?: WifiNetwork[];
 }
 
 interface UserState {

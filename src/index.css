@@ -908,222 +908,266 @@ canvas {
   @apply text-sm text-white/50;
 }
 
-.brave-workspace {
+.alexandria-workspace {
   @apply flex h-full w-full flex-col gap-6 text-white;
 }
 
-.brave-workspace--empty {
+.alexandria-workspace--empty {
   @apply flex h-full items-center justify-center rounded-[32px] border border-dashed border-white/20 bg-white/5 text-sm text-white/50;
 }
 
-.brave-workspace__tabs {
+.alexandria-workspace__tabs {
   @apply flex flex-wrap items-center gap-2 rounded-3xl border border-white/10 bg-white/5 p-2 backdrop-blur-xl;
 }
 
-.brave-workspace__tab-wrapper {
+.alexandria-workspace__tab-wrapper {
   @apply flex items-center gap-1 rounded-2xl bg-transparent px-1;
 }
 
-.brave-workspace__tab {
+.alexandria-workspace__tab {
   @apply flex items-center gap-2 rounded-2xl px-3 py-2 text-sm text-white/60 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40;
 }
 
-.brave-workspace__tab.active {
+.alexandria-workspace__tab.active {
   @apply bg-emerald-400/20 text-white shadow-[0_0_25px_rgba(45,212,191,0.25)];
 }
 
-.brave-workspace__tab--new {
+.alexandria-workspace__tab--new {
   @apply inline-flex items-center gap-2 rounded-2xl border border-dashed border-white/20 px-3 py-2 text-sm text-white/50 transition hover:border-emerald-300/60 hover:text-emerald-100;
 }
 
-.brave-workspace__tab-close {
+.alexandria-workspace__tab-close {
   @apply flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-white/50 transition hover:border-rose-400/60 hover:bg-rose-500/20 hover:text-rose-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40;
 }
 
-.brave-workspace__toolbar {
+.alexandria-workspace__toolbar {
   @apply flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl;
 }
 
-.brave-workspace__toolbar-main {
+.alexandria-workspace__toolbar-main {
   @apply flex flex-1 items-center gap-3;
 }
 
-.brave-workspace__icon-button {
+.alexandria-workspace__icon-button {
   @apply flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40;
 }
 
-.brave-workspace__url-form {
+.alexandria-workspace__url-form {
   @apply flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-2;
 }
 
-.brave-workspace__url-input {
+.alexandria-workspace__url-input {
   @apply flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
 }
 
-.brave-workspace__url-form button {
+.alexandria-workspace__url-form button {
   @apply rounded-full border border-emerald-400/50 bg-emerald-400/20 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300 hover:bg-emerald-400/30;
 }
 
-.brave-workspace__toolbar-actions {
+.alexandria-workspace__toolbar-actions {
   @apply flex flex-wrap items-center gap-2;
 }
 
-.brave-workspace__chip {
+.alexandria-workspace__chip {
   @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/30;
 }
 
-.brave-workspace__chip.active {
+.alexandria-workspace__chip.active {
   @apply border-emerald-400/60 bg-emerald-400/20 text-emerald-100 shadow-[0_0_25px_rgba(45,212,191,0.2)];
 }
 
-.brave-workspace__status {
+.alexandria-workspace__status {
   @apply grid gap-4 rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-xl md:grid-cols-[auto,1fr,auto];
 }
 
-.brave-workspace__signal {
+.alexandria-workspace__signal {
   @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70;
 }
 
-.brave-workspace__signal p {
+.alexandria-workspace__signal p {
   @apply text-xs uppercase tracking-wide text-white/40;
 }
 
-.brave-workspace__signal span {
+.alexandria-workspace__signal span {
   @apply text-sm font-semibold text-white;
 }
 
-.brave-workspace__keywords {
-  @apply flex flex-wrap items-center gap-2;
+.alexandria-workspace__wifi {
+  @apply flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/70;
 }
 
-.brave-workspace__keyword {
-  @apply rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-white/70;
-}
-
-.brave-workspace__upload {
-  @apply flex flex-col items-end gap-2 text-right;
-}
-
-.brave-workspace__status-note {
-  @apply max-w-sm text-right text-xs text-white/50;
-}
-
-.brave-workspace__discovery {
-  @apply flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl;
-}
-
-.brave-workspace__search {
-  @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3;
-}
-
-.brave-workspace__search input {
-  @apply flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
-}
-
-.brave-workspace__search button {
-  @apply rounded-full border border-emerald-400/40 bg-emerald-400/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300 hover:bg-emerald-400/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/40;
-}
-
-.brave-workspace__alert {
-  @apply rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-xs text-amber-100;
-}
-
-.brave-workspace__alert--quiet {
-  @apply border-slate-500/40 bg-slate-500/10 text-slate-200;
-}
-
-.brave-workspace__results {
-  @apply grid gap-3;
-}
-
-.brave-workspace__result {
-  @apply flex flex-col gap-2 rounded-3xl border border-white/10 bg-black/30 p-4 transition hover:border-white/40;
-}
-
-.brave-workspace__result header {
+.alexandria-workspace__wifi-heading {
   @apply flex items-center justify-between gap-3;
 }
 
-.brave-workspace__result header h3 {
+.alexandria-workspace__wifi-label {
+  @apply text-xs font-semibold uppercase tracking-wide text-white/40;
+}
+
+.alexandria-workspace__wifi-speed {
+  @apply text-sm font-semibold text-emerald-100;
+}
+
+.alexandria-workspace__wifi-latency {
+  @apply text-[11px] uppercase tracking-wide text-white/40;
+}
+
+.alexandria-workspace__wifi-note {
+  @apply text-xs text-white/60;
+}
+
+.alexandria-workspace__wifi-options {
+  @apply flex flex-wrap gap-2;
+}
+
+.alexandria-workspace__chip--wifi {
+  @apply flex grow basis-[calc(50%-0.5rem)] flex-col items-start gap-1 text-left text-white/60;
+}
+
+.alexandria-workspace__chip--wifi.active {
+  @apply text-emerald-100;
+}
+
+.alexandria-workspace__wifi-name {
+  @apply text-sm font-semibold text-white;
+}
+
+.alexandria-workspace__wifi-meta {
+  @apply text-[11px] uppercase tracking-wide text-white/50;
+}
+
+.alexandria-workspace__keywords {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.alexandria-workspace__keyword {
+  @apply rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-white/70;
+}
+
+.alexandria-workspace__upload {
+  @apply flex flex-col items-end gap-2 text-right;
+}
+
+.alexandria-workspace__status-note {
+  @apply max-w-sm text-right text-xs text-white/50;
+}
+
+.alexandria-workspace__discovery {
+  @apply flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl;
+}
+
+.alexandria-workspace__search {
+  @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3;
+}
+
+.alexandria-workspace__search input {
+  @apply flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
+}
+
+.alexandria-workspace__search button {
+  @apply rounded-full border border-emerald-400/40 bg-emerald-400/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300 hover:bg-emerald-400/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/40;
+}
+
+.alexandria-workspace__alert {
+  @apply rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-xs text-amber-100;
+}
+
+.alexandria-workspace__alert--quiet {
+  @apply border-slate-500/40 bg-slate-500/10 text-slate-200;
+}
+
+.alexandria-workspace__results {
+  @apply grid gap-3;
+}
+
+.alexandria-workspace__result {
+  @apply flex flex-col gap-2 rounded-3xl border border-white/10 bg-black/30 p-4 transition hover:border-white/40;
+}
+
+.alexandria-workspace__result header {
+  @apply flex items-center justify-between gap-3;
+}
+
+.alexandria-workspace__result header h3 {
   @apply text-base font-semibold text-white;
 }
 
-.brave-workspace__result header button {
+.alexandria-workspace__result header button {
   @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-emerald-400/40 hover:bg-emerald-400/20 hover:text-emerald-100;
 }
 
-.brave-workspace__result p {
+.alexandria-workspace__result p {
   @apply text-sm text-white/70;
 }
 
-.brave-workspace__result footer {
+.alexandria-workspace__result footer {
   @apply flex flex-wrap items-center gap-3;
 }
 
-.brave-workspace__result-meta {
+.alexandria-workspace__result-meta {
   @apply text-[11px] uppercase tracking-wide text-white/40;
 }
 
-.brave-workspace__result--loading {
+.alexandria-workspace__result--loading {
   @apply flex items-center gap-3 rounded-3xl border border-white/10 bg-black/30 p-4 text-sm text-white/60;
 }
 
-.brave-workspace__result--empty {
+.alexandria-workspace__result--empty {
   @apply rounded-3xl border border-dashed border-white/20 bg-black/20 p-4 text-sm text-white/50;
 }
 
-.brave-workspace__content {
+.alexandria-workspace__content {
   @apply grid gap-6 lg:grid-cols-[minmax(0,2fr),minmax(240px,360px)];
 }
 
-.brave-workspace__frame {
+.alexandria-workspace__frame {
   @apply relative min-h-[320px] overflow-hidden rounded-[32px] border border-white/10 bg-black/40 backdrop-blur-xl;
 }
 
-.brave-workspace__frame-loading {
+.alexandria-workspace__frame-loading {
   @apply absolute inset-0 z-10 flex items-center justify-center gap-3 bg-black/60 text-sm text-white/70;
 }
 
-.brave-workspace__iframe {
+.alexandria-workspace__iframe {
   @apply h-full min-h-[320px] w-full rounded-[32px] border-0 bg-white/5;
 }
 
-.brave-workspace__intel {
+.alexandria-workspace__intel {
   @apply flex flex-col gap-4;
 }
 
-.brave-workspace__panel {
+.alexandria-workspace__panel {
   @apply flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-4;
 }
 
-.brave-workspace__panel header {
+.alexandria-workspace__panel header {
   @apply flex items-center gap-2 text-sm font-semibold text-white;
 }
 
-.brave-workspace__panel ul {
+.alexandria-workspace__panel ul {
   @apply flex max-h-60 flex-col gap-3 overflow-y-auto pr-1;
 }
 
-.brave-workspace__panel li {
+.alexandria-workspace__panel li {
   @apply flex flex-col gap-2 rounded-2xl border border-white/5 bg-black/20 px-3 py-3;
 }
 
-.brave-workspace__panel li button:first-of-type {
+.alexandria-workspace__panel li button:first-of-type {
   @apply text-left text-sm font-medium text-white transition hover:text-emerald-200;
 }
 
-.brave-workspace__panel-actions {
+.alexandria-workspace__panel-actions {
   @apply flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/40;
 }
 
-.brave-workspace__download-meta {
+.alexandria-workspace__download-meta {
   @apply text-[11px] uppercase tracking-wide text-white/40;
 }
 
-.brave-workspace__download-source {
+.alexandria-workspace__download-source {
   @apply break-all text-[10px] text-white/30;
 }
 
-.brave-workspace__empty {
+.alexandria-workspace__empty {
   @apply rounded-2xl border border-dashed border-white/20 bg-black/20 px-4 py-6 text-center text-sm text-white/50;
 }

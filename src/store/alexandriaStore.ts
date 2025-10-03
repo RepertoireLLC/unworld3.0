@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type BraveAttachmentType = 'image' | 'video' | 'file';
+export type AlexandriaAttachmentType = 'image' | 'video' | 'file';
 
-export interface BraveTab {
+export interface AlexandriaTab {
   id: string;
   title: string;
   url: string;
@@ -15,17 +15,17 @@ export interface BraveTab {
   lastQuery?: string;
 }
 
-export interface BraveBookmark {
+export interface AlexandriaBookmark {
   id: string;
   title: string;
   url: string;
   createdAt: number;
 }
 
-export interface BraveDownload {
+export interface AlexandriaDownload {
   id: string;
   name: string;
-  type: BraveAttachmentType;
+  type: AlexandriaAttachmentType;
   size: number;
   mimeType: string;
   encryptedData: string;
@@ -34,7 +34,7 @@ export interface BraveDownload {
   source: string;
 }
 
-export interface BraveTabInit {
+export interface AlexandriaTabInit {
   url?: string;
   title?: string;
   isPrivate?: boolean;
@@ -43,14 +43,14 @@ export interface BraveTabInit {
 }
 
 interface BrowserState {
-  tabsByUser: Record<string, BraveTab[]>;
+  tabsByUser: Record<string, AlexandriaTab[]>;
   activeTabByUser: Record<string, string | null>;
-  bookmarksByUser: Record<string, BraveBookmark[]>;
-  downloadsByUser: Record<string, BraveDownload[]>;
-  openTab: (userId: string, tabData?: BraveTabInit) => BraveTab;
+  bookmarksByUser: Record<string, AlexandriaBookmark[]>;
+  downloadsByUser: Record<string, AlexandriaDownload[]>;
+  openTab: (userId: string, tabData?: AlexandriaTabInit) => AlexandriaTab;
   closeTab: (userId: string, tabId: string) => void;
   setActiveTab: (userId: string, tabId: string | null) => void;
-  updateTab: (userId: string, tabId: string, updates: Partial<Omit<BraveTab, 'id' | 'createdAt'>>) => void;
+  updateTab: (userId: string, tabId: string, updates: Partial<Omit<AlexandriaTab, 'id' | 'createdAt'>>) => void;
   togglePrivate: (userId: string, tabId: string) => void;
   addBookmark: (userId: string, bookmark: { title: string; url: string }) => void;
   removeBookmark: (userId: string, bookmarkId: string) => void;
@@ -58,7 +58,7 @@ interface BrowserState {
     userId: string,
     download: {
       name: string;
-      type: BraveAttachmentType;
+      type: AlexandriaAttachmentType;
       size: number;
       mimeType: string;
       encryptedData: string;
@@ -68,7 +68,7 @@ interface BrowserState {
   ) => void;
 }
 
-const createTab = (tabData: BraveTabInit | undefined): Omit<BraveTab, 'id'> => {
+const createTab = (tabData: AlexandriaTabInit | undefined): Omit<AlexandriaTab, 'id'> => {
   const timestamp = Date.now();
   return {
     title: tabData?.title ?? 'New Tab',
@@ -82,7 +82,7 @@ const createTab = (tabData: BraveTabInit | undefined): Omit<BraveTab, 'id'> => {
   };
 };
 
-export const useBrowserStore = create<BrowserState>()(
+export const useAlexandriaStore = create<BrowserState>()(
   persist(
     (set, get) => ({
       tabsByUser: {},
@@ -92,7 +92,7 @@ export const useBrowserStore = create<BrowserState>()(
 
       openTab: (userId, tabData) => {
         const id = `tab_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-        const nextTab: BraveTab = {
+        const nextTab: AlexandriaTab = {
           id,
           ...createTab(tabData ?? {}),
         };
@@ -179,7 +179,7 @@ export const useBrowserStore = create<BrowserState>()(
             return state;
           }
 
-          const nextBookmark: BraveBookmark = {
+          const nextBookmark: AlexandriaBookmark = {
             id: `bookmark_${Date.now()}_${Math.random().toString(16).slice(2)}`,
             title: bookmark.title || bookmark.url,
             url: bookmark.url,
@@ -208,7 +208,7 @@ export const useBrowserStore = create<BrowserState>()(
       },
 
       logDownload: (userId, download) => {
-        const nextDownload: BraveDownload = {
+        const nextDownload: AlexandriaDownload = {
           id: `download_${Date.now()}_${Math.random().toString(16).slice(2)}`,
           timestamp: Date.now(),
           ...download,
@@ -226,7 +226,7 @@ export const useBrowserStore = create<BrowserState>()(
       },
     }),
     {
-      name: 'enclypse-browser-store',
+      name: 'enclypse-alexandria-store',
       version: 1,
     }
   )
