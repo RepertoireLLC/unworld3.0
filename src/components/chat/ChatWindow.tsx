@@ -1,25 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, NotebookPen } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
+import { useNotesStore } from '../../store/notesStore';
 
 interface ChatWindowProps {
   userId: string;
   onClose: () => void;
 }
 
+/**
+ * Render a direct message window with logging shortcuts into Field Notes.
+ */
 export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((state) => state.user);
   const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
   const { sendMessage, getMessagesForChat } = useChatStore();
+  const createNoteFromMessage = useNotesStore((state) => state.createNoteFromMessage);
+  const setActiveNote = useNotesStore((state) => state.setActiveNote);
 
-  const messages = currentUser 
+  const messages = currentUser
     ? getMessagesForChat(currentUser.id, userId)
     : [];
 
+  /**
+   * Keep the chat scrolled to the most recent message when content updates.
+   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -28,12 +37,33 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
     scrollToBottom();
   }, [messages]);
 
+  /**
+   * Handle sending a message and resetting the input field.
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !currentUser) return;
 
     sendMessage(currentUser.id, userId, message.trim());
     setMessage('');
+  };
+
+  /**
+   * Convert an existing chat message into a secure note entry.
+   */
+  const handleCaptureMessage = (msg: (typeof messages)[number]) => {
+    if (!currentUser) return;
+
+    const sender = msg.fromUserId === currentUser.id ? currentUser : otherUser;
+    const noteId = createNoteFromMessage({
+      messageId: msg.id,
+      senderId: sender?.id ?? msg.fromUserId,
+      senderName: sender?.name,
+      content: msg.content,
+      timestamp: msg.timestamp,
+      chatLabel: `Chat:${currentUser.id.slice(-4)}-${userId.slice(-4)}`,
+    });
+    setActiveNote(noteId);
   };
 
   if (!currentUser || !otherUser) return null;
@@ -60,10 +90,17 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
         {messages.map((msg) => {
           const isOwn = msg.fromUserId === currentUser.id;
           return (
-            <div
-              key={msg.id}
-              className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={msg.id} className={`group relative flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              {!isOwn && (
+                <button
+                  type="button"
+                  onClick={() => handleCaptureMessage(msg)}
+                  className="absolute -left-11 top-1 hidden h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/70 transition-all group-hover:flex hover:border-emerald-400 hover:text-emerald-200"
+                  title="Log to Field Notes"
+                >
+                  <NotebookPen className="h-4 w-4" />
+                </button>
+              )}
               <div
                 className={`max-w-[80%] p-3 rounded-lg ${
                   isOwn
@@ -72,6 +109,16 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
                 }`}
               >
                 {msg.content}
+                {isOwn && (
+                  <button
+                    type="button"
+                    onClick={() => handleCaptureMessage(msg)}
+                    className="mt-2 hidden items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-white/70 transition-colors hover:text-emerald-200 group-hover:flex"
+                  >
+                    <NotebookPen className="h-3 w-3" />
+                    Save Note
+                  </button>
+                )}
               </div>
             </div>
           );

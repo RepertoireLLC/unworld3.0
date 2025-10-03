@@ -6,6 +6,7 @@ import { FriendRequests } from './components/FriendRequests';
 import { ChatWindow } from './components/chat/ChatWindow';
 import { ThemeSelector } from './components/ThemeSelector';
 import { ProfileIcon } from './components/ProfileIcon';
+import { NotesPanel } from './components/notes/NotesPanel';
 import { useAuthStore } from './store/authStore';
 import { useModalStore } from './store/modalStore';
 import { useChatStore } from './store/chatStore';
@@ -13,6 +14,9 @@ import { useEffect } from 'react';
 import { initializeMockData } from './store/mockData';
 import { useThemeStore } from './store/themeStore';
 
+/**
+ * Primary application shell – wires authentication, theming, chats and notes.
+ */
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const profileUserId = useModalStore((state) => state.profileUserId);
@@ -27,6 +31,9 @@ export function App() {
     }
   }, [isAuthenticated]);
 
+  /**
+   * Resolve the gradient that matches the selected experience theme.
+   */
   const getBackgroundClass = () => {
     switch (currentTheme) {
       case 'neon':
@@ -51,6 +58,7 @@ export function App() {
           <ThemeSelector />
           <FriendRequests />
           <Scene />
+          <NotesPanel />
           {profileUserId && (
             <ProfileModal
               userId={profileUserId}
