@@ -17,11 +17,22 @@
       </nav>
       <section class="card chat-card">
         <header class="chat-header">
-          <h1 id="chat-title">Chat</h1>
-          <span class="badge" id="chat-presence">
-            <span class="status-dot offline"></span>
-            Select a friend
-          </span>
+          <div class="chat-header__primary">
+            <h1 id="chat-title">Chat</h1>
+            <span class="badge" id="chat-presence">
+              <span class="status-dot offline"></span>
+              Select a friend
+            </span>
+          </div>
+          <button
+            type="button"
+            class="chat-tools-toggle"
+            id="chat-tools-toggle"
+            aria-expanded="false"
+            aria-controls="chat-tools"
+          >
+            Tools
+          </button>
         </header>
         <div class="chat-columns">
           <div class="chat-column">
@@ -35,29 +46,6 @@
                 <span class="badge" id="transport-status">Checking…</span>
               </div>
             </div>
-            <div class="chat-flair">
-              <label class="toggle">
-                <input type="checkbox" id="ephemeral-toggle" />
-                <span>Ephemeral blast</span>
-              </label>
-              <div class="flair-inline" id="ephemeral-settings">
-                <label>Views <input type="number" id="ephemeral-limit" min="1" value="1" /></label>
-                <label>Expires (sec) <input type="number" id="ephemeral-seconds" min="0" step="30" value="0" /></label>
-              </div>
-              <label class="flair-select">
-                <span>Secret filter</span>
-                <select id="secret-filter">
-                  <option value="">None</option>
-                  <option value="prism">Prism glow</option>
-                  <option value="orbit">Orbit shift</option>
-                  <option value="pulse">Pulse bloom</option>
-                </select>
-              </label>
-              <label class="flair-input">
-                <span>Secret link</span>
-                <input type="text" id="secret-link-input" placeholder="Hidden portal URL or clue" />
-              </label>
-            </div>
             <div class="chat-window">
               <div class="chat-messages" id="messages"></div>
               <form class="chat-input" id="message-form">
@@ -68,94 +56,126 @@
               </form>
             </div>
           </div>
-          <aside class="chat-side">
-            <section class="panel" id="sidekick-panel">
-              <header>
-                <h2>AI sidekick</h2>
-                <p>Summaries and memes stay on-device.</p>
+          <aside class="chat-side" id="chat-tools" aria-hidden="true">
+            <div class="chat-side__backdrop" id="chat-tools-backdrop"></div>
+            <div class="chat-side__panel" role="dialog" aria-modal="true" aria-labelledby="chat-tools-title">
+              <header class="chat-side__header">
+                <h2 id="chat-tools-title">Chat tools</h2>
+                <button type="button" class="chat-side__dismiss" id="chat-tools-dismiss" aria-label="Close tools">×</button>
               </header>
-              <div class="sidekick-controls">
-                <button type="button" id="sidekick-summary">Summarize chat</button>
-                <button type="button" id="sidekick-meme" class="secondary">Spin a meme</button>
+              <div class="chat-side__content">
+                <div class="chat-flair">
+                  <label class="toggle">
+                    <input type="checkbox" id="ephemeral-toggle" />
+                    <span>Ephemeral blast</span>
+                  </label>
+                  <div class="flair-inline" id="ephemeral-settings">
+                    <label>Views <input type="number" id="ephemeral-limit" min="1" value="1" /></label>
+                    <label>Expires (sec) <input type="number" id="ephemeral-seconds" min="0" step="30" value="0" /></label>
+                  </div>
+                  <label class="flair-select">
+                    <span>Secret filter</span>
+                    <select id="secret-filter">
+                      <option value="">None</option>
+                      <option value="prism">Prism glow</option>
+                      <option value="orbit">Orbit shift</option>
+                      <option value="pulse">Pulse bloom</option>
+                    </select>
+                  </label>
+                  <label class="flair-input">
+                    <span>Secret link</span>
+                    <input type="text" id="secret-link-input" placeholder="Hidden portal URL or clue" />
+                  </label>
+                </div>
+                <section class="panel" id="sidekick-panel">
+                  <header>
+                    <h2>AI sidekick</h2>
+                    <p>Summaries and memes stay on-device.</p>
+                  </header>
+                  <div class="sidekick-controls">
+                    <button type="button" id="sidekick-summary">Summarize chat</button>
+                    <button type="button" id="sidekick-meme" class="secondary">Spin a meme</button>
+                  </div>
+                  <pre id="sidekick-output">Waiting for inspiration…</pre>
+                </section>
+                <section class="panel" id="game-panel">
+                  <header>
+                    <h2>Mini-games</h2>
+                    <p>Challenge your friend in real time.</p>
+                  </header>
+                  <div class="game-controls">
+                    <select id="game-type">
+                      <option value="tic-tac-toe">Tic-Tac-Toe</option>
+                      <option value="trivia">Trivia Buzz</option>
+                    </select>
+                    <button type="button" id="start-game">Start game</button>
+                  </div>
+                  <p class="game-instructions" id="game-instructions">Choose a game to see the rules.</p>
+                  <div class="game-board" id="game-board">
+                    <button type="button" class="cell" data-index="0"></button>
+                    <button type="button" class="cell" data-index="1"></button>
+                    <button type="button" class="cell" data-index="2"></button>
+                    <button type="button" class="cell" data-index="3"></button>
+                    <button type="button" class="cell" data-index="4"></button>
+                    <button type="button" class="cell" data-index="5"></button>
+                    <button type="button" class="cell" data-index="6"></button>
+                    <button type="button" class="cell" data-index="7"></button>
+                    <button type="button" class="cell" data-index="8"></button>
+                  </div>
+                  <div class="game-actions">
+                    <button type="button" id="game-buzz">Buzz</button>
+                    <input type="text" id="game-answer" placeholder="Your move or punchline" />
+                    <button type="button" id="game-submit">Send</button>
+                  </div>
+                  <div class="game-status" id="game-status">No active game.</div>
+                </section>
+                <section class="panel" id="album-panel">
+                  <header>
+                    <h2>Shared albums</h2>
+                    <p>Create an encrypted gallery.</p>
+                  </header>
+                  <form id="album-create">
+                    <input type="text" id="album-name" placeholder="Album name" required />
+                    <button type="submit">Spawn album</button>
+                  </form>
+                  <div class="album-uploader">
+                    <input type="file" id="album-file" accept="image/*" />
+                    <input type="text" id="album-caption" placeholder="Caption" />
+                    <button type="button" id="album-upload">Upload to latest</button>
+                  </div>
+                  <ul id="album-list"></ul>
+                </section>
+                <section class="panel" id="secret-links-panel">
+                  <header>
+                    <h2>Secret rooms</h2>
+                    <p>Drop portals between nodes.</p>
+                  </header>
+                  <form id="secret-link-form">
+                    <input type="text" id="secret-link-label" placeholder="Label" required />
+                    <input type="text" id="secret-link-destination" placeholder="Encrypted payload" required />
+                    <button type="submit">Store link</button>
+                  </form>
+                  <ul id="secret-link-list"></ul>
+                </section>
+                <section class="panel" id="treasure-panel">
+                  <header>
+                    <h2>QR treasure</h2>
+                    <p>Hide easter eggs for your circles.</p>
+                  </header>
+                  <form id="treasure-form">
+                    <input type="text" id="treasure-code" placeholder="Secret code" required />
+                    <input type="text" id="treasure-hint" placeholder="Hint" />
+                    <textarea id="treasure-payload" placeholder="Reward details" rows="2"></textarea>
+                    <button type="submit">Hide treasure</button>
+                  </form>
+                  <div class="treasure-claim">
+                    <input type="text" id="treasure-claim-code" placeholder="Scan code" />
+                    <button type="button" id="treasure-claim">Claim</button>
+                  </div>
+                  <ul id="treasure-list"></ul>
+                </section>
               </div>
-              <pre id="sidekick-output">Waiting for inspiration…</pre>
-            </section>
-            <section class="panel" id="game-panel">
-              <header>
-                <h2>Mini-games</h2>
-                <p>Challenge your friend in real time.</p>
-              </header>
-              <div class="game-controls">
-                <select id="game-type">
-                  <option value="tic-tac-toe">Tic-Tac-Toe</option>
-                  <option value="trivia">Trivia Buzz</option>
-                </select>
-                <button type="button" id="start-game">Start game</button>
-              </div>
-              <p class="game-instructions" id="game-instructions">Choose a game to see the rules.</p>
-              <div class="game-board" id="game-board">
-                <button type="button" class="cell" data-index="0"></button>
-                <button type="button" class="cell" data-index="1"></button>
-                <button type="button" class="cell" data-index="2"></button>
-                <button type="button" class="cell" data-index="3"></button>
-                <button type="button" class="cell" data-index="4"></button>
-                <button type="button" class="cell" data-index="5"></button>
-                <button type="button" class="cell" data-index="6"></button>
-                <button type="button" class="cell" data-index="7"></button>
-                <button type="button" class="cell" data-index="8"></button>
-              </div>
-              <div class="game-actions">
-                <button type="button" id="game-buzz">Buzz</button>
-                <input type="text" id="game-answer" placeholder="Your move or punchline" />
-                <button type="button" id="game-submit">Send</button>
-              </div>
-              <div class="game-status" id="game-status">No active game.</div>
-            </section>
-            <section class="panel" id="album-panel">
-              <header>
-                <h2>Shared albums</h2>
-                <p>Create an encrypted gallery.</p>
-              </header>
-              <form id="album-create">
-                <input type="text" id="album-name" placeholder="Album name" required />
-                <button type="submit">Spawn album</button>
-              </form>
-              <div class="album-uploader">
-                <input type="file" id="album-file" accept="image/*" />
-                <input type="text" id="album-caption" placeholder="Caption" />
-                <button type="button" id="album-upload">Upload to latest</button>
-              </div>
-              <ul id="album-list"></ul>
-            </section>
-            <section class="panel" id="secret-links-panel">
-              <header>
-                <h2>Secret rooms</h2>
-                <p>Drop portals between nodes.</p>
-              </header>
-              <form id="secret-link-form">
-                <input type="text" id="secret-link-label" placeholder="Label" required />
-                <input type="text" id="secret-link-destination" placeholder="Encrypted payload" required />
-                <button type="submit">Store link</button>
-              </form>
-              <ul id="secret-link-list"></ul>
-            </section>
-            <section class="panel" id="treasure-panel">
-              <header>
-                <h2>QR treasure</h2>
-                <p>Hide easter eggs for your circles.</p>
-              </header>
-              <form id="treasure-form">
-                <input type="text" id="treasure-code" placeholder="Secret code" required />
-                <input type="text" id="treasure-hint" placeholder="Hint" />
-                <textarea id="treasure-payload" placeholder="Reward details" rows="2"></textarea>
-                <button type="submit">Hide treasure</button>
-              </form>
-              <div class="treasure-claim">
-                <input type="text" id="treasure-claim-code" placeholder="Scan code" />
-                <button type="button" id="treasure-claim">Claim</button>
-              </div>
-              <ul id="treasure-list"></ul>
-            </section>
+            </div>
           </aside>
         </div>
       </section>
@@ -209,6 +229,10 @@
       const form = document.getElementById('message-form');
       const input = document.getElementById('message');
       const fileInput = document.getElementById('attachment');
+      const chatTools = document.getElementById('chat-tools');
+      const chatToolsToggle = document.getElementById('chat-tools-toggle');
+      const chatToolsBackdrop = document.getElementById('chat-tools-backdrop');
+      const chatToolsDismiss = document.getElementById('chat-tools-dismiss');
       const transportSelect = document.getElementById('transport-select');
       const transportStatus = document.getElementById('transport-status');
       const ephemeralToggle = document.getElementById('ephemeral-toggle');
@@ -269,6 +293,32 @@
       if (partner) {
         document.getElementById('chat-title').textContent = `Chat with ${partner}`;
       }
+
+      function setToolsOpen(open) {
+        if (!chatTools || !chatToolsToggle) return;
+        chatTools.classList.toggle('open', open);
+        chatTools.setAttribute('aria-hidden', open ? 'false' : 'true');
+        chatToolsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('tools-open', open);
+      }
+
+      if (chatToolsToggle && chatTools) {
+        chatToolsToggle.addEventListener('click', () => {
+          const isOpen = chatTools.classList.contains('open');
+          setToolsOpen(!isOpen);
+        });
+      }
+
+      [chatToolsBackdrop, chatToolsDismiss].forEach((element) => {
+        if (!element) return;
+        element.addEventListener('click', () => setToolsOpen(false));
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && chatTools?.classList.contains('open')) {
+          setToolsOpen(false);
+        }
+      });
 
       applyGameLayout(gameTypeSelect.value);
       updateGameGuidance(gameTypeSelect.value, null);
