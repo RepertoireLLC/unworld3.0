@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   Coffee,
+  Flame,
 } from 'lucide-react';
 import { Scene } from '../Scene';
 import { ChatWindow } from './ChatWindow';
@@ -25,12 +26,14 @@ import { useChatStore } from '../../store/chatStore';
 import { useFriendStore } from '../../store/friendStore';
 import { useThemeStore, ThemeType } from '../../store/themeStore';
 import { EnclypseLogo } from './EnclypseLogo';
+import { BraveWorkspace } from './BraveWorkspace';
 
 const NAV_ITEMS = [
   { id: 'sphere', label: 'Sphere', icon: Globe2 },
   { id: 'contacts', label: 'Contacts', icon: Users2 },
   { id: 'search', label: 'Search', icon: Search },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'brave', label: 'Brave', icon: Flame },
   { id: 'profile', label: 'Profile', icon: UserCircle2 },
 ] as const;
 
@@ -264,6 +267,18 @@ export function ChatShell() {
 
   const visibleContacts = activeView === 'search' ? filteredContacts : contacts;
 
+  const sidebarEyebrow = activeView === 'search'
+    ? 'Signal Scan'
+    : activeView === 'brave'
+      ? 'Curated Streams'
+      : 'Linked Operators';
+
+  const sidebarHeading = activeView === 'search'
+    ? 'Search the Sphere'
+    : activeView === 'brave'
+      ? 'Trusted Sources'
+      : 'Contact Lattice';
+
   const getAvailabilityBadge = (value: Availability | undefined) => {
     switch (value) {
       case 'focus':
@@ -305,7 +320,7 @@ export function ChatShell() {
   return (
     <div className="chat-shell p-8">
       <a href="#enclypse-chat-main" className="chat-shell__skip-link">
-        Skip to chat content
+        Skip to active workspace
       </a>
       <aside className="chat-shell__nav" onKeyDown={handleNavKeyDown}>
         <EnclypseLogo />
@@ -348,8 +363,8 @@ export function ChatShell() {
         <section className="chat-shell__sidebar">
           <header className="chat-shell__sidebar-header">
             <div>
-              <p className="chat-shell__eyebrow">{activeView === 'search' ? 'Signal Scan' : 'Linked Operators'}</p>
-              <h2>{activeView === 'search' ? 'Search the Sphere' : 'Contact Lattice'}</h2>
+              <p className="chat-shell__eyebrow">{sidebarEyebrow}</p>
+              <h2>{sidebarHeading}</h2>
             </div>
             <button
               type="button"
@@ -745,6 +760,8 @@ export function ChatShell() {
               <div className="chat-shell__scene">
                 <Scene />
               </div>
+            ) : activeView === 'brave' ? (
+              <BraveWorkspace />
             ) : (
               <ChatWindow activeChatId={activeChat} />
             )}
