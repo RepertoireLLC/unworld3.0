@@ -22,7 +22,13 @@ interface NotepadState {
   getActiveNoteId: (userId: string) => string | null;
 }
 
-const generateId = () => `note_${Math.random().toString(36).slice(2, 10)}`;
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `note_${crypto.randomUUID()}`;
+  }
+
+  return `note_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+};
 
 export const useNotepadStore = create<NotepadState>()(
   persist(
@@ -56,13 +62,41 @@ export const useNotepadStore = create<NotepadState>()(
       updateNote: (userId, noteId, updates) => {
         set((state) => {
           const existingNotes = state.notesByUser[userId] ?? [];
+
+          let didChange = false;
           const updatedNotes = existingNotes
-            .map((note) =>
-              note.id === noteId
-                ? { ...note, ...updates, updatedAt: Date.now() }
-                : note
-            )
+            .map((note) => {
+              if (note.id !== noteId) {
+                return note;
+              }
+
+              const nextNote = { ...note };
+
+              if (updates.title !== undefined && updates.title !== note.title) {
+                nextNote.title = updates.title;
+                didChange = true;
+              }
+
+              if (
+                updates.content !== undefined &&
+                updates.content !== note.content
+              ) {
+                nextNote.content = updates.content;
+                didChange = true;
+              }
+
+              if (!didChange) {
+                return note;
+              }
+
+              nextNote.updatedAt = Date.now();
+              return nextNote;
+            })
             .sort((a, b) => b.updatedAt - a.updatedAt);
+
+          if (!didChange) {
+            return state;
+          }
 
           return {
             notesByUser: {

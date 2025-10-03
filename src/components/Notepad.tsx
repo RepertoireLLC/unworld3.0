@@ -50,12 +50,18 @@ export function Notepad() {
   };
 
   const handleUpdateTitle = (value: string) => {
-    if (!activeNote) return;
+    if (!activeNote || value === activeNote.title) {
+      return;
+    }
+
     updateNote(user.id, activeNote.id, { title: value });
   };
 
   const handleUpdateContent = (value: string) => {
-    if (!activeNote) return;
+    if (!activeNote || value === activeNote.content) {
+      return;
+    }
+
     updateNote(user.id, activeNote.id, { content: value });
   };
 
