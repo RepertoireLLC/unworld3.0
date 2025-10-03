@@ -32,7 +32,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ port: 4001 });
 
 const bluetoothRelay = new BluetoothRelay();
-const transportSelections = new Map(); // userId -> transport string
+const transportSelections = new Map(); // userId -> { channel, peer, auto }
 const onlineUsers = new Map(); // userId -> { username, displayName, sockets: Set<WebSocket> }
 const defaultPreferences = {
   theme: 'default',
@@ -66,6 +66,22 @@ async function getUserPreferences(userId) {
     avatar: row.avatar || '',
     trailsEnabled: row.trails_enabled === null ? defaultPreferences.trailsEnabled : Boolean(row.trails_enabled),
   };
+}
+
+function formatBluetoothPeer(row, identifier) {
+  if (!identifier && !row) return null;
+  return {
+    identifier: row?.bluetooth_identifier || identifier || null,
+    username: row?.username || null,
+    displayName: row?.display_name || null,
+  };
+}
+
+async function resolveBluetoothPeer(identifier) {
+  if (!identifier) return null;
+  const row = await get('SELECT username, display_name, bluetooth_identifier FROM users WHERE bluetooth_identifier = ?', [identifier]);
+  if (!row) return { identifier, username: null, displayName: null };
+  return formatBluetoothPeer(row, identifier);
 }
 
 async function upsertUserPreferences(userId, updates) {
@@ -376,8 +392,11 @@ app.post('/api/preferences', authMiddleware, async (req, res) => {
 });
 
 app.get('/api/transports', authMiddleware, (req, res) => {
+  const selection = transportSelections.get(req.user.id) || { channel: 'internet', peer: null, auto: false };
   res.json({
-    active: transportSelections.get(req.user.id) || 'internet',
+    active: selection.channel,
+    auto: Boolean(selection.auto),
+    peer: selection.peer || null,
     available: {
       bluetooth: bluetoothRelay.available,
     },
@@ -385,32 +404,102 @@ app.get('/api/transports', authMiddleware, (req, res) => {
   });
 });
 
+app.get('/api/transports/bluetooth/peers', authMiddleware, async (req, res) => {
+  const peers = bluetoothRelay.listPeers();
+  if (!peers.length) {
+    res.json({ peers: [] });
+    return;
+  }
+  const identifiers = peers.map((peer) => peer.identifier);
+  const placeholders = identifiers.map(() => '?').join(',');
+  let rows = [];
+  if (identifiers.length) {
+    rows = await all(
+      `SELECT username, display_name, bluetooth_identifier
+       FROM users
+       WHERE bluetooth_identifier IN (${placeholders})`,
+      identifiers,
+    );
+  }
+  const map = new Map(rows.map((row) => [row.bluetooth_identifier, row]));
+  res.json({
+    peers: peers.map((peer) => ({
+      identifier: peer.identifier,
+      lastSeen: peer.lastSeen,
+      rssi: peer.rssi,
+      user: formatBluetoothPeer(map.get(peer.identifier), peer.identifier),
+    })),
+  });
+});
+
 app.post('/api/transports', authMiddleware, async (req, res) => {
-  const { transport } = req.body || {};
-  if (!['internet', 'bluetooth'].includes(transport)) {
+  const { transport, target } = req.body || {};
+  if (!['internet', 'bluetooth', 'auto'].includes(transport)) {
     return res.status(400).json({ error: 'Invalid transport option' });
   }
-  if (transport === 'bluetooth') {
-    try {
-      let identifier = req.user.bluetoothIdentifier;
-      if (!identifier) {
-        identifier = computeBluetoothIdentifier(req.user.username);
-        await run('UPDATE users SET bluetooth_identifier = ? WHERE id = ?', [identifier, req.user.id]);
-        req.user.bluetoothIdentifier = identifier;
-      }
-      await bluetoothRelay.enableForUser({
-        userId: req.user.id,
-        username: req.user.username,
-        identifier,
-      });
-    } catch (error) {
-      return res.status(503).json({ error: `Bluetooth unavailable: ${error.message}` });
+
+  const enableBluetooth = async () => {
+    let identifier = req.user.bluetoothIdentifier;
+    if (!identifier) {
+      identifier = computeBluetoothIdentifier(req.user.username);
+      await run('UPDATE users SET bluetooth_identifier = ? WHERE id = ?', [identifier, req.user.id]);
+      req.user.bluetoothIdentifier = identifier;
     }
-  } else {
-    await bluetoothRelay.disableForUser(req.user.id);
+    await bluetoothRelay.enableForUser({
+      userId: req.user.id,
+      username: req.user.username,
+      identifier,
+    });
+    return identifier;
+  };
+
+  try {
+    if (transport === 'internet') {
+      await bluetoothRelay.disableForUser(req.user.id);
+      transportSelections.set(req.user.id, { channel: 'internet', peer: null, auto: false });
+      res.json({ success: true, active: 'internet', auto: false, peer: null });
+      return;
+    }
+
+    if (transport === 'auto') {
+      if (!bluetoothRelay.available) {
+        await bluetoothRelay.disableForUser(req.user.id);
+        transportSelections.set(req.user.id, { channel: 'internet', peer: null, auto: true });
+        res.json({ success: true, active: 'internet', auto: true, peer: null });
+        return;
+      }
+      const peers = bluetoothRelay.listPeers();
+      const identifier = await enableBluetooth();
+      let peerInfo = null;
+      let channel = 'internet';
+      if (peers.length === 1) {
+        peerInfo = await resolveBluetoothPeer(peers[0].identifier);
+        channel = 'bluetooth';
+      } else if (peers.length > 1) {
+        channel = 'bluetooth';
+      }
+      if (channel !== 'bluetooth') {
+        await bluetoothRelay.disableForUser(req.user.id);
+      }
+      transportSelections.set(req.user.id, { channel, peer: peerInfo, auto: true });
+      res.json({ success: true, active: channel, auto: true, peer: peerInfo, identifier });
+      return;
+    }
+
+    if (transport === 'bluetooth') {
+      if (!bluetoothRelay.available) {
+        return res.status(503).json({ error: 'Bluetooth transport is not available on this system' });
+      }
+      const identifier = await enableBluetooth();
+      const peerInfo = target ? await resolveBluetoothPeer(target) : null;
+      transportSelections.set(req.user.id, { channel: 'bluetooth', peer: peerInfo, auto: false });
+      res.json({ success: true, active: 'bluetooth', auto: false, peer: peerInfo, identifier });
+      return;
+    }
+  } catch (error) {
+    await bluetoothRelay.disableForUser(req.user.id).catch(() => {});
+    return res.status(503).json({ error: `Bluetooth unavailable: ${error.message}` });
   }
-  transportSelections.set(req.user.id, transport);
-  res.json({ success: true, active: transport });
 });
 
 app.get('/api/users/:username', authMiddleware, async (req, res) => {

@@ -37,12 +37,24 @@
         <div class="chat-columns">
           <div class="chat-column">
             <div class="channel-toggle">
-              <label for="transport-select">Channel</label>
-              <div class="channel-controls">
-                <select id="transport-select">
-                  <option value="internet">Internet (Wi‑Fi)</option>
-                  <option value="bluetooth">Bluetooth</option>
-                </select>
+              <span class="channel-toggle__label">Channel</span>
+              <div class="channel-controls channel-controls--toggles">
+                <div class="channel-chips" role="group" aria-label="Chat transport">
+                  <button type="button" class="channel-chip" data-channel="internet" aria-pressed="false">
+                    Wi‑Fi
+                  </button>
+                  <button type="button" class="channel-chip" data-channel="bluetooth" aria-pressed="false">
+                    Bluetooth
+                  </button>
+                  <button
+                    type="button"
+                    class="channel-chip channel-chip--auto"
+                    data-channel="auto"
+                    aria-pressed="false"
+                  >
+                    Auto configure
+                  </button>
+                </div>
                 <span class="badge" id="transport-status">Checking…</span>
               </div>
             </div>
@@ -180,6 +192,33 @@
         </div>
       </section>
     </main>
+    <div class="bluetooth-handshake hidden" id="bluetooth-handshake" aria-hidden="true">
+      <div class="bluetooth-handshake__backdrop" id="bluetooth-handshake-backdrop"></div>
+      <div
+        class="bluetooth-handshake__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bluetooth-handshake-title"
+      >
+        <button
+          type="button"
+          class="bluetooth-handshake__dismiss"
+          id="bluetooth-handshake-dismiss"
+          aria-label="Close Bluetooth pairing"
+        >
+          ×
+        </button>
+        <header class="bluetooth-handshake__header">
+          <h2 id="bluetooth-handshake-title">Nearby Bluetooth chats</h2>
+          <p id="bluetooth-handshake-status">Scanning for Enclypse peers…</p>
+        </header>
+        <ul class="bluetooth-peer-list" id="bluetooth-peer-list"></ul>
+        <div class="bluetooth-handshake__actions">
+          <button type="button" id="bluetooth-refresh">Refresh</button>
+          <button type="button" class="secondary" id="bluetooth-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div class="album-lightbox hidden" id="album-lightbox">
       <div class="album-lightbox__backdrop" id="album-lightbox-close"></div>
       <div class="album-lightbox__dialog" role="dialog" aria-modal="true" aria-labelledby="album-lightbox-title">
@@ -202,6 +241,7 @@
         api,
         ensureReady,
         getTransportState,
+        listBluetoothPeers,
         setTransportPreference,
         unlockSecretFilter,
         listGames,
@@ -233,8 +273,15 @@
       const chatToolsToggle = document.getElementById('chat-tools-toggle');
       const chatToolsBackdrop = document.getElementById('chat-tools-backdrop');
       const chatToolsDismiss = document.getElementById('chat-tools-dismiss');
-      const transportSelect = document.getElementById('transport-select');
+      const channelButtons = Array.from(document.querySelectorAll('.channel-chip[data-channel]'));
       const transportStatus = document.getElementById('transport-status');
+      const bluetoothHandshake = document.getElementById('bluetooth-handshake');
+      const bluetoothHandshakeStatus = document.getElementById('bluetooth-handshake-status');
+      const bluetoothPeerList = document.getElementById('bluetooth-peer-list');
+      const bluetoothRefreshButton = document.getElementById('bluetooth-refresh');
+      const bluetoothCancelButton = document.getElementById('bluetooth-cancel');
+      const bluetoothHandshakeBackdrop = document.getElementById('bluetooth-handshake-backdrop');
+      const bluetoothHandshakeDismiss = document.getElementById('bluetooth-handshake-dismiss');
       const ephemeralToggle = document.getElementById('ephemeral-toggle');
       const ephemeralLimit = document.getElementById('ephemeral-limit');
       const ephemeralSeconds = document.getElementById('ephemeral-seconds');
@@ -278,6 +325,8 @@
       const conversationCache = [];
       let bluetoothAvailable = false;
       let currentTransport = 'internet';
+      let transportAuto = false;
+      let currentBluetoothPeer = null;
       let partnerProfile = null;
       let currentGameId = null;
       let currentGameState = null;
@@ -315,8 +364,18 @@
       });
 
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && chatTools?.classList.contains('open')) {
+        if (event.key !== 'Escape') return;
+        let handled = false;
+        if (chatTools?.classList.contains('open')) {
           setToolsOpen(false);
+          handled = true;
+        }
+        if (bluetoothHandshake?.classList.contains('open')) {
+          hideBluetoothHandshake();
+          handled = true;
+        }
+        if (handled) {
+          event.preventDefault();
         }
       });
 
@@ -524,35 +583,123 @@
         sidekickOutput.textContent = summarizeConversation();
       }
 
+      function updateChannelButtons() {
+        channelButtons.forEach((button) => {
+          const channel = button.dataset.channel;
+          const isActive = channel === 'auto' ? transportAuto : currentTransport === channel;
+          button.classList.toggle('active', isActive);
+          button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+      }
+
       function updateTransportBadge() {
         if (!transportStatus) return;
-        if (!bluetoothAvailable) {
-          transportStatus.textContent = 'Bluetooth unavailable';
-          transportStatus.className = 'badge warning';
+        if (currentTransport === 'bluetooth') {
+          if (!bluetoothAvailable) {
+            transportStatus.textContent = 'Bluetooth unavailable';
+            transportStatus.className = 'badge warning';
+            return;
+          }
+          const peerLabel =
+            currentBluetoothPeer?.displayName ||
+            currentBluetoothPeer?.username ||
+            currentBluetoothPeer?.identifier ||
+            '';
+          const label = peerLabel ? `Bluetooth with ${peerLabel}` : transportAuto ? 'Bluetooth (auto)' : 'Bluetooth ready';
+          transportStatus.textContent = label;
+          transportStatus.className = 'badge success';
           return;
         }
-        if (currentTransport === 'bluetooth') {
-          transportStatus.textContent = 'Bluetooth linked';
-          transportStatus.className = 'badge success';
+        if (transportAuto) {
+          transportStatus.textContent = 'Auto (Wi‑Fi)';
         } else {
           transportStatus.textContent = 'Using internet';
+        }
+        if (!bluetoothAvailable) {
+          transportStatus.textContent += ' • Bluetooth off';
+          transportStatus.className = 'badge warning';
+        } else {
           transportStatus.className = 'badge';
         }
       }
 
-      async function refreshTransport(initial = false) {
-        if (!transportSelect) return;
+      function showBluetoothHandshake() {
+        if (!bluetoothHandshake) return;
+        bluetoothHandshake.classList.remove('hidden');
+        bluetoothHandshake.classList.add('open');
+        bluetoothHandshake.setAttribute('aria-hidden', 'false');
+        if (bluetoothPeerList) {
+          bluetoothPeerList.innerHTML = '<li class="empty">Scanning for nearby devices…</li>';
+        }
+        if (bluetoothHandshakeStatus) {
+          bluetoothHandshakeStatus.textContent = 'Scanning for Enclypse peers…';
+        }
+        loadBluetoothPeers().catch(() => {
+          // errors handled inside loader
+        });
+      }
+
+      function hideBluetoothHandshake() {
+        if (!bluetoothHandshake) return;
+        bluetoothHandshake.classList.remove('open');
+        bluetoothHandshake.classList.add('hidden');
+        bluetoothHandshake.setAttribute('aria-hidden', 'true');
+      }
+
+      async function loadBluetoothPeers() {
+        if (!bluetoothPeerList) return [];
+        try {
+          const { peers } = await listBluetoothPeers();
+          if (!peers.length) {
+            bluetoothPeerList.innerHTML = '<li class="empty">No nearby Enclypse beacons yet.</li>';
+            if (bluetoothHandshakeStatus) {
+              bluetoothHandshakeStatus.textContent = 'No nearby peers detected. Move closer to try again.';
+            }
+            return [];
+          }
+          bluetoothPeerList.innerHTML = '';
+          for (const peer of peers) {
+            const item = document.createElement('li');
+            item.className = 'bluetooth-peer';
+            item.dataset.identifier = peer.identifier;
+            const name = peer.user?.displayName || peer.user?.username || peer.identifier;
+            const handle = peer.user?.username ? `@${peer.user.username}` : 'Unknown user';
+            const rssi = typeof peer.rssi === 'number' ? `${peer.rssi} dBm` : 'Signal unknown';
+            item.innerHTML = `
+              <div class="bluetooth-peer__info">
+                <strong>${escapeHtml(name)}</strong>
+                <span>${escapeHtml(handle)}</span>
+              </div>
+              <div class="bluetooth-peer__meta">
+                <span>${escapeHtml(rssi)}</span>
+                <button type="button" class="bluetooth-peer__connect" data-connect="${peer.identifier}">Connect</button>
+              </div>
+            `;
+            bluetoothPeerList.appendChild(item);
+          }
+          if (bluetoothHandshakeStatus) {
+            bluetoothHandshakeStatus.textContent = 'Select a nearby friend to pair over Bluetooth.';
+          }
+          return peers;
+        } catch (error) {
+          if (bluetoothPeerList) {
+            bluetoothPeerList.innerHTML = '<li class="error">Unable to scan for peers.</li>';
+          }
+          if (bluetoothHandshakeStatus) {
+            bluetoothHandshakeStatus.textContent = 'Bluetooth scanner unavailable. Try again in a moment.';
+          }
+          throw error;
+        }
+      }
+
+      async function refreshTransport() {
         try {
           const state = await getTransportState();
           bluetoothAvailable = Boolean(state?.available?.bluetooth);
           currentTransport = state?.active || 'internet';
-          if (initial || transportSelect.value !== currentTransport) {
-            transportSelect.value = currentTransport;
-          }
-          const bluetoothOption = transportSelect.querySelector('option[value="bluetooth"]');
-          if (bluetoothOption) {
-            bluetoothOption.disabled = !bluetoothAvailable;
-          }
+          transportAuto = Boolean(state?.auto);
+          currentBluetoothPeer = state?.peer || null;
+          updateChannelButtons();
           updateTransportBadge();
         } catch (error) {
           bluetoothAvailable = false;
@@ -560,6 +707,7 @@
             transportStatus.textContent = 'Channel status unavailable';
             transportStatus.className = 'badge warning';
           }
+          updateChannelButtons();
         }
       }
 
@@ -800,20 +948,106 @@
         }
       });
 
-      if (transportSelect) {
-        transportSelect.addEventListener('change', async (event) => {
-          const desired = event.target.value;
+      if (channelButtons.length) {
+        channelButtons.forEach((button) => {
+          button.addEventListener('click', async () => {
+            const desired = button.dataset.channel;
+            if (!desired) return;
+            if (desired === 'internet') {
+              try {
+                const result = await setTransportPreference('internet');
+                currentTransport = result?.active || 'internet';
+                transportAuto = Boolean(result?.auto);
+                currentBluetoothPeer = result?.peer || null;
+                updateChannelButtons();
+                updateTransportBadge();
+              } catch (error) {
+                alert(error.message || 'Unable to switch to Wi‑Fi');
+              }
+              await refreshTransport();
+              return;
+            }
+            if (desired === 'auto') {
+              try {
+                const result = await setTransportPreference('auto');
+                currentTransport = result?.active || currentTransport;
+                transportAuto = Boolean(result?.auto);
+                currentBluetoothPeer = result?.peer || null;
+                updateChannelButtons();
+                updateTransportBadge();
+                await refreshTransport();
+                if (currentTransport === 'bluetooth' && bluetoothAvailable && !currentBluetoothPeer) {
+                  showBluetoothHandshake();
+                }
+              } catch (error) {
+                alert(error.message || 'Unable to auto configure transport');
+                await refreshTransport();
+              }
+              return;
+            }
+            if (desired === 'bluetooth') {
+              await refreshTransport();
+              if (!bluetoothAvailable) {
+                alert('Bluetooth is unavailable on this system right now.');
+                return;
+              }
+              transportAuto = false;
+              updateChannelButtons();
+              showBluetoothHandshake();
+            }
+          });
+        });
+      }
+
+      if (bluetoothPeerList) {
+        bluetoothPeerList.addEventListener('click', async (event) => {
+          const connectButton = event.target.closest('button[data-connect]');
+          if (!connectButton) return;
+          const identifier = connectButton.dataset.connect;
+          if (!identifier) return;
+          const originalText = connectButton.textContent;
+          connectButton.disabled = true;
+          connectButton.textContent = 'Linking…';
           try {
-            const result = await setTransportPreference(desired);
-            currentTransport = result?.active || desired;
-            await refreshTransport();
-          } catch (error) {
-            alert(error.message || 'Unable to switch channel');
-            transportSelect.value = currentTransport;
+            const result = await setTransportPreference('bluetooth', { target: identifier });
+            currentTransport = result?.active || 'bluetooth';
+            transportAuto = Boolean(result?.auto);
+            currentBluetoothPeer = result?.peer || { identifier };
+            updateChannelButtons();
             updateTransportBadge();
+            hideBluetoothHandshake();
+          } catch (error) {
+            alert(error.message || 'Unable to connect over Bluetooth');
+          } finally {
+            connectButton.disabled = false;
+            connectButton.textContent = originalText || 'Connect';
+            await refreshTransport();
           }
         });
       }
+
+      if (bluetoothRefreshButton) {
+        bluetoothRefreshButton.addEventListener('click', async () => {
+          if (bluetoothRefreshButton.disabled) return;
+          const originalText = bluetoothRefreshButton.textContent;
+          bluetoothRefreshButton.disabled = true;
+          bluetoothRefreshButton.textContent = 'Refreshing…';
+          try {
+            await loadBluetoothPeers();
+          } finally {
+            bluetoothRefreshButton.disabled = false;
+            bluetoothRefreshButton.textContent = originalText || 'Refresh';
+          }
+        });
+      }
+
+      [bluetoothCancelButton, bluetoothHandshakeBackdrop, bluetoothHandshakeDismiss].forEach((element) => {
+        if (!element) return;
+        element.addEventListener('click', () => {
+          hideBluetoothHandshake();
+          updateChannelButtons();
+        });
+      });
 
       if (gameTypeSelect) {
         gameTypeSelect.addEventListener('change', () => {
@@ -1226,7 +1460,7 @@
         logout();
       });
 
-      await refreshTransport(true);
+      await refreshTransport();
       await Promise.all([loadMessages(), refreshGames(), refreshAlbums(), refreshSecretLinks(), refreshTreasure()]);
     </script>
   </body>

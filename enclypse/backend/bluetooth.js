@@ -109,7 +109,8 @@ export class BluetoothRelay extends EventEmitter {
   async sendMessage({ fromIdentifier, toIdentifier, payload }) {
     await this.ready;
     if (!this.available) throw new Error('Bluetooth stack not available');
-    const peripheral = this.peers.get(toIdentifier);
+    const entry = this.peers.get(toIdentifier);
+    const peripheral = entry?.peripheral;
     if (!peripheral) {
       throw new Error('Bluetooth peer not in range');
     }
@@ -181,7 +182,11 @@ export class BluetoothRelay extends EventEmitter {
       if (!hasService) return;
       const identifier = this.#extractIdentifier(advertisement.localName);
       if (!identifier) return;
-      this.peers.set(identifier, peripheral);
+      this.peers.set(identifier, {
+        peripheral,
+        lastSeen: Date.now(),
+        rssi: peripheral?.rssi ?? null,
+      });
     });
   }
 
@@ -230,7 +235,7 @@ export class BluetoothRelay extends EventEmitter {
 
   #startAdvertising() {
     if (!this.bleno || !this.service || !this.activeContext) return;
-    const name = `Enc-${this.activeContext.identifier.slice(0, 8)}`;
+    const name = `Enc-${this.activeContext.identifier}`;
     try {
       this.bleno.stopAdvertising(() => {
         this.bleno.setServices([this.service], (err) => {
@@ -259,5 +264,22 @@ export class BluetoothRelay extends EventEmitter {
     if (!payload?.to || !this.activeContext) return;
     if (payload.to !== this.activeContext.identifier) return;
     this.emit('message', payload);
+  }
+
+  listPeers() {
+    const now = Date.now();
+    const peers = [];
+    for (const [identifier, entry] of this.peers.entries()) {
+      if (now - entry.lastSeen > 60_000) {
+        this.peers.delete(identifier);
+        continue;
+      }
+      peers.push({
+        identifier,
+        lastSeen: entry.lastSeen,
+        rssi: entry.rssi ?? null,
+      });
+    }
+    return peers.sort((a, b) => (b.rssi ?? -100) - (a.rssi ?? -100));
   }
 }

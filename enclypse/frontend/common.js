@@ -293,10 +293,14 @@ async function getTransportState() {
   return api('/api/transports');
 }
 
-async function setTransportPreference(transport) {
+async function listBluetoothPeers() {
+  return api('/api/transports/bluetooth/peers');
+}
+
+async function setTransportPreference(transport, extra = {}) {
   return api('/api/transports', {
     method: 'POST',
-    body: JSON.stringify({ transport }),
+    body: JSON.stringify({ transport, ...extra }),
   });
 }
 
@@ -417,5 +421,6 @@ export {
   decryptMessage,
   getKeyMaterial,
   getTransportState,
+  listBluetoothPeers,
   setTransportPreference,
 };
