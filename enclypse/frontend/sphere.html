@@ -20,13 +20,24 @@
       <section class="card">
         <h1>Enclypse Presence Sphere</h1>
         <p class="badge">Live map of your network</p>
+        <div class="sphere-toolbar" role="group" aria-label="Sphere visibility">
+          <span class="sphere-toolbar__label">Visibility</span>
+          <div class="sphere-toolbar__buttons">
+            <button type="button" class="sphere-toolbar__button is-active" data-visibility-mode="private" aria-pressed="true">
+              Private
+            </button>
+            <button type="button" class="sphere-toolbar__button" data-visibility-mode="public" aria-pressed="false">
+              Public
+            </button>
+          </div>
+        </div>
         <div class="sphere-wrapper">
           <canvas id="sphere-canvas"></canvas>
         </div>
       </section>
     </main>
     <script type="module">
-      import { getPresence, connectPresenceSocket, logout, createSecretLink, api } from './common.js';
+      import { getPresence, getContacts, connectPresenceSocket, logout, createSecretLink, api } from './common.js';
 
       const canvas = document.getElementById('sphere-canvas');
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -48,6 +59,9 @@
       let currentUser = null;
       let selfPreferences = {};
       let currentPreferencesMap = {};
+      let latestPresencePayload = null;
+      let visibilityMode = 'private';
+      let friendUsernames = new Set();
       let previousOnline = new Set();
       let intersected;
       let lastPointerEvent = null;
@@ -73,6 +87,14 @@
         document.body.dataset.theme = theme || 'default';
       }
 
+      function updateVisibilityButtons(mode) {
+        document.querySelectorAll('[data-visibility-mode]').forEach((button) => {
+          const isActive = button.dataset.visibilityMode === mode;
+          button.classList.toggle('is-active', isActive);
+          button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+      }
+
       async function loadSelf() {
         try {
           const me = await api('/api/me');
@@ -81,6 +103,15 @@
           applyTheme(selfPreferences.theme);
         } catch (error) {
           console.warn('Unable to load self preferences', error);
+        }
+      }
+
+      async function loadContacts() {
+        try {
+          const data = await getContacts();
+          friendUsernames = new Set((data.contacts || []).map((entry) => entry.username));
+        } catch (error) {
+          console.warn('Unable to load contacts', error);
         }
       }
 
@@ -313,6 +344,35 @@
         });
       }
 
+      function getVisibleUsers(users) {
+        if (visibilityMode === 'public') return users;
+        const allowed = new Set(friendUsernames);
+        if (currentUser) allowed.add(currentUser);
+        return users.filter((user) => allowed.has(user.username));
+      }
+
+      function filterTrailsByVisibility(trails, allowed) {
+        if (visibilityMode === 'public') return trails;
+        const filtered = {};
+        Object.entries(trails || {}).forEach(([username, entries]) => {
+          if (allowed.has(username)) {
+            filtered[username] = entries;
+          }
+        });
+        return filtered;
+      }
+
+      function filterConstellationsByVisibility(constellations, allowed) {
+        if (visibilityMode === 'public') return constellations;
+        return (constellations || [])
+          .filter((constellation) => allowed.has(constellation.owner))
+          .map((constellation) => ({
+            ...constellation,
+            links: (constellation.links || []).filter((link) => allowed.has(link.from) && allowed.has(link.to)),
+          }))
+          .filter((constellation) => constellation.links.length > 0);
+      }
+
       function playPresenceChime() {
         if (!audioCtx) {
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -340,15 +400,18 @@
 
       function updateScene(payload) {
         if (!payload) return;
+        latestPresencePayload = payload;
         currentPreferencesMap = payload.preferences || {};
         if (currentUser && currentPreferencesMap[currentUser]?.theme && currentPreferencesMap[currentUser].theme !== selfPreferences.theme) {
           selfPreferences.theme = currentPreferencesMap[currentUser].theme;
           applyTheme(selfPreferences.theme);
         }
-        updateNodes(payload.users || []);
-        updateTrails(payload.trails || {});
-        updateConstellations(payload.constellations || []);
-        handleChimes(payload.users || []);
+        const visibleUsers = getVisibleUsers(payload.users || []);
+        const allowedUsernames = new Set(visibleUsers.map((user) => user.username));
+        updateNodes(visibleUsers);
+        updateTrails(filterTrailsByVisibility(payload.trails || {}, allowedUsernames));
+        updateConstellations(filterConstellationsByVisibility(payload.constellations || [], allowedUsernames));
+        handleChimes(visibleUsers);
       }
 
       async function loadPresence() {
@@ -363,6 +426,19 @@
       connectPresenceSocket((payload) => {
         updateScene(payload);
       });
+
+      document.querySelectorAll('[data-visibility-mode]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const mode = button.dataset.visibilityMode;
+          if (!mode || mode === visibilityMode) return;
+          visibilityMode = mode;
+          updateVisibilityButtons(mode);
+          if (latestPresencePayload) {
+            updateScene(latestPresencePayload);
+          }
+        });
+      });
+      updateVisibilityButtons(visibilityMode);
 
       document.getElementById('logout-link').addEventListener('click', (event) => {
         event.preventDefault();
@@ -389,7 +465,11 @@
       }
 
       await loadSelf();
+      await loadContacts();
       await loadPresence();
+      if (latestPresencePayload) {
+        updateScene(latestPresencePayload);
+      }
       animate();
     </script>
   </body>
