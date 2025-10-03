@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Send,
@@ -10,10 +11,25 @@ import {
   RefreshCcw,
   Pin,
   PinOff,
+  Bluetooth,
+  ShieldCheck,
+  Paperclip,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  File as FileIcon,
 } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
+import { useBluetoothStore } from '../../store/bluetoothStore';
+import type { EncryptedAttachment, EncryptedMessage } from '../../store/chatStore';
+import {
+  encryptText,
+  decryptText,
+  encryptBuffer,
+  decryptBuffer,
+  bufferToDataUrl,
+} from '../../utils/encryption';
 
 interface ChatWindowProps {
   activeChatId: string | null;
@@ -31,6 +47,27 @@ interface Note {
   title: string;
   content: string;
   updatedAt: number;
+}
+
+interface PendingAttachment {
+  id: string;
+  file: File;
+  previewUrl: string;
+  type: 'image' | 'video' | 'file';
+}
+
+interface DecryptedAttachment {
+  id: string;
+  name: string;
+  type: 'image' | 'video' | 'file';
+  size: number;
+  mimeType: string;
+  dataUrl: string;
+}
+
+interface DecryptedMessage extends Omit<EncryptedMessage, 'encryptedContent' | 'attachments'> {
+  content: string;
+  attachments: DecryptedAttachment[];
 }
 
 const generateNoteId = () => {
@@ -166,6 +203,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   const [activeChannel, setActiveChannel] = useState(CHANNELS[0].id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState('');
@@ -182,20 +220,37 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     state.users.find((user) => user.id === activeChatId)
   );
   const { sendMessage, getMessagesForChat } = useChatStore();
+  const { ensureConnection, updateSignalStrength, connections, getConnection } = useBluetoothStore((state) => ({
+    ensureConnection: state.ensureConnection,
+    updateSignalStrength: state.updateSignalStrength,
+    connections: state.connections,
+    getConnection: state.getConnection,
+  }));
 
-  const messages = useMemo(() => {
+  const connection = useMemo(() => {
+    if (!currentUser || !activeChatId) return undefined;
+    return getConnection(currentUser.id, activeChatId);
+  }, [getConnection, currentUser?.id, activeChatId, connections]);
+
+  const encryptedMessages = useMemo(() => {
     if (!currentUser || !activeChatId) return [];
     return getMessagesForChat(currentUser.id, activeChatId);
   }, [currentUser, activeChatId, getMessagesForChat]);
 
+  const [displayMessages, setDisplayMessages] = useState<DecryptedMessage[]>([]);
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [linkAlert, setLinkAlert] = useState<string | null>(null);
+  const [isTransmitting, setIsTransmitting] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+
   const pinnedMessages = useMemo(() => {
     if (!pinnedMessageIds.length) return [];
-    return messages.filter((msg) => pinnedMessageIds.includes(msg.id));
-  }, [messages, pinnedMessageIds]);
+    return displayMessages.filter((msg) => pinnedMessageIds.includes(msg.id));
+  }, [displayMessages, pinnedMessageIds]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, activeChannel]);
+  }, [displayMessages, activeChannel]);
 
   useEffect(() => {
     if (!currentUser || !activeChatId || typeof window === 'undefined') {
@@ -229,6 +284,89 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
       JSON.stringify(pinnedMessageIds)
     );
   }, [pinnedMessageIds, currentUser?.id, activeChatId]);
+
+  useEffect(() => {
+    if (!currentUser || !activeChatId) return;
+    setLinkAlert(null);
+    ensureConnection(currentUser.id, activeChatId);
+  }, [currentUser?.id, activeChatId, ensureConnection]);
+
+  useEffect(() => {
+    if (!currentUser || !activeChatId) return;
+    const interval = window.setInterval(() => {
+      const latest = getConnection(currentUser.id, activeChatId);
+      const baseStrength = latest?.signalStrength ?? 80;
+      const variation = Math.random() * 14 - 7;
+      updateSignalStrength(currentUser.id, activeChatId, baseStrength + variation);
+    }, 6000);
+
+    return () => window.clearInterval(interval);
+  }, [currentUser?.id, activeChatId, updateSignalStrength, getConnection]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const decryptMessages = async () => {
+      if (!connection?.key) {
+        setDisplayMessages([]);
+        return;
+      }
+
+      if (encryptedMessages.length === 0) {
+        setDisplayMessages([]);
+        return;
+      }
+
+      setIsDecrypting(true);
+      setLinkAlert(null);
+
+      try {
+        const resolved = await Promise.all(
+          encryptedMessages.map(async (msg) => {
+            const content = await decryptText(connection.key, msg.encryptedContent, msg.iv);
+            const attachments = await Promise.all(
+              msg.attachments.map(async (attachment) => {
+                const buffer = await decryptBuffer(connection.key, attachment.encryptedData, attachment.iv);
+                return {
+                  id: attachment.id,
+                  name: attachment.name,
+                  type: attachment.type,
+                  size: attachment.size,
+                  mimeType: attachment.mimeType,
+                  dataUrl: bufferToDataUrl(buffer, attachment.mimeType),
+                };
+              })
+            );
+
+            return {
+              ...msg,
+              content,
+              attachments,
+            } satisfies DecryptedMessage;
+          })
+        );
+
+        if (isActive) {
+          setDisplayMessages(resolved);
+        }
+      } catch (error) {
+        console.error('Failed to decrypt bluetooth messages', error);
+        if (isActive) {
+          setLinkAlert('Bluetooth link disrupted. Unable to decrypt latest packets.');
+        }
+      } finally {
+        if (isActive) {
+          setIsDecrypting(false);
+        }
+      }
+    };
+
+    decryptMessages();
+
+    return () => {
+      isActive = false;
+    };
+  }, [encryptedMessages, connection?.key]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -338,12 +476,144 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     );
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!message.trim() || !activeChatId) return;
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          reject(new Error('Unable to preview file.'));
+        }
+      };
+      reader.onerror = () => {
+        reject(reader.error ?? new Error('Failed to read file.'));
+      };
+      reader.readAsDataURL(file);
+    });
 
-    sendMessage(currentUser.id, activeChatId, message.trim());
-    setMessage('');
+  const formatFileSize = (size: number) => {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleAttachmentClick = () => {
+    if (!activeChatId) {
+      setLinkAlert('Select an operator to initiate a Bluetooth payload transfer.');
+      return;
+    }
+    setLinkAlert(null);
+    fileInputRef.current?.click();
+  };
+
+  const handleAttachmentSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+
+    const files = Array.from(event.target.files);
+    const additions: PendingAttachment[] = [];
+
+    for (const file of files) {
+      try {
+        const previewUrl = await readFileAsDataUrl(file);
+        const type = file.type.startsWith('image')
+          ? 'image'
+          : file.type.startsWith('video')
+          ? 'video'
+          : 'file';
+
+        additions.push({
+          id: `${Date.now()}-${file.name}-${Math.random().toString(16).slice(2)}`,
+          file,
+          previewUrl,
+          type,
+        });
+      } catch (error) {
+        console.error('Failed to buffer attachment preview', error);
+        setLinkAlert('One of the selected files could not be prepared. Please try again.');
+      }
+    }
+
+    if (additions.length > 0) {
+      setPendingAttachments((previous) => [...previous, ...additions]);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    setPendingAttachments((previous) =>
+      previous.filter((attachment) => attachment.id !== attachmentId)
+    );
+  };
+
+  const handleTransmit = async () => {
+    if (!currentUser || !activeChatId || !connection?.key) {
+      setLinkAlert('Secure the Bluetooth pairing before transmitting.');
+      return;
+    }
+
+    if (!message.trim() && pendingAttachments.length === 0) {
+      setLinkAlert('Compose a message or attach intel before sending.');
+      return;
+    }
+
+    setIsTransmitting(true);
+    setLinkAlert(null);
+
+    try {
+      const payloadText = message;
+      const { ciphertext, iv } = await encryptText(connection.key, payloadText);
+
+      const encryptedAttachments: EncryptedAttachment[] = [];
+
+      for (const attachment of pendingAttachments) {
+        try {
+          const buffer = await attachment.file.arrayBuffer();
+          const encrypted = await encryptBuffer(connection.key, buffer);
+          encryptedAttachments.push({
+            id: attachment.id,
+            name: attachment.file.name,
+            type: attachment.type,
+            size: attachment.file.size,
+            mimeType: attachment.file.type || 'application/octet-stream',
+            encryptedData: encrypted.ciphertext,
+            iv: encrypted.iv,
+          });
+        } catch (error) {
+          console.error('Failed to encrypt attachment', error);
+          setLinkAlert('Attachment encryption failed. Remove the item and retry.');
+          setIsTransmitting(false);
+          return;
+        }
+      }
+
+      await sendMessage({
+        fromUserId: currentUser.id,
+        toUserId: activeChatId,
+        encryptedContent: ciphertext,
+        iv,
+        attachments: encryptedAttachments,
+        algorithm: 'AES-GCM',
+      });
+
+      setMessage('');
+      setPendingAttachments([]);
+    } catch (error) {
+      console.error('Bluetooth transmission failure', error);
+      setLinkAlert('Transmission failed. Try adjusting proximity and send again.');
+    } finally {
+      setIsTransmitting(false);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await handleTransmit();
   };
 
   const handleSaveNote = () => {
@@ -412,7 +682,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     if (!currentUser) return;
     setIsGeneratingRecap(true);
     const finalize = () => {
-      setRecap(generateRecap(messages, currentUser.id));
+      setRecap(generateRecap(displayMessages, currentUser.id));
       setLastRecapAt(Date.now());
       setIsGeneratingRecap(false);
     };
@@ -430,12 +700,44 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     return selected?.label ?? 'Translation';
   }, [translationLanguage]);
 
+  const signalStrength = Math.max(0, Math.min(100, Math.round(connection?.signalStrength ?? 0)));
+  const signalQuality = useMemo(() => {
+    if (signalStrength >= 80) return 'Excellent';
+    if (signalStrength >= 60) return 'Strong';
+    if (signalStrength >= 40) return 'Moderate';
+    if (signalStrength >= 20) return 'Weak';
+    return 'Critical';
+  }, [signalStrength]);
+  const signalBars = [25, 50, 75, 100];
+
   return (
     <div className="chat-window">
       <header className="chat-window__header">
         <div>
           <p className="chat-window__eyebrow">Encrypted Relay · {CHANNELS.find((c) => c.id === activeChannel)?.label}</p>
           <h1>Quantum Link Console</h1>
+        </div>
+        <div className="chat-window__header-status" role="status" aria-live="polite">
+          <div className="chat-window__link-indicator">
+            <Bluetooth className="h-4 w-4" aria-hidden="true" />
+            <span>{connection?.connected ? 'Bluetooth link secured' : 'Link offline'}</span>
+          </div>
+          <div className="chat-window__signal" aria-label={`Signal strength ${signalStrength}%`}>
+            <div className="chat-window__signal-bars">
+              {signalBars.map((threshold) => (
+                <span
+                  key={threshold}
+                  className={`chat-window__signal-bar ${signalStrength >= threshold ? 'active' : ''}`}
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+            <span className="chat-window__signal-metric">{signalStrength}% · {signalQuality}</span>
+          </div>
+          <div className="chat-window__encryption">
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            <span>End-to-end AES-GCM</span>
+          </div>
         </div>
         {otherUser ? (
           <div className="chat-window__recipient">
@@ -516,7 +818,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
             type="button"
             className="chat-window__utility-toggle"
             onClick={handleGenerateRecap}
-            disabled={isGeneratingRecap || messages.length === 0}
+            disabled={isGeneratingRecap || displayMessages.length === 0}
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />
             <span>{isGeneratingRecap ? 'Synthesizing recap…' : 'Generate recap'}</span>
@@ -564,9 +866,21 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
             </div>
           )}
 
+          {linkAlert && (
+            <div className="chat-window__alert" role="status">
+              {linkAlert}
+            </div>
+          )}
+
+          {isDecrypting && (
+            <div className="chat-window__status" role="status">
+              Decoding encrypted bursts…
+            </div>
+          )}
+
           <div className="chat-window__messages" role="log" aria-live="polite">
-            {activeChatId && messages.length > 0 ? (
-              messages.map((msg) => {
+            {activeChatId && displayMessages.length > 0 ? (
+              displayMessages.map((msg) => {
                 const isOwn = msg.fromUserId === currentUser.id;
                 const isPinned = pinnedMessageIds.includes(msg.id);
                 return (
@@ -592,9 +906,35 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
                       </button>
                     </div>
                     <div className="chat-window__bubble">
-                      <p>{msg.content}</p>
+                      {msg.content && <p>{msg.content}</p>}
+                      {msg.attachments.length > 0 && (
+                        <div className="chat-window__attachments" role="group" aria-label="Shared attachments">
+                          {msg.attachments.map((attachment) => (
+                            <div key={attachment.id} className={`chat-window__attachment chat-window__attachment--${attachment.type}`}>
+                              <div className="chat-window__attachment-meta">
+                                {attachment.type === 'image' && <ImageIcon className="h-4 w-4" aria-hidden="true" />}
+                                {attachment.type === 'video' && <VideoIcon className="h-4 w-4" aria-hidden="true" />}
+                                {attachment.type === 'file' && <FileIcon className="h-4 w-4" aria-hidden="true" />}
+                                <span>{attachment.name}</span>
+                                <span>{formatFileSize(attachment.size)}</span>
+                              </div>
+                              {attachment.type === 'image' && (
+                                <img src={attachment.dataUrl} alt={attachment.name} loading="lazy" />
+                              )}
+                              {attachment.type === 'video' && (
+                                <video src={attachment.dataUrl} controls preload="metadata" />
+                              )}
+                              {attachment.type === 'file' && (
+                                <a href={attachment.dataUrl} download={attachment.name}>
+                                  Download {attachment.name}
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {autoTranslate && (
+                    {autoTranslate && msg.content && (
                       <p className="chat-window__translation" aria-label={`Translated to ${translationLabel}`}>
                         {translateText(msg.content, translationLanguage)}
                       </p>
@@ -606,20 +946,59 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
                 );
               })
             ) : (
-              <div className="chat-window__placeholder">
-                <h2>No transmissions yet.</h2>
-                <p>Choose a contact on the left to establish a secure channel.</p>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+            <div className="chat-window__placeholder">
+              <h2>No transmissions yet.</h2>
+              <p>Choose a contact on the left to establish a secure channel.</p>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-          <form onSubmit={handleSubmit} className="chat-window__composer" aria-label="Send a message">
-            <input
-              type="text"
-              value={message}
-              disabled={!activeChatId}
-              onChange={(event) => setMessage(event.target.value)}
+        {pendingAttachments.length > 0 && (
+          <div className="chat-window__pending-attachments" role="list" aria-label="Pending attachments">
+            {pendingAttachments.map((attachment) => (
+              <div key={attachment.id} className="chat-window__pending-attachment" role="listitem">
+                <div className="chat-window__pending-preview">
+                  {attachment.type === 'image' && (
+                    <img src={attachment.previewUrl} alt={attachment.file.name} loading="lazy" />
+                  )}
+                  {attachment.type === 'video' && (
+                    <video src={attachment.previewUrl} muted loop playsInline />
+                  )}
+                  {attachment.type === 'file' && <FileIcon className="h-6 w-6" aria-hidden="true" />}
+                </div>
+                <div className="chat-window__pending-meta">
+                  <p>{attachment.file.name}</p>
+                  <span>{formatFileSize(attachment.file.size)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAttachment(attachment.id)}
+                  className="chat-window__pending-remove"
+                  aria-label={`Remove ${attachment.file.name}`}
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="chat-window__composer" aria-label="Send a message">
+          <button
+            type="button"
+            className="chat-window__composer-attachment"
+            onClick={handleAttachmentClick}
+            disabled={!activeChatId || isTransmitting}
+            aria-label="Attach files via Bluetooth"
+          >
+            <Paperclip className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <input
+            type="text"
+            value={message}
+            disabled={!activeChatId}
+            onChange={(event) => setMessage(event.target.value)}
               placeholder={activeChatId ? 'Compose your transmission…' : 'Select a contact to begin'}
               aria-label={
                 activeChatId
@@ -627,14 +1006,26 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
                   : 'Message input disabled until a contact is selected.'
               }
             />
-            <button type="submit" disabled={!message.trim() || !activeChatId} aria-label="Send message">
+            <button
+              type="submit"
+              disabled={(!message.trim() && pendingAttachments.length === 0) || !activeChatId || isTransmitting}
+              aria-label="Send message"
+            >
               <Send className="h-5 w-5" />
             </button>
-          </form>
-          <p className="chat-window__composer-hint" role="note">
-            Press <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line.
-          </p>
-        </div>
+        </form>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="chat-window__file-input"
+          multiple
+          onChange={handleAttachmentSelect}
+          accept="image/*,video/*,application/pdf,application/zip,application/json,.doc,.docx,.ppt,.pptx"
+        />
+        <p className="chat-window__composer-hint" role="note">
+          Press <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line.
+        </p>
+      </div>
 
         <aside className="chat-window__tools chat-window__notepad" aria-label="Personal notepad">
           <div className="chat-window__intel">
@@ -656,7 +1047,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
               type="button"
               className="chat-window__intel-refresh"
               onClick={handleGenerateRecap}
-              disabled={isGeneratingRecap || messages.length === 0}
+              disabled={isGeneratingRecap || displayMessages.length === 0}
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" />
               {isGeneratingRecap ? 'Synthesizing…' : 'Refresh recap'}

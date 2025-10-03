@@ -489,6 +489,50 @@ canvas {
   @apply text-3xl font-semibold text-white;
 }
 
+.chat-window__header-status {
+  @apply flex flex-col items-start gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs uppercase tracking-wide text-white/60 shadow-[0_10px_30px_rgba(15,23,42,0.35)];
+}
+
+.chat-window__link-indicator {
+  @apply flex items-center gap-2 text-white;
+}
+
+.chat-window__signal {
+  @apply flex items-center gap-3 text-[10px] text-white/60;
+}
+
+.chat-window__signal-bars {
+  @apply flex items-end gap-1;
+}
+
+.chat-window__signal-bar {
+  @apply h-2 w-1 rounded-full bg-white/20 transition-all duration-500 ease-out;
+}
+
+.chat-window__signal-bar:nth-child(2) {
+  @apply h-3;
+}
+
+.chat-window__signal-bar:nth-child(3) {
+  @apply h-4;
+}
+
+.chat-window__signal-bar:nth-child(4) {
+  @apply h-5;
+}
+
+.chat-window__signal-bar.active {
+  @apply bg-emerald-400;
+}
+
+.chat-window__signal-metric {
+  @apply text-[11px] font-semibold text-white/70;
+}
+
+.chat-window__encryption {
+  @apply flex items-center gap-2 text-[11px] font-semibold text-emerald-200;
+}
+
 .chat-window__recipient {
   @apply flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2;
 }
@@ -597,6 +641,14 @@ canvas {
   @apply flex-1 space-y-4 overflow-y-auto pr-2;
 }
 
+.chat-window__alert {
+  @apply mb-3 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-100 shadow-[0_10px_30px_rgba(251,191,36,0.25)];
+}
+
+.chat-window__status {
+  @apply mb-3 flex items-center gap-2 text-xs uppercase tracking-wide text-white/60;
+}
+
 .chat-window__message {
   @apply flex flex-col items-start gap-2 text-sm text-white/80;
 }
@@ -629,6 +681,31 @@ canvas {
   @apply max-w-[80%] rounded-3xl border border-white/10 bg-white/10 px-5 py-3 text-sm leading-relaxed text-white shadow-[0_15px_40px_-20px_rgba(0,0,0,0.8)];
 }
 
+.chat-window__attachments {
+  @apply mt-4 grid gap-3;
+}
+
+.chat-window__attachment {
+  @apply flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-3;
+}
+
+.chat-window__attachment-meta {
+  @apply flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/60;
+}
+
+.chat-window__attachment img,
+.chat-window__attachment video {
+  @apply max-h-64 w-full rounded-xl border border-white/10 object-cover shadow-[0_20px_40px_rgba(15,23,42,0.45)];
+}
+
+.chat-window__attachment video {
+  @apply bg-black;
+}
+
+.chat-window__attachment a {
+  @apply inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:text-white;
+}
+
 .chat-window__message.self .chat-window__bubble {
   @apply border-emerald-400/40 bg-emerald-500/10 text-emerald-100;
 }
@@ -653,16 +730,57 @@ canvas {
   @apply mt-6 flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-3;
 }
 
+.chat-window__composer-attachment {
+  @apply flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40;
+}
+
 .chat-window__composer input {
   @apply flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
 }
 
-.chat-window__composer button {
+.chat-window__composer button[type='submit'] {
   @apply flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-emerald-500/20 text-emerald-200 transition hover:border-emerald-300/60 hover:bg-emerald-400/30;
 }
 
-.chat-window__composer button:disabled {
+.chat-window__composer button[type='submit']:disabled {
   @apply cursor-not-allowed border-white/10 bg-white/5 text-white/30;
+}
+
+.chat-window__file-input {
+  @apply sr-only;
+}
+
+.chat-window__pending-attachments {
+  @apply mt-4 flex flex-wrap gap-3;
+}
+
+.chat-window__pending-attachment {
+  @apply flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70;
+}
+
+.chat-window__pending-preview {
+  @apply flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/60;
+}
+
+.chat-window__pending-preview img,
+.chat-window__pending-preview video {
+  @apply h-full w-full object-cover;
+}
+
+.chat-window__pending-meta {
+  @apply flex flex-col;
+}
+
+.chat-window__pending-meta p {
+  @apply max-w-[160px] truncate text-xs font-medium text-white;
+}
+
+.chat-window__pending-meta span {
+  @apply text-[10px] uppercase tracking-wide text-white/40;
+}
+
+.chat-window__pending-remove {
+  @apply flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/50 transition hover:border-rose-400/60 hover:bg-rose-500/20 hover:text-rose-200;
 }
 
 .chat-window__composer-hint {
