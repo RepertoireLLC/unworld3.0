@@ -11,7 +11,7 @@ export function ProfileIcon() {
   if (!currentUser) return null;
 
   return (
-    <div className="absolute top-4 right-36 z-10">
+    <div className="relative pointer-events-auto">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors flex items-center space-x-2"
@@ -28,7 +28,7 @@ export function ProfileIcon() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden">
+        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-20">
           <button
             onClick={() => {
               setProfileUserId(currentUser.id);

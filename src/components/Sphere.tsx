@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
-import { Mesh, Color, MathUtils } from 'three';
+import { Mesh, Color } from 'three';
 import { useThemeStore } from '../store/themeStore';
 
 const themeConfigs = {

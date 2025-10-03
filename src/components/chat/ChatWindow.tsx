@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Send } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
@@ -16,9 +16,10 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
   const { sendMessage, getMessagesForChat } = useChatStore();
 
-  const messages = currentUser 
-    ? getMessagesForChat(currentUser.id, userId)
-    : [];
+  const messages = useMemo(
+    () => (currentUser ? getMessagesForChat(currentUser.id, userId) : []),
+    [currentUser, userId, getMessagesForChat],
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,7 +40,7 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   if (!currentUser || !otherUser) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white/10 backdrop-blur-md rounded-xl shadow-xl flex flex-col overflow-hidden">
+    <div className="fixed bottom-4 right-4 z-40 w-80 bg-white/10 backdrop-blur-md rounded-xl shadow-xl flex flex-col overflow-hidden pointer-events-auto">
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div

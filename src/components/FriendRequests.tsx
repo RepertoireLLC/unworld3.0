@@ -18,7 +18,7 @@ export function FriendRequests() {
   );
 
   return (
-    <div className="absolute top-4 right-4 z-10">
+    <div className="relative pointer-events-auto">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
@@ -32,7 +32,7 @@ export function FriendRequests() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-20">
           <div className="p-4 border-b border-white/10">
             <h3 className="text-white font-medium">Friend Requests</h3>
           </div>
