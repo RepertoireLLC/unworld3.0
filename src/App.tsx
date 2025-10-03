@@ -6,6 +6,7 @@ import { FriendRequests } from './components/FriendRequests';
 import { ChatWindow } from './components/chat/ChatWindow';
 import { ThemeSelector } from './components/ThemeSelector';
 import { ProfileIcon } from './components/ProfileIcon';
+import { Notepad } from './components/Notepad';
 import { useAuthStore } from './store/authStore';
 import { useModalStore } from './store/modalStore';
 import { useChatStore } from './store/chatStore';
@@ -50,6 +51,7 @@ export function App() {
           <ProfileIcon />
           <ThemeSelector />
           <FriendRequests />
+          <Notepad />
           <Scene />
           {profileUserId && (
             <ProfileModal
