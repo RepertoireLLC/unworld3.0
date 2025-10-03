@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Enclypse – Profile</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <nav>
+        <a href="sphere.html">Sphere</a>
+        <a href="contacts.html">Contacts</a>
+        <a href="search.html">Search</a>
+        <a href="chat.html">Chat</a>
+        <a href="profile.html" class="active">Profile</a>
+        <a href="#" id="logout-link">Logout</a>
+      </nav>
+      <section class="card profile-card" id="profile-card">
+        <h1>Loading profile…</h1>
+      </section>
+    </main>
+    <script type="module">
+      import { api, logout, savePreferences } from './common.js';
+
+      const params = new URLSearchParams(window.location.search);
+      const username = params.get('user');
+      const card = document.getElementById('profile-card');
+      let preferences = null;
+      let currentUser = null;
+
+      function applyTheme(theme) {
+        document.body.dataset.theme = theme || 'default';
+      }
+
+      function renderProfile(data, isSelf) {
+        const theme = data.preferences?.theme || preferences?.theme || 'default';
+        applyTheme(theme);
+        const avatar = (data.preferences && data.preferences.avatar) || preferences?.avatar || '';
+        const avatarMarkup = avatar
+          ? `<div class="avatar-preview animate"><img src="${avatar}" alt="${data.username} avatar" /></div>`
+          : '<div class="avatar-preview placeholder">🌌</div>';
+        const about = data.bio || 'No bio yet.';
+        card.innerHTML = `
+          <div class="profile-header">
+            ${avatarMarkup}
+            <div class="profile-meta">
+              <h1>${data.displayName || data.username}</h1>
+              <p class="badge"><span class="status-dot ${data.online ? 'online' : 'offline'}"></span> ${data.online ? 'Online' : 'Offline'}</p>
+              <p><strong>Username:</strong> ${data.username}</p>
+              <p><strong>Joined:</strong> ${new Date(data.createdAt).toLocaleString()}</p>
+              <p><strong>About:</strong> ${about}</p>
+            </div>
+          </div>
+          ${isSelf ? renderPreferencesForm(preferences || data.preferences || {}) : ''}
+        `;
+        if (isSelf) {
+          wirePreferencesForm();
+        }
+      }
+
+      function renderPreferencesForm(current) {
+        return `
+          <form id="preferences-form" class="preferences-form">
+            <h2>Personalization</h2>
+            <label>
+              <span>Theme</span>
+              <select id="pref-theme">
+                <option value="default" ${current.theme === 'default' ? 'selected' : ''}>Aurora default</option>
+                <option value="tron" ${current.theme === 'tron' ? 'selected' : ''}>Tron grid</option>
+                <option value="galaxy" ${current.theme === 'galaxy' ? 'selected' : ''}>Cosmic galaxy</option>
+                <option value="whiteboard" ${current.theme === 'whiteboard' ? 'selected' : ''}>Minimal whiteboard</option>
+              </select>
+            </label>
+            <label>
+              <span>Animated avatar URL</span>
+              <input type="url" id="pref-avatar" placeholder="https://" value="${current.avatar || ''}" />
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="pref-ai" ${current.aiSidekick ? 'checked' : ''} /> Enable local AI sidekick boosts
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="pref-trails" ${current.trailsEnabled !== false ? 'checked' : ''} /> Show presence trails across the sphere
+            </label>
+            <h2>Presence chimes</h2>
+            <label class="checkbox">
+              <input type="checkbox" id="pref-sound" ${current.soundEnabled ? 'checked' : ''} /> Play a chime when a friend appears
+            </label>
+            <label>
+              <span>Friend handle for chime</span>
+              <input type="text" id="pref-sound-contact" placeholder="friend username" value="${current.soundContact || ''}" />
+            </label>
+            <button type="submit">Save preferences</button>
+            <p class="badge" id="preferences-status">Preferences update instantly and stay on-device.</p>
+          </form>
+        `;
+      }
+
+      function wirePreferencesForm() {
+        const form = document.getElementById('preferences-form');
+        if (!form) return;
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const payload = {
+            theme: document.getElementById('pref-theme').value,
+            avatar: document.getElementById('pref-avatar').value.trim(),
+            aiSidekick: document.getElementById('pref-ai').checked,
+            trailsEnabled: document.getElementById('pref-trails').checked,
+            soundEnabled: document.getElementById('pref-sound').checked,
+            soundContact: document.getElementById('pref-sound-contact').value.trim(),
+          };
+          try {
+            preferences = await savePreferences(payload);
+            applyTheme(preferences.theme);
+            document.getElementById('preferences-status').textContent = 'Saved! Theme and trails updated.';
+          } catch (error) {
+            document.getElementById('preferences-status').textContent = error.message || 'Unable to save preferences';
+          }
+        });
+      }
+
+      async function loadProfile() {
+        try {
+          if (!username) {
+            const me = await api('/api/me');
+            currentUser = me.username;
+            preferences = me.preferences || {};
+            renderProfile(me, true);
+          } else {
+            const data = await api(`/api/users/${encodeURIComponent(username)}`);
+            renderProfile(data, false);
+          }
+        } catch (error) {
+          card.innerHTML = `<p class="badge">${error.message || 'Unable to load profile.'}</p>`;
+        }
+      }
+
+      document.getElementById('logout-link').addEventListener('click', (event) => {
+        event.preventDefault();
+        logout();
+      });
+
+      await loadProfile();
+    </script>
+  </body>
+</html>

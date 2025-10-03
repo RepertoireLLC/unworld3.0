@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Enclypse – Login</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <nav>
+        <a href="login.html" class="active">Login</a>
+        <a href="register.html">Register</a>
+      </nav>
+      <section class="card">
+        <h1>Welcome back to Enclypse</h1>
+        <p class="badge">Privacy-first messaging</p>
+        <form id="login-form">
+          <input type="text" id="username" placeholder="Username" required />
+          <input type="password" id="password" placeholder="Password" required />
+          <button type="submit">Log in</button>
+        </form>
+        <p>Need an account? <a href="register.html">Create one here</a>.</p>
+      </section>
+    </main>
+    <script type="module">
+      import { login } from './common.js';
+
+      const form = document.getElementById('login-form');
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        try {
+          await login({ username, password });
+          window.location.href = 'sphere.html';
+        } catch (error) {
+          alert(error.message || 'Login failed');
+        }
+      });
+    </script>
+  </body>
+</html>

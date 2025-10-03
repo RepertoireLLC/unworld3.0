@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Enclypse – Chat</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <nav>
+        <a href="sphere.html">Sphere</a>
+        <a href="contacts.html">Contacts</a>
+        <a href="search.html">Search</a>
+        <a href="chat.html" class="active">Chat</a>
+        <a href="profile.html">Profile</a>
+        <a href="#" id="logout-link">Logout</a>
+      </nav>
+      <section class="card chat-card">
+        <h1 id="chat-title">Chat</h1>
+        <div class="chat-columns">
+          <div class="chat-column">
+            <div class="channel-toggle">
+              <label for="transport-select">Channel</label>
+              <div class="channel-controls">
+                <select id="transport-select">
+                  <option value="internet">Internet (Wi‑Fi)</option>
+                  <option value="bluetooth">Bluetooth</option>
+                </select>
+                <span class="badge" id="transport-status">Checking…</span>
+              </div>
+            </div>
+            <div class="chat-flair">
+              <label class="toggle">
+                <input type="checkbox" id="ephemeral-toggle" />
+                <span>Ephemeral blast</span>
+              </label>
+              <div class="flair-inline" id="ephemeral-settings">
+                <label>Views <input type="number" id="ephemeral-limit" min="1" value="1" /></label>
+                <label>Expires (sec) <input type="number" id="ephemeral-seconds" min="0" step="30" value="0" /></label>
+              </div>
+              <label class="flair-select">
+                <span>Secret filter</span>
+                <select id="secret-filter">
+                  <option value="">None</option>
+                  <option value="prism">Prism glow</option>
+                  <option value="orbit">Orbit shift</option>
+                  <option value="pulse">Pulse bloom</option>
+                </select>
+              </label>
+              <label class="flair-input">
+                <span>Secret link</span>
+                <input type="text" id="secret-link-input" placeholder="Hidden portal URL or clue" />
+              </label>
+            </div>
+            <div class="chat-window">
+              <div class="chat-messages" id="messages"></div>
+              <form class="chat-input" id="message-form">
+                <input type="text" id="message" placeholder="Type an encrypted message" autocomplete="off" required />
+                <label class="file-label" for="attachment">📎 Attach</label>
+                <input type="file" id="attachment" accept="image/*" />
+                <button type="submit">Send</button>
+              </form>
+            </div>
+          </div>
+          <aside class="chat-side">
+            <section class="panel" id="sidekick-panel">
+              <header>
+                <h2>AI sidekick</h2>
+                <p>Summaries and memes stay on-device.</p>
+              </header>
+              <div class="sidekick-controls">
+                <button type="button" id="sidekick-summary">Summarize chat</button>
+                <button type="button" id="sidekick-meme" class="secondary">Spin a meme</button>
+              </div>
+              <pre id="sidekick-output">Waiting for inspiration…</pre>
+            </section>
+            <section class="panel" id="game-panel">
+              <header>
+                <h2>Mini-games</h2>
+                <p>Challenge your friend in real time.</p>
+              </header>
+              <div class="game-controls">
+                <select id="game-type">
+                  <option value="tic-tac-toe">Tic-Tac-Toe</option>
+                  <option value="trivia">Trivia Buzz</option>
+                </select>
+                <button type="button" id="start-game">Start game</button>
+              </div>
+              <p class="game-instructions" id="game-instructions">Choose a game to see the rules.</p>
+              <div class="game-board" id="game-board">
+                <button type="button" class="cell" data-index="0"></button>
+                <button type="button" class="cell" data-index="1"></button>
+                <button type="button" class="cell" data-index="2"></button>
+                <button type="button" class="cell" data-index="3"></button>
+                <button type="button" class="cell" data-index="4"></button>
+                <button type="button" class="cell" data-index="5"></button>
+                <button type="button" class="cell" data-index="6"></button>
+                <button type="button" class="cell" data-index="7"></button>
+                <button type="button" class="cell" data-index="8"></button>
+              </div>
+              <div class="game-actions">
+                <button type="button" id="game-buzz">Buzz</button>
+                <input type="text" id="game-answer" placeholder="Your move or punchline" />
+                <button type="button" id="game-submit">Send</button>
+              </div>
+              <div class="game-status" id="game-status">No active game.</div>
+            </section>
+            <section class="panel" id="album-panel">
+              <header>
+                <h2>Shared albums</h2>
+                <p>Create an encrypted gallery.</p>
+              </header>
+              <form id="album-create">
+                <input type="text" id="album-name" placeholder="Album name" required />
+                <button type="submit">Spawn album</button>
+              </form>
+              <div class="album-uploader">
+                <input type="file" id="album-file" accept="image/*" />
+                <input type="text" id="album-caption" placeholder="Caption" />
+                <button type="button" id="album-upload">Upload to latest</button>
+              </div>
+              <ul id="album-list"></ul>
+            </section>
+            <section class="panel" id="secret-links-panel">
+              <header>
+                <h2>Secret rooms</h2>
+                <p>Drop portals between nodes.</p>
+              </header>
+              <form id="secret-link-form">
+                <input type="text" id="secret-link-label" placeholder="Label" required />
+                <input type="text" id="secret-link-destination" placeholder="Encrypted payload" required />
+                <button type="submit">Store link</button>
+              </form>
+              <ul id="secret-link-list"></ul>
+            </section>
+            <section class="panel" id="treasure-panel">
+              <header>
+                <h2>QR treasure</h2>
+                <p>Hide easter eggs for your circles.</p>
+              </header>
+              <form id="treasure-form">
+                <input type="text" id="treasure-code" placeholder="Secret code" required />
+                <input type="text" id="treasure-hint" placeholder="Hint" />
+                <textarea id="treasure-payload" placeholder="Reward details" rows="2"></textarea>
+                <button type="submit">Hide treasure</button>
+              </form>
+              <div class="treasure-claim">
+                <input type="text" id="treasure-claim-code" placeholder="Scan code" />
+                <button type="button" id="treasure-claim">Claim</button>
+              </div>
+              <ul id="treasure-list"></ul>
+            </section>
+          </aside>
+        </div>
+      </section>
+    </main>
+    <div class="album-lightbox hidden" id="album-lightbox">
+      <div class="album-lightbox__backdrop" id="album-lightbox-close"></div>
+      <div class="album-lightbox__dialog" role="dialog" aria-modal="true" aria-labelledby="album-lightbox-title">
+        <button type="button" class="album-lightbox__dismiss" id="album-lightbox-dismiss" aria-label="Close album viewer">×</button>
+        <h3 id="album-lightbox-title"></h3>
+        <div class="album-lightbox__grid" id="album-lightbox-grid"></div>
+      </div>
+    </div>
+    <script type="module">
+      import {
+        fetchConversation,
+        sendMessage,
+        sendAttachment,
+        downloadAttachment,
+        encryptMessage,
+        decryptMessage,
+        connectPresenceSocket,
+        logout,
+        api,
+        ensureReady,
+        getTransportState,
+        setTransportPreference,
+        unlockSecretFilter,
+        listGames,
+        createGame,
+        sendGameMove,
+        fetchGame,
+        listAlbums,
+        createAlbum,
+        uploadAlbumItem,
+        fetchAlbum,
+        listSecretLinks,
+        createSecretLink,
+        deleteSecretLink,
+        listTreasureHunts,
+        createTreasureHunt,
+        claimTreasure,
+        getKeyMaterial,
+        fetchUser,
+      } from './common.js';
+
+      const params = new URLSearchParams(window.location.search);
+      const partner = params.get('to');
+      const messagesList = document.getElementById('messages');
+      const form = document.getElementById('message-form');
+      const input = document.getElementById('message');
+      const fileInput = document.getElementById('attachment');
+      const transportSelect = document.getElementById('transport-select');
+      const transportStatus = document.getElementById('transport-status');
+      const ephemeralToggle = document.getElementById('ephemeral-toggle');
+      const ephemeralLimit = document.getElementById('ephemeral-limit');
+      const ephemeralSeconds = document.getElementById('ephemeral-seconds');
+      const secretFilterSelect = document.getElementById('secret-filter');
+      const secretLinkInput = document.getElementById('secret-link-input');
+      const sidekickSummary = document.getElementById('sidekick-summary');
+      const sidekickMeme = document.getElementById('sidekick-meme');
+      const sidekickOutput = document.getElementById('sidekick-output');
+      const gameTypeSelect = document.getElementById('game-type');
+      const startGameButton = document.getElementById('start-game');
+      const gameStatus = document.getElementById('game-status');
+      const gameInstructions = document.getElementById('game-instructions');
+      const gameBoardElement = document.getElementById('game-board');
+      const gameBoardCells = Array.from(document.querySelectorAll('#game-board .cell'));
+      const gameBuzzButton = document.getElementById('game-buzz');
+      const gameAnswerInput = document.getElementById('game-answer');
+      const gameSubmitButton = document.getElementById('game-submit');
+      const albumForm = document.getElementById('album-create');
+      const albumNameInput = document.getElementById('album-name');
+      const albumFileInput = document.getElementById('album-file');
+      const albumCaptionInput = document.getElementById('album-caption');
+      const albumUploadButton = document.getElementById('album-upload');
+      const albumList = document.getElementById('album-list');
+      const albumLightbox = document.getElementById('album-lightbox');
+      const albumLightboxClose = document.getElementById('album-lightbox-close');
+      const albumLightboxDismiss = document.getElementById('album-lightbox-dismiss');
+      const albumLightboxGrid = document.getElementById('album-lightbox-grid');
+      const albumLightboxTitle = document.getElementById('album-lightbox-title');
+      const secretLinkForm = document.getElementById('secret-link-form');
+      const secretLinkLabel = document.getElementById('secret-link-label');
+      const secretLinkDestination = document.getElementById('secret-link-destination');
+      const secretLinkList = document.getElementById('secret-link-list');
+      const treasureForm = document.getElementById('treasure-form');
+      const treasureCode = document.getElementById('treasure-code');
+      const treasureHint = document.getElementById('treasure-hint');
+      const treasurePayload = document.getElementById('treasure-payload');
+      const treasureClaimCode = document.getElementById('treasure-claim-code');
+      const treasureClaimButton = document.getElementById('treasure-claim');
+      const treasureList = document.getElementById('treasure-list');
+
+      const conversationCache = [];
+      let bluetoothAvailable = false;
+      let currentTransport = 'internet';
+      let partnerProfile = null;
+      let currentGameId = null;
+      let currentGameState = null;
+      let currentGameStatus = null;
+      let latestAlbumId = null;
+      let selfProfile = null;
+      const activeAlbumUrls = new Set();
+      const orbitHints = new Map();
+      let orientationListenerAttached = false;
+
+      if (partner) {
+        document.getElementById('chat-title').textContent = `Chat with ${partner}`;
+      }
+
+      applyGameLayout(gameTypeSelect.value);
+      updateGameGuidance(gameTypeSelect.value, null);
+
+      function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value;
+        return div.innerHTML;
+      }
+
+      function secretFilterInstruction(type) {
+        switch (type) {
+          case 'orbit':
+            return 'Rotate your device to align the orbit';
+          case 'prism':
+            return 'Tap and hold to refract the secret';
+          case 'pulse':
+            return 'Double-tap to sync the pulse';
+          default:
+            return 'Unlock to reveal the attachment';
+        }
+      }
+
+      function ensureOrientationTracking() {
+        if (orientationListenerAttached || !('DeviceOrientationEvent' in window)) return;
+        orientationListenerAttached = true;
+        window.addEventListener('deviceorientation', (event) => {
+          const energy = Math.abs(event.beta || 0) + Math.abs(event.gamma || 0);
+          if (energy < 60) {
+            orbitHints.forEach((entry) => {
+              entry.hintElement.classList.remove('secret-attachment__hint--primed');
+            });
+            return;
+          }
+          orbitHints.forEach((entry, button) => {
+            entry.hintElement.classList.add('secret-attachment__hint--primed');
+            button.dataset.primed = 'true';
+          });
+        });
+      }
+
+      function registerOrbitHint(button, hintElement) {
+        if (!button || !hintElement) return;
+        orbitHints.set(button, { hintElement });
+        ensureOrientationTracking();
+      }
+
+      function clearOrbitHint(button) {
+        if (!button) return;
+        const entry = orbitHints.get(button);
+        if (entry) {
+          entry.hintElement.classList.remove('secret-attachment__hint--primed');
+        }
+        orbitHints.delete(button);
+      }
+
+      function applyGameLayout(type) {
+        if (!gameBoardElement) return;
+        const trivia = type === 'trivia';
+        gameBoardElement.classList.toggle('game-board--hidden', trivia);
+        [gameBuzzButton, gameAnswerInput, gameSubmitButton].forEach((element) => {
+          if (!element) return;
+          element.classList.toggle('visually-hidden', !trivia);
+          element.disabled = !trivia;
+        });
+        if (!trivia && gameAnswerInput) {
+          gameAnswerInput.value = '';
+        }
+      }
+
+      function updateGameGuidance(type, status) {
+        if (!gameInstructions) return;
+        if (type === 'trivia') {
+          const prompt = status === 'active' ? 'Buzz first, then type your answer. First correct response wins.' : 'Start a round and be ready to /buzz!';
+          gameInstructions.textContent = prompt;
+          if (gameAnswerInput) gameAnswerInput.placeholder = 'Answer after buzzing…';
+        } else if (type === 'tic-tac-toe') {
+          const prompt = status === 'active' ? 'Tap a square on your turn to mark it.' : 'Start a match to drop an X or O.';
+          gameInstructions.textContent = prompt;
+          if (gameAnswerInput) gameAnswerInput.placeholder = 'Chat is for tactics, not inputs.';
+        } else {
+          gameInstructions.textContent = 'Choose a game to see the rules.';
+        }
+      }
+
+      function detectMimeType(bytes) {
+        if (!bytes || !bytes.length) return 'application/octet-stream';
+        const view = bytes.slice ? bytes.slice(0, 12) : bytes.subarray(0, 12);
+        if (view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4e && view[3] === 0x47) return 'image/png';
+        if (view[0] === 0xff && view[1] === 0xd8) return 'image/jpeg';
+        if (view[0] === 0x47 && view[1] === 0x49 && view[2] === 0x46) return 'image/gif';
+        if (view[8] === 0x57 && view[9] === 0x45 && view[10] === 0x42 && view[11] === 0x50) return 'image/webp';
+        return 'application/octet-stream';
+      }
+
+      function revokeAlbumUrls() {
+        activeAlbumUrls.forEach((url) => URL.revokeObjectURL(url));
+        activeAlbumUrls.clear();
+      }
+
+      function hideAlbumLightbox() {
+        revokeAlbumUrls();
+        albumLightboxGrid.innerHTML = '';
+        albumLightboxTitle.textContent = '';
+        albumLightbox.classList.add('hidden');
+        albumLightbox.classList.remove('open');
+      }
+
+      async function ensureSelfProfile() {
+        if (!selfProfile) {
+          selfProfile = await api('/api/me');
+        }
+        return selfProfile;
+      }
+
+      async function decryptAlbumItem(item) {
+        try {
+          const sodium = await ensureReady();
+          const payload = JSON.parse(item.ciphertext || '{}');
+          if (!payload?.data || !payload?.key) return null;
+          const cipherBytes = sodium.from_base64(payload.data);
+          const nonceBytes = sodium.from_base64(item.nonce);
+          const keyBytes = sodium.from_base64(payload.key);
+          const plainBytes = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(null, cipherBytes, null, nonceBytes, keyBytes);
+          const mime = detectMimeType(plainBytes);
+          const blob = new Blob([plainBytes], { type: mime });
+          const url = URL.createObjectURL(blob);
+          activeAlbumUrls.add(url);
+          return {
+            url,
+            mime,
+            description: item.description,
+            uploader: item.uploader,
+            createdAt: item.createdAt,
+          };
+        } catch (error) {
+          console.error('Failed to decrypt album item', error);
+          return null;
+        }
+      }
+
+      function trackConversation(direction, text, createdAt = new Date().toISOString()) {
+        if (!text) return;
+        conversationCache.push({ direction, text, createdAt });
+        if (conversationCache.length > 200) {
+          conversationCache.shift();
+        }
+      }
+
+      function summarizeConversation() {
+        if (!conversationCache.length) {
+          return 'No conversation yet. Say hi!';
+        }
+        const recent = conversationCache.slice(-8);
+        const sent = recent.filter((item) => item.direction === 'sent');
+        const received = recent.filter((item) => item.direction === 'received');
+        const vibe = received.slice(-3).map((item) => `• ${item.text.slice(0, 80)}${item.text.length > 80 ? '…' : ''}`).join('\n');
+        const tone = sent.length > received.length ? 'You have been steering the chat.' : 'Your friend is leading the vibe.';
+        return `Recent vibe check:\n${vibe || '• (no decrypted lines yet)'}\n\n${tone}`;
+      }
+
+      function generateMeme() {
+        const starters = ['When the node finally glows green:', 'Mood when Bluetooth actually connects:', 'You vs. the chat she tells you not to worry about:'];
+        const punchlines = ['insert dramatic drum solo', 'that moment when encryption hits different', 'galaxy brain energy'];
+        const sample = conversationCache.slice(-3).map((item) => `${item.direction === 'sent' ? 'You' : partner || 'Friend'}: ${item.text.slice(0, 60)}`);
+        return `${starters[Math.floor(Math.random() * starters.length)]}\n${sample.join('\n') || '(waiting for chat)'}\n→ ${punchlines[Math.floor(Math.random() * punchlines.length)]}`;
+      }
+
+      function updateSidekickBaseline() {
+        sidekickOutput.textContent = summarizeConversation();
+      }
+
+      function updateTransportBadge() {
+        if (!transportStatus) return;
+        if (!bluetoothAvailable) {
+          transportStatus.textContent = 'Bluetooth unavailable';
+          transportStatus.className = 'badge warning';
+          return;
+        }
+        if (currentTransport === 'bluetooth') {
+          transportStatus.textContent = 'Bluetooth linked';
+          transportStatus.className = 'badge success';
+        } else {
+          transportStatus.textContent = 'Using internet';
+          transportStatus.className = 'badge';
+        }
+      }
+
+      async function refreshTransport(initial = false) {
+        if (!transportSelect) return;
+        try {
+          const state = await getTransportState();
+          bluetoothAvailable = Boolean(state?.available?.bluetooth);
+          currentTransport = state?.active || 'internet';
+          if (initial || transportSelect.value !== currentTransport) {
+            transportSelect.value = currentTransport;
+          }
+          const bluetoothOption = transportSelect.querySelector('option[value="bluetooth"]');
+          if (bluetoothOption) {
+            bluetoothOption.disabled = !bluetoothAvailable;
+          }
+          updateTransportBadge();
+        } catch (error) {
+          bluetoothAvailable = false;
+          if (transportStatus) {
+            transportStatus.textContent = 'Channel status unavailable';
+            transportStatus.className = 'badge warning';
+          }
+        }
+      }
+
+      async function ensurePartnerProfile() {
+        if (!partner) return null;
+        if (!partnerProfile) {
+          partnerProfile = await api(`/api/users/${encodeURIComponent(partner)}`);
+        }
+        return partnerProfile;
+      }
+
+      function appendMessage({ id, direction, body, createdAt, status, metadata }) {
+        const element = document.createElement('div');
+        element.className = `message ${direction}`;
+        element.dataset.messageId = id;
+        if (metadata?.secretFilter?.type) element.dataset.secretFilter = metadata.secretFilter.type;
+        if (metadata?.ephemeral?.enabled) element.dataset.ephemeral = 'true';
+        element.innerHTML = `
+          <div class="bubble">${body}</div>
+          <small>${new Date(createdAt).toLocaleTimeString()} • ${status || 'sent'}</small>
+        `;
+        messagesList.appendChild(element);
+        messagesList.scrollTop = messagesList.scrollHeight;
+        if (metadata?.secretFilter?.type === 'orbit') {
+          const button = element.querySelector('button[data-attachment]');
+          const hint = element.querySelector('.secret-attachment__hint');
+          registerOrbitHint(button, hint);
+        }
+        return element;
+      }
+
+      async function loadMessages() {
+        if (!partner) return;
+        messagesList.innerHTML = '<p class="badge">Decrypting conversation…</p>';
+        conversationCache.length = 0;
+        const data = await fetchConversation(partner);
+        messagesList.innerHTML = '';
+        for (const message of data.messages) {
+          const metadata = message.metadata || {};
+          let bodyHtml = '<span class="badge">[Encrypted message]</span>';
+          let plainText = '';
+          if (message.ciphertext) {
+            try {
+              const decrypted = await decryptMessage(message.senderPublicKey, message.ciphertext, message.nonce);
+              plainText = decrypted;
+              bodyHtml = `<p>${escapeHtml(decrypted)}</p>`;
+            } catch (error) {
+              bodyHtml = '<p class="badge warning">[Unable to decrypt message]</p>';
+            }
+          } else if (message.attachmentId) {
+            const filterType = metadata.secretFilter?.type || '';
+            const instructions = secretFilterInstruction(filterType);
+            const filterAttr = filterType ? ` data-filter="${filterType}"` : '';
+            bodyHtml = `
+              <div class="secret-attachment${filterType ? ` secret-attachment--${filterType}` : ''}">
+                <button class="secondary secret-attachment__button" data-attachment="${message.id}"${filterAttr} aria-live="polite">
+                  ${filterType ? 'Unlock & download' : 'Download attachment'}
+                </button>
+                ${filterType ? `<div class="secret-attachment__hint"><span>${escapeHtml(instructions)}</span></div>` : ''}
+              </div>
+            `;
+          }
+          const flair = [];
+          if (metadata.ephemeral?.enabled) {
+            flair.push('<span class="badge glow">Ephemeral</span>');
+          }
+          if (metadata.secretFilter?.type) {
+            flair.push(`<span class="badge filter">${escapeHtml(secretFilterInstruction(metadata.secretFilter.type))}</span>`);
+          }
+          if (metadata.secretLink?.cipher && metadata.secretLink?.nonce) {
+            try {
+              const secret = await decryptMessage(message.senderPublicKey, metadata.secretLink.cipher, metadata.secretLink.nonce);
+              flair.push(`<button type="button" class="link-secret" data-secret="${encodeURIComponent(secret)}">Open ${escapeHtml(metadata.secretLink.label || 'secret room')}</button>`);
+            } catch (error) {
+              flair.push('<span class="badge warning">Secret room locked</span>');
+            }
+          }
+          if (flair.length) {
+            bodyHtml += `<div class="message-flair">${flair.join(' ')}</div>`;
+          }
+          appendMessage({
+            id: message.id,
+            direction: message.direction,
+            body: bodyHtml,
+            createdAt: message.createdAt,
+            status: message.status,
+            metadata,
+          });
+          if (plainText) {
+            trackConversation(message.direction, plainText, message.createdAt);
+          }
+        }
+        updateSidekickBaseline();
+      }
+
+      function buildEphemeralOptions() {
+        if (!ephemeralToggle.checked) return null;
+        return {
+          enabled: true,
+          viewLimit: Number(ephemeralLimit.value) || 1,
+          expiresSeconds: Number(ephemeralSeconds.value) || null,
+        };
+      }
+
+      function buildSecretFilterOptions() {
+        const type = secretFilterSelect.value;
+        if (!type) return null;
+        return { type };
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!partner) {
+          alert('Open a conversation by selecting a contact.');
+          return;
+        }
+        const text = input.value.trim();
+        const file = fileInput.files[0];
+        const channel = currentTransport;
+        if (channel === 'bluetooth' && !bluetoothAvailable) {
+          alert('Bluetooth is unavailable. Switch back to Internet to continue.');
+          return;
+        }
+        try {
+          const options = {};
+          const ephemeral = buildEphemeralOptions();
+          if (ephemeral) options.ephemeral = ephemeral;
+          const secretFilter = buildSecretFilterOptions();
+          if (secretFilter) options.secretFilter = secretFilter;
+          if (file) {
+            if (channel === 'bluetooth') {
+              alert('Attachments are only supported over the Internet channel.');
+              return;
+            }
+            await sendAttachment({ to: partner, file, options });
+            appendMessage({
+              id: Date.now(),
+              direction: 'sent',
+              body: '<span class="badge">[Encrypted attachment]</span>',
+              createdAt: new Date().toISOString(),
+              status: 'uploading',
+              metadata: options,
+            });
+            trackConversation('sent', '[attachment]');
+            fileInput.value = '';
+          }
+          if (text) {
+            const profile = await ensurePartnerProfile();
+            const { ciphertext, nonce } = await encryptMessage(profile.publicKey, text);
+            if (secretLinkInput.value.trim()) {
+              const secretLinkText = secretLinkInput.value.trim();
+              const secretPayload = await encryptMessage(profile.publicKey, secretLinkText);
+              options.secretLink = {
+                label: secretLinkText.slice(0, 32),
+                cipher: secretPayload.ciphertext,
+                nonce: secretPayload.nonce,
+              };
+              secretLinkInput.value = '';
+            }
+            await sendMessage({ to: partner, ciphertext, nonce, transport: channel, options });
+            const pendingStatus = channel === 'bluetooth' ? 'bluetooth' : 'sending';
+            appendMessage({
+              id: Date.now() + 1,
+              direction: 'sent',
+              body: `<p>${escapeHtml(text)}</p>`,
+              createdAt: new Date().toISOString(),
+              status: pendingStatus,
+              metadata: options,
+            });
+            trackConversation('sent', text);
+            input.value = '';
+          }
+        } catch (error) {
+          alert(error.message || 'Unable to send message');
+        }
+      });
+
+      messagesList.addEventListener('click', async (event) => {
+        const attachmentButton = event.target.closest('button[data-attachment]');
+        if (attachmentButton) {
+          try {
+            await downloadAttachment(attachmentButton.dataset.attachment);
+            attachmentButton.textContent = 'Downloaded';
+            attachmentButton.disabled = true;
+            clearOrbitHint(attachmentButton);
+          } catch (error) {
+            if (error.status === 423) {
+              const filter = attachmentButton.dataset.filter || attachmentButton.closest('.message')?.dataset.secretFilter;
+              const action = filter === 'orbit' ? 'rotate' : 'tap';
+              const hint = attachmentButton.closest('.secret-attachment')?.querySelector('.secret-attachment__hint');
+              if (hint) {
+                hint.classList.add('secret-attachment__hint--active');
+              }
+              try {
+                await unlockSecretFilter(attachmentButton.dataset.attachment, action);
+                await downloadAttachment(attachmentButton.dataset.attachment);
+                attachmentButton.textContent = 'Unlocked';
+                attachmentButton.disabled = true;
+                clearOrbitHint(attachmentButton);
+              } catch (unlockError) {
+                alert(unlockError.message || 'Unable to unlock attachment');
+              }
+            } else if (error.status === 410) {
+              attachmentButton.textContent = 'Attachment expired';
+              attachmentButton.disabled = true;
+              clearOrbitHint(attachmentButton);
+            } else {
+              alert(error.message || 'Unable to fetch attachment');
+            }
+          }
+          return;
+        }
+        const secretButton = event.target.closest('button.link-secret');
+        if (secretButton) {
+          const secret = decodeURIComponent(secretButton.dataset.secret || '');
+          const span = document.createElement('span');
+          span.className = 'badge';
+          span.textContent = secret || 'Secret unavailable';
+          secretButton.replaceWith(span);
+        }
+      });
+
+      if (transportSelect) {
+        transportSelect.addEventListener('change', async (event) => {
+          const desired = event.target.value;
+          try {
+            const result = await setTransportPreference(desired);
+            currentTransport = result?.active || desired;
+            await refreshTransport();
+          } catch (error) {
+            alert(error.message || 'Unable to switch channel');
+            transportSelect.value = currentTransport;
+            updateTransportBadge();
+          }
+        });
+      }
+
+      if (gameTypeSelect) {
+        gameTypeSelect.addEventListener('change', () => {
+          applyGameLayout(gameTypeSelect.value);
+          updateGameGuidance(gameTypeSelect.value, currentGameStatus);
+          if (!currentGameState || currentGameState.type !== gameTypeSelect.value) {
+            gameBoardCells.forEach((cell) => {
+              cell.textContent = '';
+              cell.disabled = true;
+            });
+            gameStatus.textContent = gameTypeSelect.value === 'trivia' ? 'Trivia ready. Tap Buzz to claim the floor.' : 'No active game.';
+          }
+        });
+      }
+
+      sidekickSummary.addEventListener('click', () => {
+        sidekickOutput.textContent = summarizeConversation();
+      });
+
+      sidekickMeme.addEventListener('click', () => {
+        sidekickOutput.textContent = generateMeme();
+      });
+
+      async function renderGame(state, status) {
+        currentGameState = state;
+        currentGameStatus = status || null;
+        const effectiveType = state?.type || gameTypeSelect.value;
+        applyGameLayout(effectiveType);
+        updateGameGuidance(effectiveType, status);
+        if (!state) {
+          gameBoardCells.forEach((cell) => {
+            cell.textContent = '';
+            cell.disabled = true;
+          });
+          gameStatus.textContent = 'No active game.';
+          return;
+        }
+        if (state.type === 'tic-tac-toe') {
+          gameBoardCells.forEach((cell) => {
+            const index = Number(cell.dataset.index);
+            cell.textContent = state.board[index] || '';
+            cell.disabled = Boolean(state.board[index]) || status !== 'active';
+          });
+          gameStatus.textContent = status === 'active' ? `Turn: ${state.turn}` : status === 'draw' ? 'Draw! Everyone wins.' : `Winner: ${state.winner || 'unknown'}`;
+        } else {
+          gameBoardCells.forEach((cell) => {
+            cell.textContent = '';
+            cell.disabled = true;
+          });
+          const history = (state.history || []).slice(-5).map((entry) => `${entry.by}: ${entry.text || entry.action}`);
+          gameStatus.textContent = history.length ? history.join(' • ') : state.prompt || 'Trivia in progress';
+        }
+      }
+
+      async function refreshGames() {
+        if (!partner) return;
+        const { games } = await listGames();
+        const active = games.find((game) => game.creator === partner || game.opponent === partner);
+        if (active) {
+          currentGameId = active.id;
+          renderGame(active.state, active.status);
+        } else {
+          currentGameId = null;
+          renderGame(null, null);
+        }
+      }
+
+      startGameButton.addEventListener('click', async () => {
+        if (!partner) {
+          alert('Pick a friend first.');
+          return;
+        }
+        try {
+          await createGame({ opponent: partner, type: gameTypeSelect.value });
+          await refreshGames();
+        } catch (error) {
+          alert(error.message || 'Unable to start game');
+        }
+      });
+
+      gameBoardCells.forEach((cell) => {
+        cell.addEventListener('click', async () => {
+          if (!currentGameId || !currentGameState || currentGameState.type !== 'tic-tac-toe') return;
+          try {
+            await sendGameMove(currentGameId, { move: cell.dataset.index });
+          } catch (error) {
+            alert(error.message || 'Move failed');
+          }
+        });
+      });
+
+      gameBuzzButton.addEventListener('click', async () => {
+        if (!currentGameId) return;
+        try {
+          await sendGameMove(currentGameId, { move: '/buzz' });
+        } catch (error) {
+          alert(error.message || 'Buzz failed');
+        }
+      });
+
+      gameSubmitButton.addEventListener('click', async () => {
+        if (!currentGameId) return;
+        const text = gameAnswerInput.value.trim();
+        if (!text) return;
+        try {
+          await sendGameMove(currentGameId, { move: text });
+          gameAnswerInput.value = '';
+        } catch (error) {
+          alert(error.message || 'Unable to send move');
+        }
+      });
+
+      async function refreshAlbums() {
+        const { albums } = await listAlbums();
+        const scoped = partner ? albums.filter((album) => album.owner === partner || album.members.some((m) => m.username === partner)) : albums;
+        albumList.innerHTML = '';
+        if (!scoped.length) {
+          albumList.innerHTML = '<li class="empty">No shared albums yet.</li>';
+          latestAlbumId = null;
+          return;
+        }
+        latestAlbumId = scoped[0].id;
+        for (const album of scoped) {
+          const item = document.createElement('li');
+          item.dataset.album = album.id;
+          const members = album.members.map((member) => member.displayName || member.username).join(', ');
+          item.innerHTML = `
+            <strong>${escapeHtml(album.name)}</strong>
+            <span>${escapeHtml(members || 'Just you two')}</span>
+            <small>Click to explore</small>
+          `;
+          albumList.appendChild(item);
+        }
+      }
+
+      async function openAlbum(albumId) {
+        if (!albumId) return;
+        try {
+          revokeAlbumUrls();
+          const { album, items } = await fetchAlbum(albumId);
+          albumLightboxTitle.textContent = album.name;
+          albumLightboxGrid.innerHTML = '';
+          if (!items.length) {
+            albumLightboxGrid.innerHTML = '<p class="empty">No media yet.</p>';
+          } else {
+            for (const item of items) {
+              const decrypted = await decryptAlbumItem(item);
+              const figure = document.createElement('figure');
+              figure.className = 'album-lightbox__item';
+              if (decrypted && decrypted.mime.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = decrypted.url;
+                img.alt = `Encrypted upload by ${item.uploader}`;
+                figure.appendChild(img);
+              } else if (decrypted) {
+                const link = document.createElement('a');
+                link.href = decrypted.url;
+                link.download = `enclypse-album-${item.id}`;
+                link.className = 'album-lightbox__download';
+                link.textContent = 'Download item';
+                figure.appendChild(link);
+              } else {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'album-lightbox__error';
+                placeholder.textContent = 'Unable to decrypt item.';
+                figure.appendChild(placeholder);
+              }
+              const caption = document.createElement('figcaption');
+              caption.innerHTML = `
+                <strong>${escapeHtml(item.uploader)}</strong>
+                <span>${escapeHtml(item.description || 'No caption')}</span>
+                <time datetime="${item.createdAt}">${new Date(item.createdAt).toLocaleString()}</time>
+              `;
+              figure.appendChild(caption);
+              albumLightboxGrid.appendChild(figure);
+            }
+          }
+          albumLightbox.classList.remove('hidden');
+          albumLightbox.classList.add('open');
+        } catch (error) {
+          console.error(error);
+          alert('Unable to open album');
+        }
+      }
+
+      albumForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!albumNameInput.value.trim()) return;
+        try {
+          await createAlbum({ name: albumNameInput.value.trim(), theme: secretFilterSelect.value || 'default', members: partner ? [partner] : [] });
+          albumNameInput.value = '';
+          await refreshAlbums();
+        } catch (error) {
+          alert(error.message || 'Unable to create album');
+        }
+      });
+
+      albumUploadButton.addEventListener('click', async () => {
+        if (!latestAlbumId) {
+          alert('Create an album first.');
+          return;
+        }
+        const file = albumFileInput.files[0];
+        if (!file) {
+          alert('Choose a file to upload.');
+          return;
+        }
+        try {
+          await uploadAlbumItem(latestAlbumId, { file, description: albumCaptionInput.value });
+          albumFileInput.value = '';
+          albumCaptionInput.value = '';
+          alert('Encrypted media uploaded to the album!');
+        } catch (error) {
+          alert(error.message || 'Upload failed');
+        }
+      });
+
+      albumList.addEventListener('click', async (event) => {
+        const target = event.target.closest('li[data-album]');
+        if (!target) return;
+        await openAlbum(target.dataset.album);
+      });
+
+      [albumLightboxClose, albumLightboxDismiss].forEach((element) => {
+        if (!element) return;
+        element.addEventListener('click', hideAlbumLightbox);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && albumLightbox.classList.contains('open')) {
+          hideAlbumLightbox();
+        }
+      });
+
+      window.addEventListener('beforeunload', revokeAlbumUrls);
+
+      async function refreshSecretLinks() {
+        const { links } = await listSecretLinks();
+        secretLinkList.innerHTML = '';
+        if (!links.length) {
+          secretLinkList.innerHTML = '<li class="empty">No portals yet.</li>';
+          return;
+        }
+        for (const link of links) {
+          const li = document.createElement('li');
+          const audience = (link.audience || []).join(', ');
+          const sealedCount = link.sealedKeys ? Object.keys(link.sealedKeys).length : 0;
+          li.innerHTML = `
+            <div>
+              <strong>${escapeHtml(link.label)}</strong>
+              <span>${escapeHtml(audience || 'Private stash')}</span>
+              <small>${sealedCount ? `${sealedCount} sealed key${sealedCount > 1 ? 's' : ''}` : 'Unsealed legacy link'}</small>
+            </div>
+            <button type="button" data-delete="${link.id}">Delete</button>
+          `;
+          secretLinkList.appendChild(li);
+        }
+      }
+
+      async function buildSecretLinkCipher(destination, audience = []) {
+        const sodium = await ensureReady();
+        const payloadBytes = sodium.from_string(destination);
+        const secretKey = sodium.randombytes_buf(sodium.crypto_secretbox_KEYBYTES);
+        const nonceBytes = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+        const ciphertextBytes = sodium.crypto_secretbox_easy(payloadBytes, nonceBytes, secretKey);
+        const sealedKeys = {};
+        const participants = new Set((audience || []).map((user) => user.toLowerCase()));
+        const self = await ensureSelfProfile();
+        const keyMaterial = getKeyMaterial();
+        if (!keyMaterial.publicKey) {
+          throw new Error('Missing local public key; re-login to regenerate keys.');
+        }
+        const selfPublic = sodium.from_base64(keyMaterial.publicKey);
+        sealedKeys[self.username] = sodium.to_base64(sodium.crypto_box_seal(secretKey, selfPublic));
+        for (const username of participants) {
+          if (!username || username === self.username) continue;
+          const profile = await fetchUser(username);
+          if (!profile?.publicKey) {
+            throw new Error(`Missing encryption key for ${username}`);
+          }
+          const recipientKey = sodium.from_base64(profile.publicKey);
+          sealedKeys[profile.username] = sodium.to_base64(sodium.crypto_box_seal(secretKey, recipientKey));
+        }
+        return {
+          cipher: {
+            ciphertext: sodium.to_base64(ciphertextBytes),
+            sealedKeys,
+          },
+          nonce: sodium.to_base64(nonceBytes),
+        };
+      }
+
+      secretLinkForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!secretLinkLabel.value.trim() || !secretLinkDestination.value.trim()) return;
+        try {
+          const destination = secretLinkDestination.value.trim();
+          const scopedAudience = partner ? [partner] : [];
+          const payload = await buildSecretLinkCipher(destination, scopedAudience);
+          await createSecretLink({
+            label: secretLinkLabel.value.trim(),
+            cipher: payload.cipher,
+            nonce: payload.nonce,
+            audience: scopedAudience,
+          });
+          secretLinkLabel.value = '';
+          secretLinkDestination.value = '';
+          await refreshSecretLinks();
+        } catch (error) {
+          alert(error.message || 'Unable to store secret link');
+        }
+      });
+
+      secretLinkList.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-delete]');
+        if (!button) return;
+        try {
+          await deleteSecretLink(button.dataset.delete);
+          await refreshSecretLinks();
+        } catch (error) {
+          alert(error.message || 'Unable to remove link');
+        }
+      });
+
+      async function refreshTreasure() {
+        const { hunts } = await listTreasureHunts();
+        treasureList.innerHTML = '';
+        if (!hunts.length) {
+          treasureList.innerHTML = '<li class="empty">No hunts yet.</li>';
+          return;
+        }
+        for (const hunt of hunts) {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <strong>${escapeHtml(hunt.hint || 'Mystery drop')}</strong>
+            <span>${hunt.claimed ? 'Claimed' : 'Unclaimed'}</span>
+            ${hunt.payload ? `<p>${escapeHtml(hunt.payload)}</p>` : ''}
+          `;
+          treasureList.appendChild(li);
+        }
+      }
+
+      treasureForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!treasureCode.value.trim() || !treasurePayload.value.trim()) return;
+        try {
+          await createTreasureHunt({ code: treasureCode.value.trim(), hint: treasureHint.value.trim(), payload: treasurePayload.value.trim() });
+          treasureCode.value = '';
+          treasureHint.value = '';
+          treasurePayload.value = '';
+          await refreshTreasure();
+        } catch (error) {
+          alert(error.message || 'Unable to hide treasure');
+        }
+      });
+
+      treasureClaimButton.addEventListener('click', async () => {
+        if (!treasureClaimCode.value.trim()) return;
+        try {
+          const result = await claimTreasure(treasureClaimCode.value.trim());
+          alert(`Reward unlocked: ${result.payload}`);
+          treasureClaimCode.value = '';
+          await refreshTreasure();
+        } catch (error) {
+          alert(error.message || 'Unable to claim treasure');
+        }
+      });
+
+      connectPresenceSocket(async (payload) => {
+        if (!partner) return;
+        const message = payload.message;
+        if (message && message.from === partner) {
+          await loadMessages();
+        }
+      });
+
+      window.addEventListener('enclypse:game', async (event) => {
+        if (!currentGameId) {
+          await refreshGames();
+          return;
+        }
+        const { id } = event.detail || {};
+        if (id === currentGameId) {
+          try {
+            const game = await fetchGame(id);
+            renderGame(game.state, game.status);
+          } catch (error) {
+            console.warn('Failed to update game', error);
+          }
+        }
+      });
+
+      document.getElementById('logout-link').addEventListener('click', (event) => {
+        event.preventDefault();
+        logout();
+      });
+
+      await refreshTransport(true);
+      await Promise.all([loadMessages(), refreshGames(), refreshAlbums(), refreshSecretLinks(), refreshTreasure()]);
+    </script>
+  </body>
+</html>

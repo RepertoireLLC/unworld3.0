@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Send } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
@@ -16,9 +16,10 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
   const { sendMessage, getMessagesForChat } = useChatStore();
 
-  const messages = currentUser 
-    ? getMessagesForChat(currentUser.id, userId)
-    : [];
+  const messages = useMemo(
+    () => (currentUser ? getMessagesForChat(currentUser.id, userId) : []),
+    [currentUser, userId, getMessagesForChat],
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
