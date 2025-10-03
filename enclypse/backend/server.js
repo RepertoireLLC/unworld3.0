@@ -280,6 +280,7 @@ app.post('/api/register', async (req, res) => {
         bluetoothIdentifier,
       ],
     );
+    await broadcastPresence();
     res.json({ success: true });
   } catch (error) {
     console.error(error);

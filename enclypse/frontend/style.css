@@ -273,6 +273,18 @@ nav a.active {
   gap: 1.75rem;
 }
 
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.chat-header .badge {
+  font-size: 0.78rem;
+}
+
 .chat-columns {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);

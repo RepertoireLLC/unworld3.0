@@ -16,7 +16,13 @@
         <a href="#" id="logout-link">Logout</a>
       </nav>
       <section class="card chat-card">
-        <h1 id="chat-title">Chat</h1>
+        <header class="chat-header">
+          <h1 id="chat-title">Chat</h1>
+          <span class="badge" id="chat-presence">
+            <span class="status-dot offline"></span>
+            Select a friend
+          </span>
+        </header>
         <div class="chat-columns">
           <div class="chat-column">
             <div class="channel-toggle">
@@ -165,6 +171,7 @@
     <script type="module">
       import {
         fetchConversation,
+        getPresence,
         sendMessage,
         sendAttachment,
         downloadAttachment,
@@ -198,6 +205,7 @@
       const params = new URLSearchParams(window.location.search);
       const partner = params.get('to');
       const messagesList = document.getElementById('messages');
+      const presenceBadge = document.getElementById('chat-presence');
       const form = document.getElementById('message-form');
       const input = document.getElementById('message');
       const fileInput = document.getElementById('attachment');
@@ -255,6 +263,8 @@
       const activeAlbumUrls = new Set();
       const orbitHints = new Map();
       let orientationListenerAttached = false;
+      let reloadingMessages = false;
+      let pendingMessageReload = false;
 
       if (partner) {
         document.getElementById('chat-title').textContent = `Chat with ${partner}`;
@@ -298,6 +308,39 @@
             button.dataset.primed = 'true';
           });
         });
+      }
+
+      function updatePresenceBadge(state) {
+        if (!presenceBadge) return;
+        if (!partner) {
+          presenceBadge.innerHTML = '<span class="status-dot offline"></span>Select a friend';
+          presenceBadge.classList.remove('success');
+          return;
+        }
+        if (state === null) {
+          presenceBadge.innerHTML = '<span class="status-dot offline"></span>Presence unknown';
+          presenceBadge.classList.remove('success');
+          return;
+        }
+        const dotClass = state ? 'online' : 'offline';
+        const label = state ? 'Online now' : 'Offline';
+        presenceBadge.innerHTML = `<span class="status-dot ${dotClass}"></span>${label}`;
+        presenceBadge.classList.toggle('success', Boolean(state));
+      }
+
+      updatePresenceBadge(null);
+
+      async function primePartnerPresence() {
+        if (!partner) return;
+        try {
+          const snapshot = await getPresence();
+          const entry = (snapshot.users || []).find((user) => user.username === partner);
+          if (entry) {
+            updatePresenceBadge(entry.online);
+          }
+        } catch (error) {
+          console.warn('Failed to load presence snapshot', error);
+        }
       }
 
       function registerOrbitHint(button, hintElement) {
@@ -560,6 +603,24 @@
           }
         }
         updateSidekickBaseline();
+      }
+
+      async function requestMessagesReload() {
+        if (!partner) return;
+        if (reloadingMessages) {
+          pendingMessageReload = true;
+          return;
+        }
+        reloadingMessages = true;
+        try {
+          await loadMessages();
+        } finally {
+          reloadingMessages = false;
+          if (pendingMessageReload) {
+            pendingMessageReload = false;
+            requestMessagesReload();
+          }
+        }
       }
 
       function buildEphemeralOptions() {
@@ -1071,12 +1132,27 @@
         }
       });
 
-      connectPresenceSocket(async (payload) => {
-        if (!partner) return;
-        const message = payload.message;
-        if (message && message.from === partner) {
-          await loadMessages();
-        }
+      primePartnerPresence();
+
+      connectPresenceSocket({
+        onPresence: (payload) => {
+          if (!partner) {
+            updatePresenceBadge(null);
+            return;
+          }
+          const entry = (payload.users || []).find((user) => user.username === partner);
+          if (entry) {
+            updatePresenceBadge(entry.online);
+          } else {
+            updatePresenceBadge(null);
+          }
+        },
+        onMessage: (message) => {
+          if (!partner) return;
+          if (message?.from === partner) {
+            requestMessagesReload();
+          }
+        },
       });
 
       window.addEventListener('enclypse:game', async (event) => {

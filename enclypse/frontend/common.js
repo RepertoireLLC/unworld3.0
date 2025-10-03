@@ -300,26 +300,47 @@ async function setTransportPreference(transport) {
   });
 }
 
-function connectPresenceSocket(onUpdate) {
+function connectPresenceSocket(handler) {
   const token = getToken();
   if (!token) return null;
+
+  const callbacks = typeof handler === 'function' ? { onPresence: handler } : handler || {};
+  const reconnectTarget = typeof handler === 'function' ? handler : callbacks;
 
   const wsUrl = `${apiBase.replace(/^http/, 'ws').replace(/:\d+$/, ':4001')}?token=${token}`;
   const socket = new WebSocket(wsUrl);
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    if (data.type === 'presence:update') {
-      onUpdate(data.payload);
+    if (data.type === 'presence:update' && callbacks.onPresence) {
+      callbacks.onPresence(data.payload);
     }
-    if (data.type === 'message:new' && window.dispatchEvent) {
-      window.dispatchEvent(new CustomEvent('enclypse:message', { detail: data.payload }));
+    if (data.type === 'message:new') {
+      if (callbacks.onMessage) {
+        try {
+          callbacks.onMessage(data.payload);
+        } catch (error) {
+          console.warn('Realtime message callback failed', error);
+        }
+      }
+      if (window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('enclypse:message', { detail: data.payload }));
+      }
     }
-    if (data.type === 'game:update' && window.dispatchEvent) {
-      window.dispatchEvent(new CustomEvent('enclypse:game', { detail: data.payload }));
+    if (data.type === 'game:update') {
+      if (callbacks.onGame) {
+        try {
+          callbacks.onGame(data.payload);
+        } catch (error) {
+          console.warn('Realtime game callback failed', error);
+        }
+      }
+      if (window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('enclypse:game', { detail: data.payload }));
+      }
     }
   };
   socket.onclose = () => {
-    setTimeout(() => connectPresenceSocket(onUpdate), 4000);
+    setTimeout(() => connectPresenceSocket(reconnectTarget), 4000);
   };
   return socket;
 }
