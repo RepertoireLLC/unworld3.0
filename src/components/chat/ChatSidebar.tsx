@@ -4,9 +4,7 @@ import { useChatStore } from '../../store/chatStore';
 import { useFriendStore } from '../../store/friendStore';
 import { useUserStore } from '../../store/userStore';
 import { MessageSquare, UserPlus, UserCheck } from 'lucide-react';
-
-const createChatId = (userId1: string, userId2: string) =>
-  [userId1, userId2].sort().join('::');
+import { createChatId } from '../../utils/chat';
 
 export function ChatSidebar() {
   const [contactQuery, setContactQuery] = useState('');

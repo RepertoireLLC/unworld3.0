@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   X,
   Send,
@@ -16,6 +16,7 @@ import {
 import { useChatStore, Attachment, Message } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
+import { createChatId, formatTimestamp } from '../../utils/chat';
 
 interface ChatWindowProps {
   userId: string;
@@ -23,9 +24,6 @@ interface ChatWindowProps {
 }
 
 const emojiList = ['😀', '😁', '😂', '😍', '😎', '😢', '👍', '🙏', '🎉', '🔥', '❤️', '🤔'];
-
-const createChatId = (userId1: string, userId2: string) =>
-  [userId1, userId2].sort().join('::');
 
 export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const [message, setMessage] = useState('');
@@ -44,48 +42,34 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
     state.users.find((user) => user.id === userId)
   );
 
-  const {
-    sendMessage,
-    editMessage,
-    deleteMessage,
-    setPinnedMessage,
-    markMessagesAsRead,
-    updateTyping,
-    getTypingUsers,
-    setEphemeralMode,
-    searchMessages,
-    pruneExpiredMessages,
-  } = useChatStore((state) => ({
-    sendMessage: state.sendMessage,
-    editMessage: state.editMessage,
-    deleteMessage: state.deleteMessage,
-    setPinnedMessage: state.setPinnedMessage,
-    markMessagesAsRead: state.markMessagesAsRead,
-    updateTyping: state.updateTyping,
-    getTypingUsers: state.getTypingUsers,
-    setEphemeralMode: state.setEphemeralMode,
-    searchMessages: state.searchMessages,
-    pruneExpiredMessages: state.pruneExpiredMessages,
-  }));
+  const sendMessage = useChatStore((state) => state.sendMessage);
+  const editMessage = useChatStore((state) => state.editMessage);
+  const deleteMessage = useChatStore((state) => state.deleteMessage);
+  const setPinnedMessage = useChatStore((state) => state.setPinnedMessage);
+  const markMessagesAsRead = useChatStore((state) => state.markMessagesAsRead);
+  const updateTyping = useChatStore((state) => state.updateTyping);
+  const getTypingUsers = useChatStore((state) => state.getTypingUsers);
+  const setEphemeralMode = useChatStore((state) => state.setEphemeralMode);
+  const searchMessages = useChatStore((state) => state.searchMessages);
+  const pruneExpiredMessages = useChatStore((state) => state.pruneExpiredMessages);
   const messagesState = useChatStore((state) => state.messages);
   const pinnedMessages = useChatStore((state) => state.pinnedMessages);
   const ephemeralSettings = useChatStore((state) => state.ephemeralSettings);
   const typingState = useChatStore((state) => state.typingStatus);
+  const users = useUserStore((state) => state.users);
 
   if (!currentUser || !otherUser) return null;
 
   const chatId = createChatId(currentUser.id, userId);
 
   const messages = useMemo(() => {
-    if (searchTerm.trim()) {
-      return searchMessages(chatId, searchTerm.trim()).sort(
-        (a, b) => a.timestamp - b.timestamp
-      );
-    }
-    return messagesState
-      .filter((msg) => msg.chatId === chatId)
-      .sort((a, b) => a.timestamp - b.timestamp);
-  }, [chatId, messagesState, searchTerm, searchMessages]);
+    const trimmedQuery = searchTerm.trim();
+    const relevantMessages = trimmedQuery
+      ? searchMessages(chatId, trimmedQuery)
+      : messagesState.filter((msg) => msg.chatId === chatId);
+
+    return [...relevantMessages].sort((a, b) => a.timestamp - b.timestamp);
+  }, [chatId, messagesState, searchMessages, searchTerm]);
 
   const pinnedMessageId = pinnedMessages[chatId];
   const pinnedMessage = useMemo(
@@ -104,11 +88,14 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
 
   useEffect(() => {
     pruneExpiredMessages();
-    const interval = setInterval(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const interval = window.setInterval(() => {
       pruneExpiredMessages();
     }, 5000);
-    return () => clearInterval(interval);
-  }, [pruneExpiredMessages, chatId]);
+    return () => window.clearInterval(interval);
+  }, [pruneExpiredMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -127,38 +114,48 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+      clearTypingState();
     };
-  }, []);
+  }, [clearTypingState]);
 
   const typingUsers = useMemo(() => {
-    const users = getTypingUsers(chatId).filter((id) => id !== currentUser.id);
-    return users
-      .map((id) => useUserStore.getState().users.find((user) => user.id === id)?.name)
+    const activeUserIds = getTypingUsers(chatId).filter((id) => id !== currentUser.id);
+    return activeUserIds
+      .map((id) => users.find((user) => user.id === id)?.name)
       .filter(Boolean) as string[];
-  }, [chatId, currentUser.id, getTypingUsers, typingState]);
+  }, [chatId, currentUser.id, getTypingUsers, typingState, users]);
+
+  const clearTypingState = useCallback(() => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    updateTyping(chatId, currentUser.id, false);
+  }, [chatId, currentUser.id, updateTyping]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!message.trim() && attachments.length === 0) return;
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage && attachments.length === 0) return;
 
     if (editingMessageId) {
-      if (message.trim()) {
-        editMessage(editingMessageId, message.trim());
+      if (trimmedMessage) {
+        editMessage(editingMessageId, trimmedMessage);
       } else {
         deleteMessage(editingMessageId);
       }
       setEditingMessageId(null);
     } else {
-      sendMessage(currentUser.id, userId, message.trim(), {
+      sendMessage(currentUser.id, userId, trimmedMessage, {
         attachments,
-        replyToId: replyTarget?.id,
+        replyToId: replyTarget?.id ?? undefined,
       });
     }
 
     setMessage('');
     setAttachments([]);
     setReplyTarget(null);
-    updateTyping(chatId, currentUser.id, false);
+    clearTypingState();
   };
 
   const handleMessageChange = (value: string) => {
@@ -167,12 +164,12 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    const scheduler =
-      typeof window !== 'undefined' && typeof window.setTimeout !== 'undefined'
-        ? window.setTimeout.bind(window)
-        : setTimeout;
-    typingTimeoutRef.current = scheduler(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    typingTimeoutRef.current = window.setTimeout(() => {
       updateTyping(chatId, currentUser.id, false);
+      typingTimeoutRef.current = null;
     }, 1500);
   };
 
@@ -197,11 +194,6 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
       reader.readAsDataURL(file);
     });
     event.target.value = '';
-  };
-
-  const formatTimestamp = (value: number) => {
-    const date = new Date(value);
-    return `${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   const renderReadReceipt = (status: Message['status']) => {
@@ -255,6 +247,11 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
     </div>
   );
 
+  const handleClose = () => {
+    clearTypingState();
+    onClose();
+  };
+
   return (
     <div className="fixed bottom-4 right-4 w-96 bg-slate-900/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl shadow-xl flex flex-col overflow-hidden border border-white/10">
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
@@ -280,7 +277,7 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
             <span className="text-xs text-white/70">{otherUser.statusMessage || 'No status set'}</span>
           </div>
         </div>
-        <button onClick={onClose} className="text-white/60 hover:text-white">
+        <button onClick={handleClose} className="text-white/60 hover:text-white">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -319,6 +316,7 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
         <button
           onClick={() => setIsEmojiOpen((prev) => !prev)}
           className="p-2 bg-white/10 rounded-lg text-white/80 hover:bg-white/20 transition-colors"
+          aria-label="Toggle emoji picker"
         >
           <Smile className="w-4 h-4" />
         </button>
@@ -410,38 +408,42 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
                   {msg.editedAt && <span>Edited</span>}
                 </div>
                 {isOwn && (
-                  <div className="flex items-center gap-1 absolute -bottom-5 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEdit(msg)}
-                      className="p-1 bg-white/10 rounded-full text-white/70 hover:text-white"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(msg.id)}
-                      className="p-1 bg-white/10 rounded-full text-white/70 hover:text-white"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
+                <div className="flex items-center gap-1 absolute -bottom-5 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleEdit(msg)}
+                    className="p-1 bg-white/10 rounded-full text-white/70 hover:text-white"
+                    aria-label="Edit message"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(msg.id)}
+                    className="p-1 bg-white/10 rounded-full text-white/70 hover:text-white"
+                    aria-label="Delete message"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
                 )}
                 <div className="flex items-center gap-2 absolute -bottom-5 left-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => setReplyTarget(msg)}
-                    className="p-1 bg-white/10 rounded-full text-white/70 hover:text-white"
-                  >
-                    <Reply className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => handlePin(msg.id)}
-                    className={`p-1 rounded-full ${
-                      pinnedMessageId === msg.id
-                        ? 'bg-amber-400/80 text-amber-950'
-                        : 'bg-white/10 text-white/70 hover:text-white'
-                    }`}
-                  >
-                    <Pin className="w-3 h-3" />
-                  </button>
+              <button
+                onClick={() => setReplyTarget(msg)}
+                className="p-1 bg-white/10 rounded-full text-white/70 hover:text-white"
+                aria-label="Reply to message"
+              >
+                <Reply className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => handlePin(msg.id)}
+                className={`p-1 rounded-full ${
+                  pinnedMessageId === msg.id
+                    ? 'bg-amber-400/80 text-amber-950'
+                    : 'bg-white/10 text-white/70 hover:text-white'
+                }`}
+                aria-label={pinnedMessageId === msg.id ? 'Unpin message' : 'Pin message'}
+              >
+                <Pin className="w-3 h-3" />
+              </button>
                 </div>
               </div>
               <div className={`flex items-center gap-2 text-[10px] text-white/60 mt-1 ${isOwn ? 'flex-row-reverse' : ''}`}>
@@ -501,6 +503,7 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
             type="text"
             value={message}
             onChange={(event) => handleMessageChange(event.target.value)}
+            onBlur={clearTypingState}
             placeholder={editingMessageId ? 'Edit your message' : 'Type a message...'}
             className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
           />

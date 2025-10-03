@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { encryptPayload, decryptPayload } from '../utils/encryption';
+import { createChatId, generateMessageId } from '../utils/chat';
 
 export type MessageStatus = 'sent' | 'delivered' | 'read';
 
@@ -63,9 +64,6 @@ interface ChatState {
   pruneExpiredMessages: () => void;
 }
 
-const createChatId = (userId1: string, userId2: string) =>
-  [userId1, userId2].sort().join('::');
-
 const pruneMessages = (messages: Message[]) => {
   const now = Date.now();
   return messages.filter((message) => !message.expiresAt || message.expiresAt > now);
@@ -84,11 +82,6 @@ const scheduleTimeout =
   typeof window !== 'undefined' && typeof window.setTimeout !== 'undefined'
     ? window.setTimeout.bind(window)
     : setTimeout;
-
-const generateMessageId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `msg_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
 export const useChatStore = create<ChatState>()(
   persist(
