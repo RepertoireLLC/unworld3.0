@@ -7,6 +7,9 @@ interface User {
   online: boolean;
   lastSeen?: number;
   position?: [number, number, number];
+  statusMessage?: string;
+  availability?: 'available' | 'focus' | 'away';
+  languages?: string[];
 }
 
 interface UserState {
@@ -17,6 +20,10 @@ interface UserState {
   setOnlineStatus: (userId: string, online: boolean) => void;
   updateUserPosition: (userId: string, position: [number, number, number]) => void;
   updateUserColor: (userId: string, color: string) => void;
+  updateUserPresence: (
+    userId: string,
+    presence: { statusMessage?: string; availability?: 'available' | 'focus' | 'away' }
+  ) => void;
   getOnlineUsers: () => User[];
 }
 
@@ -26,7 +33,9 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   addUser: (user) =>
     set((state) => ({
-      users: state.users.filter(u => u.id !== user.id).concat({ ...user, online: false }),
+      users: state.users
+        .filter((u) => u.id !== user.id)
+        .concat({ ...user, online: user.online ?? false }),
     })),
 
   removeUser: (userId) =>
@@ -65,6 +74,25 @@ export const useUserStore = create<UserState>((set, get) => ({
     set((state) => ({
       users: state.users.map((user) =>
         user.id === userId ? { ...user, color } : user
+      ),
+    })),
+
+  updateUserPresence: (userId, presence) =>
+    set((state) => ({
+      users: state.users.map((user) =>
+        user.id === userId
+          ? {
+              ...user,
+              statusMessage:
+                presence.statusMessage !== undefined
+                  ? presence.statusMessage
+                  : user.statusMessage,
+              availability:
+                presence.availability !== undefined
+                  ? presence.availability
+                  : user.availability,
+            }
+          : user
       ),
     })),
 

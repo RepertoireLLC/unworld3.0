@@ -10,6 +10,9 @@ const DEFAULT_USERS: User[] = [
     email: 'astra@sphere.io',
     password: 'nebula',
     bio: 'Navigator of the outer relays and curator of encrypted lore.',
+    statusMessage: 'Mapping the aurora corridor.',
+    availability: 'available',
+    languages: ['en', 'es'],
   },
   {
     id: 'user_orion',
@@ -18,6 +21,9 @@ const DEFAULT_USERS: User[] = [
     email: 'orion@sphere.io',
     password: 'starlight',
     bio: 'Ops tactician keeping the strike grid synchronized.',
+    statusMessage: 'Coordinating orbital briefings.',
+    availability: 'focus',
+    languages: ['en', 'fr'],
   },
   {
     id: 'user_lyra',
@@ -26,6 +32,9 @@ const DEFAULT_USERS: User[] = [
     email: 'lyra@sphere.io',
     password: 'harmonics',
     bio: 'Diplomatic envoy bridging alliances across the sphere.',
+    statusMessage: 'Routing peace accords.',
+    availability: 'available',
+    languages: ['en', 'de'],
   },
   {
     id: 'user_rhett',
@@ -34,6 +43,9 @@ const DEFAULT_USERS: User[] = [
     email: 'rhett@sphere.io',
     password: 'ember',
     bio: 'Engineering sentinel reinforcing containment shields.',
+    statusMessage: 'Fortifying shield harmonics.',
+    availability: 'away',
+    languages: ['en', 'pt'],
   },
   {
     id: 'user_vexa',
@@ -42,6 +54,9 @@ const DEFAULT_USERS: User[] = [
     email: 'vexa@sphere.io',
     password: 'cipher',
     bio: 'Signal analyst mapping sentiment tides in real-time.',
+    statusMessage: 'Listening for anomalies.',
+    availability: 'focus',
+    languages: ['en', 'ja'],
   },
 ];
 
@@ -53,6 +68,9 @@ interface User {
   password: string;
   profilePicture?: string;
   bio?: string;
+  statusMessage?: string;
+  availability?: 'available' | 'focus' | 'away';
+  languages?: string[];
 }
 
 interface AuthState {
@@ -86,6 +104,9 @@ export const useAuthStore = create<AuthState>()(
           email: userData.email,
           password: userData.password,
           color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          statusMessage: 'Ready to collaborate.',
+          availability: 'available',
+          languages: ['en'],
         };
 
         set(state => ({
@@ -96,12 +117,15 @@ export const useAuthStore = create<AuthState>()(
 
         // Add user to the online users
         const { addUser, setOnlineStatus } = useUserStore.getState();
-        addUser({
-          id: newUser.id,
-          name: newUser.name,
-          color: newUser.color,
-          online: true
-        });
+          addUser({
+            id: newUser.id,
+            name: newUser.name,
+            color: newUser.color,
+            online: true,
+            statusMessage: newUser.statusMessage,
+            availability: newUser.availability,
+            languages: newUser.languages,
+          });
         setOnlineStatus(newUser.id, true);
 
         return true;
@@ -122,7 +146,10 @@ export const useAuthStore = create<AuthState>()(
             id: user.id,
             name: user.name,
             color: user.color,
-            online: true
+            online: true,
+            statusMessage: user.statusMessage,
+            availability: user.availability,
+            languages: user.languages,
           });
           setOnlineStatus(user.id, true);
 
@@ -154,9 +181,16 @@ export const useAuthStore = create<AuthState>()(
           );
 
           // Update in user store
-          const { updateUserColor } = useUserStore.getState();
+          const { updateUserColor, updateUserPresence } = useUserStore.getState();
           if (updates.color) {
             updateUserColor(updatedUser.id, updates.color);
+          }
+
+          if (updates.statusMessage || updates.availability) {
+            updateUserPresence(updatedUser.id, {
+              statusMessage: updates.statusMessage,
+              availability: updates.availability,
+            });
           }
 
           return {

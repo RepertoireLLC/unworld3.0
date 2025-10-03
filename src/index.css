@@ -173,7 +173,7 @@ canvas {
 }
 
 .chat-shell__contact-status {
-  @apply flex items-center gap-2 text-xs uppercase tracking-wide text-white/40;
+  @apply flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white/50;
 }
 
 .chat-shell__status-dot {
@@ -182,6 +182,22 @@ canvas {
 
 .chat-shell__status-dot.online {
   @apply bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)];
+}
+
+.chat-shell__status-dot.online.focus {
+  @apply bg-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.6)];
+}
+
+.chat-shell__status-dot.online.away {
+  @apply bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.6)];
+}
+
+.chat-shell__contact-status-message {
+  @apply text-xs text-white/50;
+}
+
+.chat-shell__contact-languages {
+  @apply mt-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white/30;
 }
 
 .chat-shell__empty-state {
@@ -245,8 +261,16 @@ canvas {
   @apply text-sm font-medium text-white;
 }
 
-.chat-shell__search-result-meta span {
-  @apply flex items-center gap-2 text-xs uppercase tracking-wide text-white/40;
+.chat-shell__search-status {
+  @apply flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white/50;
+}
+
+.chat-shell__search-status-message {
+  @apply text-xs text-white/50;
+}
+
+.chat-shell__search-languages {
+  @apply text-[11px] font-semibold uppercase tracking-[0.25em] text-white/30;
 }
 
 .chat-shell__search-result-actions {
@@ -289,6 +313,10 @@ canvas {
   @apply right-0 w-72;
 }
 
+.chat-shell__dropdown--wide {
+  @apply left-auto right-0 w-[28rem] max-w-[90vw] space-y-4 p-4;
+}
+
 .chat-shell__dropdown header {
   @apply mb-2 px-2;
 }
@@ -315,6 +343,54 @@ canvas {
 
 .chat-shell__dropdown-divider {
   @apply my-2 h-px bg-white/10;
+}
+
+.chat-shell__dropdown-section {
+  @apply space-y-3 rounded-2xl bg-white/5 p-4;
+}
+
+.chat-shell__dropdown-title {
+  @apply text-xs font-semibold uppercase tracking-[0.2em] text-white/50;
+}
+
+.chat-shell__availability-grid {
+  @apply grid gap-2 md:grid-cols-3;
+}
+
+.chat-shell__availability-card {
+  @apply flex items-start gap-3 rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-left text-sm text-white/70 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-shell__availability-card.active {
+  @apply border-emerald-400/80 text-white shadow-[0_0_25px_rgba(16,185,129,0.35)];
+}
+
+.chat-shell__availability-card span {
+  @apply text-sm font-semibold text-white;
+}
+
+.chat-shell__availability-card p {
+  @apply text-xs text-white/50;
+}
+
+.chat-shell__dropdown-section textarea {
+  @apply min-h-[64px] w-full resize-none rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-shell__status-presets {
+  @apply flex flex-wrap gap-2;
+}
+
+.chat-shell__status-chip {
+  @apply rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition hover:border-emerald-400/80 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-shell__dropdown-actions {
+  @apply flex justify-end;
+}
+
+.chat-shell__dropdown-save {
+  @apply rounded-full border border-emerald-400/60 bg-emerald-400/20 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300 hover:bg-emerald-400/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300;
 }
 
 .chat-shell__color-picker {
@@ -359,6 +435,38 @@ canvas {
 
 .chat-shell__user-avatar {
   @apply h-8 w-8 rounded-full border border-white/20 shadow-[0_10px_20px_rgba(0,0,0,0.35)];
+}
+
+.chat-shell__user-meta {
+  @apply flex flex-col items-start text-left text-white;
+}
+
+.chat-shell__user-header {
+  @apply flex items-center gap-2;
+}
+
+.chat-shell__user-name {
+  @apply text-sm font-semibold;
+}
+
+.chat-shell__availability-pill {
+  @apply rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+}
+
+.chat-shell__availability-pill.available {
+  @apply border-emerald-300/70 bg-emerald-300/15 text-emerald-100;
+}
+
+.chat-shell__availability-pill.focus {
+  @apply border-cyan-300/70 bg-cyan-300/15 text-cyan-100;
+}
+
+.chat-shell__availability-pill.away {
+  @apply border-amber-300/70 bg-amber-300/15 text-amber-100;
+}
+
+.chat-shell__user-status {
+  @apply text-xs text-white/50;
 }
 
 .chat-shell__main-content {
@@ -409,6 +517,38 @@ canvas {
   @apply mt-6;
 }
 
+.chat-window__utilities {
+  @apply mt-4 flex flex-wrap items-center gap-3;
+}
+
+.chat-window__utility {
+  @apply relative flex flex-col gap-2;
+}
+
+.chat-window__utility-toggle {
+  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30;
+}
+
+.chat-window__utility-toggle.active {
+  @apply border-emerald-400/60 text-white;
+}
+
+.chat-window__utility-label {
+  @apply rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/40;
+}
+
+.chat-window__utility-options {
+  @apply flex flex-wrap gap-2;
+}
+
+.chat-window__utility-option {
+  @apply rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/60 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-window__utility-option.active {
+  @apply border-emerald-400/60 text-emerald-100;
+}
+
 .chat-window__channel-list {
   @apply flex flex-wrap gap-3;
 }
@@ -433,6 +573,26 @@ canvas {
   @apply flex flex-1 flex-col rounded-[28px] border border-white/10 bg-black/30 p-6 backdrop-blur-xl;
 }
 
+.chat-window__pinned {
+  @apply mb-4 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 p-4 text-sm text-emerald-50 shadow-[0_12px_40px_-20px_rgba(16,185,129,0.65)];
+}
+
+.chat-window__pinned-header {
+  @apply flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-100;
+}
+
+.chat-window__pinned ul {
+  @apply mt-3 flex flex-col gap-2;
+}
+
+.chat-window__pinned li button {
+  @apply flex w-full flex-col items-start gap-1 rounded-xl border border-emerald-200/20 bg-emerald-200/10 px-3 py-2 text-left text-xs text-emerald-100 transition hover:border-emerald-200/60 hover:bg-emerald-200/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/80;
+}
+
+.chat-window__pinned-meta {
+  @apply text-[10px] uppercase tracking-wide text-emerald-200/70;
+}
+
 .chat-window__messages {
   @apply flex-1 space-y-4 overflow-y-auto pr-2;
 }
@@ -443,6 +603,26 @@ canvas {
 
 .chat-window__message.self {
   @apply items-end text-emerald-100;
+}
+
+.chat-window__message-toolbar {
+  @apply flex w-full justify-end;
+}
+
+.chat-window__pin-button {
+  @apply flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+}
+
+.chat-window__pin-button.active {
+  @apply border-emerald-300/60 bg-emerald-400/10 text-emerald-100;
+}
+
+.chat-window__message.pinned .chat-window__bubble {
+  @apply border-emerald-300/60 bg-emerald-400/10;
+}
+
+.chat-window__translation {
+  @apply max-w-[80%] rounded-2xl border border-white/5 bg-white/5 px-4 py-2 text-xs text-white/70;
 }
 
 .chat-window__bubble {
@@ -499,6 +679,30 @@ canvas {
 
 .chat-window__notepad {
   @apply gap-5;
+}
+
+.chat-window__intel {
+  @apply flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-4;
+}
+
+.chat-window__intel-header {
+  @apply flex items-start gap-3;
+}
+
+.chat-window__intel-header h2 {
+  @apply text-base font-semibold text-white;
+}
+
+.chat-window__intel-header p {
+  @apply text-xs text-white/50;
+}
+
+.chat-window__intel-body {
+  @apply text-sm leading-relaxed text-white/70;
+}
+
+.chat-window__intel-refresh {
+  @apply inline-flex items-center gap-2 self-start rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30;
 }
 
 .chat-window__notepad-header {

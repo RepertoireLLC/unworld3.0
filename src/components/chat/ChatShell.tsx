@@ -11,6 +11,10 @@ import {
   Palette,
   ChevronDown,
   X,
+  Sparkles,
+  Sun,
+  Moon,
+  Coffee,
 } from 'lucide-react';
 import { Scene } from '../Scene';
 import { ChatWindow } from './ChatWindow';
@@ -34,12 +38,47 @@ type NavKey = (typeof NAV_ITEMS)[number]['id'];
 
 type ViewKey = Exclude<NavKey, 'profile'>;
 
+type Availability = 'available' | 'focus' | 'away';
+
 const THEME_OPTIONS: { id: ThemeType; label: string }[] = [
   { id: 'classic', label: 'Classic' },
   { id: 'neon', label: 'Neon' },
   { id: 'galaxy', label: 'Galaxy' },
   { id: 'matrix', label: 'Matrix' },
   { id: 'minimal', label: 'Minimal' },
+];
+
+const AVAILABILITY_OPTIONS: {
+  id: Availability;
+  label: string;
+  description: string;
+  Icon: typeof Sun;
+}[] = [
+  {
+    id: 'available',
+    label: 'Available',
+    description: 'Alerts on, ready for rapid collaboration.',
+    Icon: Sun,
+  },
+  {
+    id: 'focus',
+    label: 'Focus',
+    description: 'Mute non-urgent pings while you laser in.',
+    Icon: Moon,
+  },
+  {
+    id: 'away',
+    label: 'Away',
+    description: 'Let the lattice know you will circle back soon.',
+    Icon: Coffee,
+  },
+];
+
+const STATUS_PRESETS = [
+  'Synthesizing intel drops.',
+  'Coordinating with deep space relays.',
+  'On a quick recharge loop.',
+  'Tracking resonance anomalies.',
 ];
 
 export function ChatShell() {
@@ -49,6 +88,9 @@ export function ChatShell() {
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
+  const [isPresenceMenuOpen, setIsPresenceMenuOpen] = useState(false);
+  const [statusDraft, setStatusDraft] = useState('');
+  const [availability, setAvailability] = useState<Availability>('available');
 
   const sidebarSearchRef = useRef<HTMLInputElement>(null);
   const headerSearchRef = useRef<HTMLInputElement>(null);
@@ -62,6 +104,7 @@ export function ChatShell() {
   const users = useUserStore((state) => state.users);
   const updateUserColor = useUserStore((state) => state.updateUserColor);
   const setOnlineStatus = useUserStore((state) => state.setOnlineStatus);
+  const updateUserPresence = useUserStore((state) => state.updateUserPresence);
   const friendRequests = useFriendStore((state) => state.friendRequests);
   const acceptFriendRequest = useFriendStore((state) => state.acceptFriendRequest);
   const rejectFriendRequest = useFriendStore((state) => state.rejectFriendRequest);
@@ -98,6 +141,12 @@ export function ChatShell() {
   }, [activeChat, contacts, setActiveChat]);
 
   useEffect(() => {
+    if (!currentUser) return;
+    setStatusDraft(currentUser.statusMessage ?? '');
+    setAvailability(currentUser.availability ?? 'available');
+  }, [currentUser?.statusMessage, currentUser?.availability, currentUser]);
+
+  useEffect(() => {
     if (activeView === 'search') {
       const frame = requestAnimationFrame(() => sidebarSearchRef.current?.focus());
       return () => cancelAnimationFrame(frame);
@@ -115,6 +164,7 @@ export function ChatShell() {
         setIsThemeMenuOpen(false);
         setIsRequestsOpen(false);
         setShowColorPicker(false);
+        setIsPresenceMenuOpen(false);
         return;
       }
 
@@ -165,6 +215,7 @@ export function ChatShell() {
     }
 
     setActiveView(itemId as ViewKey);
+    setIsPresenceMenuOpen(false);
   };
 
   const startChatWith = (userId: string) => {
@@ -183,6 +234,20 @@ export function ChatShell() {
     setOnlineStatus(currentUser.id, true);
   };
 
+  const handleSavePresence = () => {
+    if (!currentUser) return;
+    const trimmedStatus = statusDraft.trim();
+    updateProfile({
+      statusMessage: trimmedStatus,
+      availability,
+    });
+    updateUserPresence(currentUser.id, {
+      statusMessage: trimmedStatus,
+      availability,
+    });
+    setIsPresenceMenuOpen(false);
+  };
+
   const handleAcceptRequest = (requestId: string) => {
     acceptFriendRequest(requestId);
   };
@@ -198,6 +263,17 @@ export function ChatShell() {
   };
 
   const visibleContacts = activeView === 'search' ? filteredContacts : contacts;
+
+  const getAvailabilityBadge = (value: Availability | undefined) => {
+    switch (value) {
+      case 'focus':
+        return 'Focus';
+      case 'away':
+        return 'Away';
+      default:
+        return 'Available';
+    }
+  };
 
   const handleNavKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const focusable = navButtonRefs.current.filter(
@@ -320,9 +396,22 @@ export function ChatShell() {
                       <div className="chat-shell__contact-meta">
                         <span className="chat-shell__contact-name">{contact.name}</span>
                         <span className="chat-shell__contact-status">
-                          <span className={`chat-shell__status-dot ${contact.online ? 'online' : ''}`} />
-                          {contact.online ? 'Online' : 'Offline'}
+                          <span
+                            className={`chat-shell__status-dot ${
+                              contact.online ? `online ${contact.availability ?? 'available'}` : ''
+                            }`}
+                            aria-hidden="true"
+                          />
+                          {contact.online ? getAvailabilityBadge(contact.availability) : 'Offline'}
                         </span>
+                        <span className="chat-shell__contact-status-message">
+                          {contact.statusMessage || 'No status broadcast'}
+                        </span>
+                        {contact.languages && contact.languages.length > 0 && (
+                          <span className="chat-shell__contact-languages">
+                            {contact.languages.map((code) => code.toUpperCase()).join(' · ')}
+                          </span>
+                        )}
                       </div>
                     </button>
                     <button
@@ -383,10 +472,23 @@ export function ChatShell() {
                           />
                           <div>
                             <p>{result.name}</p>
-                            <span>
-                              <span className={`chat-shell__status-dot ${result.online ? 'online' : ''}`} />
-                              {result.online ? 'Online' : 'Offline'}
+                            <span className="chat-shell__search-status">
+                            <span
+                                className={`chat-shell__status-dot ${
+                                  result.online ? `online ${result.availability ?? 'available'}` : ''
+                                }`}
+                                aria-hidden="true"
+                              />
+                              {result.online ? getAvailabilityBadge(result.availability) : 'Offline'}
                             </span>
+                            <span className="chat-shell__search-status-message">
+                              {result.statusMessage || 'No status broadcast'}
+                            </span>
+                            {result.languages && result.languages.length > 0 && (
+                              <span className="chat-shell__search-languages">
+                                {result.languages.map((code) => code.toUpperCase()).join(' · ')}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="chat-shell__search-result-actions">
@@ -410,14 +512,95 @@ export function ChatShell() {
                 <div className="chat-shell__action-group">
                   <button
                     type="button"
+                    className={`chat-shell__action-button ${isPresenceMenuOpen ? 'active' : ''}`}
+                    onClick={() => {
+                      setIsPresenceMenuOpen((prev) => !prev);
+                      setIsThemeMenuOpen(false);
+                      setIsRequestsOpen(false);
+                    }}
+                    aria-haspopup="dialog"
+                    aria-expanded={isPresenceMenuOpen}
+                    aria-controls="enclypse-presence-control"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>Presence</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+
+                  {isPresenceMenuOpen && (
+                    <div
+                      className="chat-shell__dropdown chat-shell__dropdown--wide"
+                      role="dialog"
+                      id="enclypse-presence-control"
+                      aria-label="Update your Enclypse presence"
+                    >
+                      <div className="chat-shell__dropdown-section">
+                        <p className="chat-shell__dropdown-title">Availability</p>
+                        <div className="chat-shell__availability-grid">
+                          {AVAILABILITY_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => setAvailability(option.id)}
+                              className={`chat-shell__availability-card ${
+                                availability === option.id ? 'active' : ''
+                              }`}
+                            >
+                              <option.Icon className="h-4 w-4" aria-hidden="true" />
+                              <div>
+                                <span>{option.label}</span>
+                                <p>{option.description}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="chat-shell__dropdown-section">
+                        <label htmlFor="enclypse-status-message">Broadcast</label>
+                        <textarea
+                          id="enclypse-status-message"
+                          value={statusDraft}
+                          onChange={(event) => setStatusDraft(event.target.value)}
+                          rows={2}
+                          placeholder="Signal your focus or intent to the network."
+                        />
+                        <div className="chat-shell__status-presets" role="list">
+                          {STATUS_PRESETS.map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              className="chat-shell__status-chip"
+                              onClick={() => setStatusDraft(preset)}
+                              role="listitem"
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="chat-shell__dropdown-actions">
+                        <button type="button" className="chat-shell__dropdown-save" onClick={handleSavePresence}>
+                          Update presence
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="chat-shell__action-group">
+                  <button
+                    type="button"
                     className={`chat-shell__action-button ${isThemeMenuOpen ? 'active' : ''}`}
-                  onClick={() => {
-                    setIsThemeMenuOpen((prev) => !prev);
-                    setIsRequestsOpen(false);
-                  }}
-                  aria-haspopup="listbox"
-                  aria-expanded={isThemeMenuOpen}
-                >
+                    onClick={() => {
+                      setIsThemeMenuOpen((prev) => !prev);
+                      setIsRequestsOpen(false);
+                      setIsPresenceMenuOpen(false);
+                    }}
+                    aria-haspopup="listbox"
+                    aria-expanded={isThemeMenuOpen}
+                  >
                   <Palette className="h-4 w-4" />
                   <span>{THEME_OPTIONS.find((theme) => theme.id === currentTheme)?.label ?? 'Theme'}</span>
                   <ChevronDown className="h-4 w-4" />
@@ -467,6 +650,7 @@ export function ChatShell() {
                     onClick={() => {
                       setIsRequestsOpen((prev) => !prev);
                       setIsThemeMenuOpen(false);
+                      setIsPresenceMenuOpen(false);
                     }}
                     aria-haspopup="true"
                     aria-expanded={isRequestsOpen}
@@ -541,7 +725,17 @@ export function ChatShell() {
                   className="chat-shell__user-avatar"
                   style={{ backgroundColor: currentUser.color }}
                 />
-                <span>{currentUser.name}</span>
+                <div className="chat-shell__user-meta">
+                  <div className="chat-shell__user-header">
+                    <span className="chat-shell__user-name">{currentUser.name}</span>
+                    <span className={`chat-shell__availability-pill ${currentUser.availability ?? 'available'}`}>
+                      {getAvailabilityBadge(currentUser.availability)}
+                    </span>
+                  </div>
+                  <span className="chat-shell__user-status">
+                    {currentUser.statusMessage?.trim() || 'Broadcast your focus to the lattice.'}
+                  </span>
+                </div>
               </button>
             </div>
           </header>

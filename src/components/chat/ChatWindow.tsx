@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Send, NotebookPen, PlusCircle, Save, Trash2 } from 'lucide-react';
+import {
+  Send,
+  NotebookPen,
+  PlusCircle,
+  Save,
+  Trash2,
+  Languages,
+  Sparkles,
+  RefreshCcw,
+  Pin,
+  PinOff,
+} from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
@@ -30,6 +41,126 @@ const generateNoteId = () => {
   return `note-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
+const TRANSLATION_LANGUAGES = [
+  { id: 'es', label: 'Spanish' },
+  { id: 'fr', label: 'French' },
+  { id: 'de', label: 'German' },
+  { id: 'ja', label: 'Japanese' },
+];
+
+const translationDictionary: Record<string, Record<string, string>> = {
+  es: {
+    hello: 'hola',
+    hi: 'hola',
+    mission: 'misión',
+    update: 'actualización',
+    meeting: 'reunión',
+    ready: 'listo',
+    yes: 'sí',
+    no: 'no',
+    soon: 'pronto',
+    later: 'luego',
+    thanks: 'gracias',
+    please: 'por favor',
+    intel: 'informe',
+    secure: 'seguro',
+    link: 'enlace',
+  },
+  fr: {
+    hello: 'bonjour',
+    hi: 'salut',
+    mission: 'mission',
+    update: 'mise à jour',
+    meeting: 'réunion',
+    ready: 'prêt',
+    yes: 'oui',
+    no: 'non',
+    soon: 'bientôt',
+    later: 'plus tard',
+    thanks: 'merci',
+    please: 's’il vous plaît',
+    intel: 'rapport',
+    secure: 'sécurisé',
+    link: 'liaison',
+  },
+  de: {
+    hello: 'hallo',
+    hi: 'hallo',
+    mission: 'mission',
+    update: 'update',
+    meeting: 'besprechung',
+    ready: 'bereit',
+    yes: 'ja',
+    no: 'nein',
+    soon: 'bald',
+    later: 'später',
+    thanks: 'danke',
+    please: 'bitte',
+    intel: 'bericht',
+    secure: 'sicher',
+    link: 'verbindung',
+  },
+  ja: {
+    hello: 'こんにちは',
+    hi: 'やあ',
+    mission: '任務',
+    update: '更新',
+    meeting: '会議',
+    ready: '準備完了',
+    yes: 'はい',
+    no: 'いいえ',
+    soon: 'まもなく',
+    later: '後で',
+    thanks: 'ありがとう',
+    please: 'お願いします',
+    intel: '情報',
+    secure: '安全',
+    link: 'リンク',
+  },
+};
+
+function translateText(text: string, language: string) {
+  const dictionary = translationDictionary[language];
+  if (!dictionary) return text;
+
+  return text
+    .split(/(\b)/)
+    .map((segment) => {
+      const lower = segment.toLowerCase();
+      if (!dictionary[lower]) {
+        return segment;
+      }
+
+      const translated = dictionary[lower];
+      if (segment === segment.toUpperCase()) {
+        return translated.toUpperCase();
+      }
+
+      if (segment[0] && segment[0] === segment[0].toUpperCase()) {
+        return translated.charAt(0).toUpperCase() + translated.slice(1);
+      }
+
+      return translated;
+    })
+    .join('');
+}
+
+function generateRecap(
+  messages: { content: string; fromUserId: string; timestamp: number }[],
+  currentUserId: string
+) {
+  if (!messages.length) {
+    return 'No transmissions yet. Once the channel warms up, Enclypse will condense the highlights for you.';
+  }
+
+  const mostRecent = messages.slice(-5);
+  const uniqueSenders = Array.from(new Set(messages.map((msg) => msg.fromUserId)));
+  const allyCount = uniqueSenders.filter((id) => id !== currentUserId).length;
+  const lastMessage = mostRecent[mostRecent.length - 1]?.content ?? '';
+
+  return `Exchanged ${messages.length} encrypted bursts with ${allyCount || 'no other'} operatives. Latest signal: “${lastMessage.slice(0, 120)}${lastMessage.length > 120 ? '…' : ''}”.`;
+}
+
 export function ChatWindow({ activeChatId }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const [activeChannel, setActiveChannel] = useState(CHANNELS[0].id);
@@ -39,6 +170,12 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState('');
   const [noteContent, setNoteContent] = useState('');
+  const [autoTranslate, setAutoTranslate] = useState(false);
+  const [translationLanguage, setTranslationLanguage] = useState(TRANSLATION_LANGUAGES[0].id);
+  const [recap, setRecap] = useState('');
+  const [isGeneratingRecap, setIsGeneratingRecap] = useState(false);
+  const [lastRecapAt, setLastRecapAt] = useState<number | null>(null);
+  const [pinnedMessageIds, setPinnedMessageIds] = useState<string[]>([]);
 
   const currentUser = useAuthStore((state) => state.user);
   const otherUser = useUserStore((state) =>
@@ -51,9 +188,47 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     return getMessagesForChat(currentUser.id, activeChatId);
   }, [currentUser, activeChatId, getMessagesForChat]);
 
+  const pinnedMessages = useMemo(() => {
+    if (!pinnedMessageIds.length) return [];
+    return messages.filter((msg) => pinnedMessageIds.includes(msg.id));
+  }, [messages, pinnedMessageIds]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeChannel]);
+
+  useEffect(() => {
+    if (!currentUser || !activeChatId || typeof window === 'undefined') {
+      setPinnedMessageIds([]);
+      return;
+    }
+
+    const storedPins = window.localStorage.getItem(
+      `enclypse-pins-${currentUser.id}-${activeChatId}`
+    );
+    if (storedPins) {
+      try {
+        const parsed: string[] = JSON.parse(storedPins);
+        setPinnedMessageIds(parsed);
+      } catch (error) {
+        console.warn('Failed to parse pinned messages', error);
+        setPinnedMessageIds([]);
+      }
+    } else {
+      setPinnedMessageIds([]);
+    }
+  }, [currentUser?.id, activeChatId]);
+
+  useEffect(() => {
+    if (!currentUser || !activeChatId || typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(
+      `enclypse-pins-${currentUser.id}-${activeChatId}`,
+      JSON.stringify(pinnedMessageIds)
+    );
+  }, [pinnedMessageIds, currentUser?.id, activeChatId]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -118,6 +293,12 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
       setNoteContent(activeNote.content);
     }
   }, [selectedNoteId, notes]);
+
+  useEffect(() => {
+    setRecap('');
+    setLastRecapAt(null);
+    setIsGeneratingRecap(false);
+  }, [activeChatId]);
 
   const handleChannelKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const focusable = channelButtonRefs.current.filter(
@@ -218,6 +399,37 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
     });
   };
 
+  const handleTogglePin = (messageId: string) => {
+    setPinnedMessageIds((previous) => {
+      if (previous.includes(messageId)) {
+        return previous.filter((id) => id !== messageId);
+      }
+      return [messageId, ...previous];
+    });
+  };
+
+  const handleGenerateRecap = () => {
+    if (!currentUser) return;
+    setIsGeneratingRecap(true);
+    const finalize = () => {
+      setRecap(generateRecap(messages, currentUser.id));
+      setLastRecapAt(Date.now());
+      setIsGeneratingRecap(false);
+    };
+
+    if (typeof window === 'undefined') {
+      finalize();
+      return;
+    }
+
+    window.setTimeout(finalize, 500);
+  };
+
+  const translationLabel = useMemo(() => {
+    const selected = TRANSLATION_LANGUAGES.find((language) => language.id === translationLanguage);
+    return selected?.label ?? 'Translation';
+  }, [translationLanguage]);
+
   return (
     <div className="chat-window">
       <header className="chat-window__header">
@@ -267,20 +479,126 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
         </div>
       </div>
 
+      <div className="chat-window__utilities" role="group" aria-label="Conversation enhancements">
+        <div className="chat-window__utility">
+          <button
+            type="button"
+            className={`chat-window__utility-toggle ${autoTranslate ? 'active' : ''}`}
+            onClick={() => setAutoTranslate((previous) => !previous)}
+            aria-pressed={autoTranslate}
+          >
+            <Languages className="h-4 w-4" aria-hidden="true" />
+            <span>Auto-translate</span>
+            <span className="chat-window__utility-label">{translationLabel}</span>
+          </button>
+          {autoTranslate && (
+            <div className="chat-window__utility-options" role="radiogroup" aria-label="Select translation language">
+              {TRANSLATION_LANGUAGES.map((language) => (
+                <button
+                  key={language.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={translationLanguage === language.id}
+                  className={`chat-window__utility-option ${
+                    translationLanguage === language.id ? 'active' : ''
+                  }`}
+                  onClick={() => setTranslationLanguage(language.id)}
+                >
+                  {language.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="chat-window__utility">
+          <button
+            type="button"
+            className="chat-window__utility-toggle"
+            onClick={handleGenerateRecap}
+            disabled={isGeneratingRecap || messages.length === 0}
+          >
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            <span>{isGeneratingRecap ? 'Synthesizing recap…' : 'Generate recap'}</span>
+            {lastRecapAt && !isGeneratingRecap && (
+              <span className="chat-window__utility-label">
+                Updated {new Date(lastRecapAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
       <div className="chat-window__body">
         <div className="chat-window__conversation">
+          {pinnedMessages.length > 0 && (
+            <div className="chat-window__pinned" aria-live="polite">
+              <div className="chat-window__pinned-header">
+                <Pin className="h-4 w-4" aria-hidden="true" />
+                <h2>Pinned intel</h2>
+                <span>{pinnedMessages.length}</span>
+              </div>
+              <ul>
+                {pinnedMessages.map((msg) => (
+                  <li key={msg.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof document === 'undefined') return;
+                        const element = document.getElementById(`enclypse-message-${msg.id}`);
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        element?.focus({ preventScroll: true });
+                      }}
+                    >
+                      <span>
+                        {msg.content.slice(0, 96)}
+                        {msg.content.length > 96 ? '…' : ''}
+                      </span>
+                      <span className="chat-window__pinned-meta">
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="chat-window__messages" role="log" aria-live="polite">
             {activeChatId && messages.length > 0 ? (
               messages.map((msg) => {
                 const isOwn = msg.fromUserId === currentUser.id;
+                const isPinned = pinnedMessageIds.includes(msg.id);
                 return (
                   <div
                     key={msg.id}
-                    className={`chat-window__message ${isOwn ? 'self' : 'remote'}`}
+                    className={`chat-window__message ${isOwn ? 'self' : 'remote'} ${isPinned ? 'pinned' : ''}`}
+                    id={`enclypse-message-${msg.id}`}
+                    tabIndex={-1}
                   >
+                    <div className="chat-window__message-toolbar">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePin(msg.id)}
+                        aria-pressed={isPinned}
+                        className={`chat-window__pin-button ${isPinned ? 'active' : ''}`}
+                        aria-label={isPinned ? 'Unpin message' : 'Pin message'}
+                      >
+                        {isPinned ? (
+                          <PinOff className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <Pin className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </button>
+                    </div>
                     <div className="chat-window__bubble">
                       <p>{msg.content}</p>
                     </div>
+                    {autoTranslate && (
+                      <p className="chat-window__translation" aria-label={`Translated to ${translationLabel}`}>
+                        {translateText(msg.content, translationLanguage)}
+                      </p>
+                    )}
                     <span className="chat-window__timestamp">
                       {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -319,6 +637,32 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
         </div>
 
         <aside className="chat-window__tools chat-window__notepad" aria-label="Personal notepad">
+          <div className="chat-window__intel">
+            <div className="chat-window__intel-header">
+              <Sparkles className="h-5 w-5" aria-hidden="true" />
+              <div>
+                <h2>Enclypse Recap</h2>
+                <p>Summaries tuned to your latest transmissions.</p>
+              </div>
+            </div>
+            <div className="chat-window__intel-body">
+              {recap ? (
+                <p>{recap}</p>
+              ) : (
+                <p>Trigger a recap to condense chatter into next-step clarity.</p>
+              )}
+            </div>
+            <button
+              type="button"
+              className="chat-window__intel-refresh"
+              onClick={handleGenerateRecap}
+              disabled={isGeneratingRecap || messages.length === 0}
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              {isGeneratingRecap ? 'Synthesizing…' : 'Refresh recap'}
+            </button>
+          </div>
+
           <div className="chat-window__notepad-header">
             <NotebookPen className="h-5 w-5" aria-hidden="true" />
             <div>
