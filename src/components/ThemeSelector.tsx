@@ -15,7 +15,7 @@ const themes: { id: ThemeType; name: string }[] = [
 export function ThemeSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const { currentTheme, setTheme, mode, toggleMode } = useThemeStore();
+  const { currentTheme, setTheme } = useThemeStore();
   const currentUser = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const { updateUserColor, setOnlineStatus } = useUserStore();
@@ -39,16 +39,7 @@ export function ThemeSelector() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-52 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden">
-          <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between">
-            <span className="text-sm text-white/80">Mode</span>
-            <button
-              onClick={toggleMode}
-              className="text-xs px-3 py-1 bg-white/15 hover:bg-white/25 rounded-full text-white transition-colors"
-            >
-              {mode === 'dark' ? 'Dark' : 'Light'}
-            </button>
-          </div>
+        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden">
           {themes.map((theme) => (
             <button
               key={theme.id}

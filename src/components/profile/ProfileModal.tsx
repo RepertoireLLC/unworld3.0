@@ -14,16 +14,15 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ userId, onClose }: ProfileModalProps) {
-  const user = useUserStore((state) => state.users.find((u) => u.id === userId));
+  const user = useUserStore((state) => state.users.find(u => u.id === userId));
   const currentUser = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const { sendFriendRequest, isFriend, hasPendingRequest } = useFriendStore();
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const stories = useStoryStore((state) => state.getActiveStoriesForUser(userId));
-
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
-  const [editStatus, setEditStatus] = useState('');
   const [showStoryCreator, setShowStoryCreator] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,7 +39,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   };
 
   const handleMessage = () => {
-    setActiveChat(userId, currentUser.id);
+    setActiveChat(userId);
     onClose();
   };
 
@@ -55,21 +54,16 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
     }
   };
 
-  const handleProfileUpdate = () => {
-    const updates: { name?: string; statusMessage?: string } = {};
+  const handleNameUpdate = () => {
     if (editName.trim()) {
-      updates.name = editName.trim();
+      updateProfile({ name: editName.trim() });
+      setIsEditing(false);
     }
-    if (editStatus.trim()) {
-      updates.statusMessage = editStatus.trim();
-    }
-    updateProfile(updates);
-    setIsEditing(false);
   };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-50" onClick={onClose}>
-      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">
             {isEditing ? (
@@ -81,14 +75,10 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                   className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white"
                   placeholder={user.name}
                 />
-                <input
-                  type="text"
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white"
-                  placeholder={user.statusMessage || 'Set a status'}
-                />
-                <button onClick={handleProfileUpdate} className="text-white/60 hover:text-white">
+                <button
+                  onClick={handleNameUpdate}
+                  className="text-white/60 hover:text-white"
+                >
                   Save
                 </button>
               </div>
@@ -105,13 +95,19 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
           <div className="flex items-center space-x-4">
             <div className="relative">
               {user.profilePicture ? (
-                <img src={user.profilePicture} alt={user.name} className="w-16 h-16 rounded-full object-cover" />
+                <img
+                  src={user.profilePicture}
+                  alt={user.name}
+                  className="w-16 h-16 rounded-full object-cover"
+                />
               ) : (
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: user.color }}
                 >
-                  <span className="text-white text-xl">{user.name[0].toUpperCase()}</span>
+                  <span className="text-white text-xl">
+                    {user.name[0].toUpperCase()}
+                  </span>
                 </div>
               )}
               {isOwnProfile && (
@@ -140,7 +136,6 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                     onClick={() => {
                       setIsEditing(true);
                       setEditName(user.name);
-                      setEditStatus(user.statusMessage || '');
                     }}
                     className="text-white/60 hover:text-white"
                   >
@@ -148,12 +143,13 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                   </button>
                 )}
               </div>
-              <p className="text-white/70 text-sm">{user.statusMessage || 'No status set'}</p>
               <p className="flex items-center gap-2">
                 <span className={user.online ? 'text-emerald-400' : 'text-white/60'}>
                   {user.online ? 'Online' : 'Offline'}
                 </span>
-                {user.online && <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />}
+                {user.online && (
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                )}
               </p>
             </div>
           </div>
@@ -210,14 +206,11 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
             </div>
           )}
         </div>
-      </div>
 
-      {showStoryCreator && (
-        <StoryCreator
-          onClose={() => setShowStoryCreator(false)}
-          onComplete={() => setShowStoryCreator(false)}
-        />
-      )}
+        {showStoryCreator && (
+          <StoryCreator onClose={() => setShowStoryCreator(false)} />
+        )}
+      </div>
     </div>
   );
 }

@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { UserPlus } from 'lucide-react';
-import { generateColor } from '../../utils/color';
 
 export function RegisterForm({ onToggle }: { onToggle: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [statusMessage, setStatusMessage] = useState('Available');
-  const [color, setColor] = useState(generateColor());
+  const [color, setColor] = useState('#' + Math.floor(Math.random()*16777215).toString(16));
   const [error, setError] = useState('');
   const register = useAuthStore((state) => state.register);
 
@@ -31,8 +29,7 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
       email,
       password,
       name: name || email.split('@')[0],
-      color,
-      statusMessage,
+      color
     });
 
     if (!success) {
@@ -70,15 +67,6 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Display Name (optional)"
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
-          />
-        </div>
-        <div>
-          <input
-            type="text"
-            value={statusMessage}
-            onChange={(e) => setStatusMessage(e.target.value)}
-            placeholder="Status message"
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
           />
         </div>

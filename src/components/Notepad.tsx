@@ -1,232 +1,170 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { NotebookPen, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useNotepadStore } from '../store/notepadStore';
 
 export function Notepad() {
-  const currentUser = useAuthStore((state) => state.user);
+  const user = useAuthStore((state) => state.user);
   const [isOpen, setIsOpen] = useState(false);
-  const notes = useNotepadStore((state) => state.notes);
-  const activeNoteId = useNotepadStore((state) => state.activeNoteId);
-  const setActiveNote = useNotepadStore((state) => state.setActiveNote);
-  const addNote = useNotepadStore((state) => state.addNote);
+
+  const notes = useNotepadStore((state) =>
+    user ? state.getNotesForUser(user.id) : []
+  );
+  const activeNoteId = useNotepadStore((state) =>
+    user ? state.getActiveNoteId(user.id) : null
+  );
+  const createNote = useNotepadStore((state) => state.createNote);
   const updateNote = useNotepadStore((state) => state.updateNote);
   const deleteNote = useNotepadStore((state) => state.deleteNote);
-
-  const userNotes = useMemo(() => {
-    if (!currentUser) return [];
-    return notes
-      .filter((note) => note.userId === currentUser.id)
-      .sort((a, b) => b.updatedAt - a.updatedAt);
-  }, [notes, currentUser]);
-
-  const activeNote = useMemo(() => {
-    if (!activeNoteId) return null;
-    return userNotes.find((note) => note.id === activeNoteId) ?? null;
-  }, [userNotes, activeNoteId]);
-
-  const [draftTitle, setDraftTitle] = useState('');
-  const [draftContent, setDraftContent] = useState('');
-  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const setActiveNote = useNotepadStore((state) => state.setActiveNote);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!user) {
       setIsOpen(false);
-      setActiveNote(null);
-      return;
     }
-
-    if (!activeNote && userNotes.length > 0) {
-      setActiveNote(userNotes[0].id);
-    }
-
-    if (userNotes.length === 0) {
-      setActiveNote(null);
-    }
-  }, [currentUser, userNotes, activeNote, setActiveNote]);
+  }, [user]);
 
   useEffect(() => {
-    if (activeNote) {
-      setDraftTitle(activeNote.title);
-      setDraftContent(activeNote.content);
-      setLastSavedAt(activeNote.updatedAt);
-    } else {
-      setDraftTitle('');
-      setDraftContent('');
-      setLastSavedAt(null);
+    if (user && !activeNoteId && notes[0]) {
+      setActiveNote(user.id, notes[0].id);
     }
-  }, [activeNote]);
+  }, [user, activeNoteId, notes, setActiveNote]);
 
-  useEffect(() => {
-    if (!isOpen || !activeNote) return;
+  const activeNote = useMemo(
+    () => notes.find((note) => note.id === activeNoteId) ?? null,
+    [notes, activeNoteId]
+  );
 
-    const frame = window.requestAnimationFrame(() => {
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [isOpen, activeNote?.id]);
-
-  if (!currentUser) {
+  if (!user) {
     return null;
   }
 
-  const handleAddNote = () => {
-    const newNote = addNote(currentUser.id);
-    setDraftTitle(newNote.title);
-    setDraftContent(newNote.content);
-    setLastSavedAt(newNote.updatedAt);
+  const handleCreateNote = () => {
+    const newNote = createNote(user.id);
     setIsOpen(true);
+    setActiveNote(user.id, newNote.id);
   };
 
-  const handleDelete = (id: string) => {
-    deleteNote(id);
+  const handleDeleteNote = (noteId: string) => {
+    deleteNote(user.id, noteId);
   };
 
-  const normalizedDraftTitle = draftTitle.trim() || 'Untitled note';
-
-  const hasUnsavedChanges =
-    !!activeNote &&
-    (normalizedDraftTitle !== activeNote.title || draftContent !== activeNote.content);
-
-  useEffect(() => {
+  const handleUpdateTitle = (value: string) => {
     if (!activeNote) return;
-    if (!hasUnsavedChanges) return;
+    updateNote(user.id, activeNote.id, { title: value });
+  };
 
-    const timeout = window.setTimeout(() => {
-      updateNote(activeNote.id, {
-        title: normalizedDraftTitle,
-        content: draftContent,
-      });
-      setLastSavedAt(Date.now());
-    }, 600);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeNote, draftTitle, draftContent, hasUnsavedChanges, updateNote]);
+  const handleUpdateContent = (value: string) => {
+    if (!activeNote) return;
+    updateNote(user.id, activeNote.id, { content: value });
+  };
 
   return (
-    <section className="fixed bottom-6 left-6 z-20 flex flex-col items-start gap-2">
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-900/70 px-4 py-2 text-white shadow-lg backdrop-blur transition hover:bg-slate-900/90"
-        aria-expanded={isOpen}
-        aria-controls="notepad-panel"
-      >
-        <NotebookPen className="h-4 w-4" />
-        <span className="text-sm font-medium">Notepad</span>
-      </button>
-      {isOpen && (
-        <div
-          id="notepad-panel"
-          className="w-[28rem] max-w-[90vw] overflow-hidden rounded-xl border border-white/10 bg-slate-950/85 shadow-2xl backdrop-blur-xl"
-        >
-            <div className="flex border-b border-white/10">
-              <div className="w-40 border-r border-white/10 bg-slate-900/40">
-                <div className="flex items-center justify-between px-4 py-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-white/60">
-                    Notes
-                  </h3>
+    <div className="absolute bottom-4 left-4 z-10">
+      {isOpen ? (
+        <div className="w-80 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl shadow-xl text-white overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <h2 className="text-sm font-semibold tracking-wide uppercase">Notepad</h2>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-1 rounded-md hover:bg-white/10 transition-colors"
+              aria-label="Close notepad"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="px-4 py-3 border-b border-white/10">
+            <button
+              onClick={handleCreateNote}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New note
+            </button>
+          </div>
+
+          <div className="px-4 py-3 border-b border-white/10 max-h-32 overflow-y-auto">
+            {notes.length === 0 ? (
+              <p className="text-xs text-white/70">No notes yet. Create one to get started.</p>
+            ) : (
+              <ul className="space-y-1">
+                {notes.map((note) => (
+                  <li key={note.id}>
+                    <button
+                      onClick={() => {
+                        setActiveNote(user.id, note.id);
+                        setIsOpen(true);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        note.id === activeNote?.id
+                          ? 'bg-white/20 text-white'
+                          : 'bg-white/5 text-white/80 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="font-medium truncate">{note.title || 'Untitled note'}</div>
+                      <div className="text-[11px] text-white/60">
+                        {new Date(note.updatedAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="p-4 space-y-3">
+            {activeNote ? (
+              <>
+                <input
+                  value={activeNote.title}
+                  onChange={(event) => handleUpdateTitle(event.target.value)}
+                  placeholder="Note title"
+                  className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/15 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+                <textarea
+                  value={activeNote.content}
+                  onChange={(event) => handleUpdateContent(event.target.value)}
+                  placeholder="Write your thoughts..."
+                  className="w-full min-h-[140px] resize-none px-3 py-2 rounded-lg bg-white/10 border border-white/15 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+                <div className="flex items-center justify-between text-xs text-white/60">
+                  <span>
+                    Updated{' '}
+                    {new Date(activeNote.updatedAt).toLocaleString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
                   <button
-                    onClick={handleAddNote}
-                    className="rounded-md p-1 text-white/70 transition hover:bg-white/10 hover:text-white"
-                    aria-label="Create new note"
+                    onClick={() => handleDeleteNote(activeNote.id)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-white/15 hover:bg-white/10 transition-colors"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Trash2 className="w-3 h-3" />
+                    Delete
                   </button>
                 </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {userNotes.length > 0 ? (
-                    userNotes.map((note) => {
-                      const isActive = activeNote?.id === note.id;
-                      return (
-                        <button
-                          key={note.id}
-                          onClick={() => setActiveNote(note.id)}
-                          className={`flex w-full flex-col gap-1 px-4 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
-                            isActive
-                              ? 'bg-white/10 text-white'
-                              : 'text-white/70 hover:bg-white/5 hover:text-white'
-                          }`}
-                        >
-                          <span className="truncate text-sm font-medium">
-                            {note.title || 'Untitled note'}
-                          </span>
-                          <span className="text-xs text-white/40">
-                            {new Date(note.updatedAt).toLocaleString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-4 py-10 text-center text-sm text-white/40">
-                      No notes yet. Create one to start jotting ideas.
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex flex-1 flex-col bg-slate-900/40">
-                {activeNote ? (
-                  <>
-                    <div className="flex items-center gap-2 border-b border-white/10 px-5 py-3">
-                      <input
-                        ref={titleInputRef}
-                        value={draftTitle}
-                        onChange={(event) => setDraftTitle(event.target.value)}
-                        placeholder="Note title"
-                        className="flex-1 bg-transparent text-base font-semibold text-white placeholder:text-white/40 focus:outline-none"
-                        aria-label="Note title"
-                      />
-                      <button
-                        onClick={() => handleDelete(activeNote.id)}
-                        className="rounded-md p-2 text-red-300 transition hover:bg-red-500/10 hover:text-red-200"
-                        aria-label="Delete note"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <textarea
-                      value={draftContent}
-                      onChange={(event) => setDraftContent(event.target.value)}
-                      placeholder="Write your thoughts here..."
-                      className="min-h-[12rem] flex-1 resize-none bg-transparent px-5 py-4 text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
-                      aria-label="Note content"
-                    />
-                    <div className="flex items-center justify-between border-t border-white/10 px-5 py-3 text-xs text-white/50">
-                      <span role="status" aria-live="polite" aria-atomic="true">
-                        {hasUnsavedChanges
-                          ? 'Saving…'
-                          : lastSavedAt
-                          ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}`
-                          : 'Not yet saved'}
-                      </span>
-                      <span className="text-white/30">{draftContent.length} characters</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center text-white/50">
-                    <p className="text-sm">
-                      Select a note from the list or create a new one to begin writing.
-                    </p>
-                    <button
-                      onClick={handleAddNote}
-                      className="rounded-md bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
-                    >
-                      New note
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+              </>
+            ) : (
+              <p className="text-sm text-white/70">
+                Create or select a note from the list to start writing.
+              </p>
+            )}
+          </div>
         </div>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="px-4 py-2 rounded-lg bg-white/15 text-sm font-medium text-white hover:bg-white/25 transition-colors"
+        >
+          Open Notepad
+        </button>
       )}
-    </section>
+    </div>
   );
 }

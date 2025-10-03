@@ -6,7 +6,6 @@ import { useModalStore } from '../store/modalStore';
 export function ProfileIcon() {
   const [isOpen, setIsOpen] = useState(false);
   const currentUser = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
   const { setProfileUserId } = useModalStore();
 
   if (!currentUser) return null;
@@ -47,15 +46,6 @@ export function ProfileIcon() {
             className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
           >
             Edit Profile
-          </button>
-          <button
-            onClick={() => {
-              logout();
-              setIsOpen(false);
-            }}
-            className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
-          >
-            Sign Out
           </button>
         </div>
       )}

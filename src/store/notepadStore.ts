@@ -1,81 +1,122 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export interface Note {
+type Note = {
   id: string;
-  userId: string;
   title: string;
   content: string;
-  createdAt: number;
   updatedAt: number;
-}
+};
+
+type NotesByUser = Record<string, Note[]>;
+type ActiveMap = Record<string, string | null>;
 
 interface NotepadState {
-  notes: Note[];
-  activeNoteId: string | null;
-  addNote: (userId: string) => Note;
-  updateNote: (id: string, updates: Pick<Note, 'title' | 'content'>) => void;
-  deleteNote: (id: string) => void;
-  setActiveNote: (id: string | null) => void;
+  notesByUser: NotesByUser;
+  activeNoteIdByUser: ActiveMap;
+  createNote: (userId: string) => Note;
+  updateNote: (userId: string, noteId: string, updates: Partial<Omit<Note, 'id'>>) => void;
+  deleteNote: (userId: string, noteId: string) => void;
+  setActiveNote: (userId: string, noteId: string | null) => void;
+  getNotesForUser: (userId: string) => Note[];
+  getActiveNoteId: (userId: string) => string | null;
 }
+
+const generateId = () => `note_${Math.random().toString(36).slice(2, 10)}`;
 
 export const useNotepadStore = create<NotepadState>()(
   persist(
-    (set) => ({
-      notes: [],
-      activeNoteId: null,
-      addNote: (userId) => {
-        const timestamp = Date.now();
-        const generateId = () => {
-          if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-            return crypto.randomUUID();
-          }
-          return `${timestamp.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-        };
-
+    (set, get) => ({
+      notesByUser: {},
+      activeNoteIdByUser: {},
+      createNote: (userId) => {
         const newNote: Note = {
           id: generateId(),
-          userId,
-          title: 'Untitled note',
+          title: 'New note',
           content: '',
-          createdAt: timestamp,
-          updatedAt: timestamp,
+          updatedAt: Date.now(),
         };
 
-        set((state) => ({
-          notes: [newNote, ...state.notes].sort((a, b) => b.updatedAt - a.updatedAt),
-          activeNoteId: newNote.id,
-        }));
+        set((state) => {
+          const existingNotes = state.notesByUser[userId] ?? [];
+          return {
+            notesByUser: {
+              ...state.notesByUser,
+              [userId]: [newNote, ...existingNotes],
+            },
+            activeNoteIdByUser: {
+              ...state.activeNoteIdByUser,
+              [userId]: newNote.id,
+            },
+          };
+        });
 
         return newNote;
       },
-      updateNote: (id, updates) => {
-        set((state) => ({
-          notes: state.notes
+      updateNote: (userId, noteId, updates) => {
+        set((state) => {
+          const existingNotes = state.notesByUser[userId] ?? [];
+          const updatedNotes = existingNotes
             .map((note) =>
-              note.id === id
-                ? {
-                    ...note,
-                    ...updates,
-                    updatedAt: Date.now(),
-                  }
+              note.id === noteId
+                ? { ...note, ...updates, updatedAt: Date.now() }
                 : note
             )
-            .sort((a, b) => b.updatedAt - a.updatedAt),
-          activeNoteId: id,
-        }));
+            .sort((a, b) => b.updatedAt - a.updatedAt);
+
+          return {
+            notesByUser: {
+              ...state.notesByUser,
+              [userId]: updatedNotes,
+            },
+          };
+        });
       },
-      deleteNote: (id) => {
+      deleteNote: (userId, noteId) => {
+        set((state) => {
+          const existingNotes = state.notesByUser[userId] ?? [];
+          const filteredNotes = existingNotes.filter((note) => note.id !== noteId);
+          const currentActive = state.activeNoteIdByUser[userId] ?? null;
+          const nextActive =
+            currentActive === noteId
+              ? filteredNotes[0]?.id ?? null
+              : currentActive;
+
+          return {
+            notesByUser: {
+              ...state.notesByUser,
+              [userId]: filteredNotes,
+            },
+            activeNoteIdByUser: {
+              ...state.activeNoteIdByUser,
+              [userId]: nextActive,
+            },
+          };
+        });
+      },
+      setActiveNote: (userId, noteId) => {
         set((state) => ({
-          notes: state.notes.filter((note) => note.id !== id),
-          activeNoteId: state.activeNoteId === id ? null : state.activeNoteId,
+          activeNoteIdByUser: {
+            ...state.activeNoteIdByUser,
+            [userId]: noteId,
+          },
         }));
       },
-      setActiveNote: (id) => set({ activeNoteId: id }),
+      getNotesForUser: (userId) => {
+        const { notesByUser } = get();
+        return notesByUser[userId] ?? [];
+      },
+      getActiveNoteId: (userId) => {
+        const { activeNoteIdByUser } = get();
+        return activeNoteIdByUser[userId] ?? null;
+      },
     }),
     {
       name: 'notepad-storage',
-      partialize: (state) => ({ notes: state.notes, activeNoteId: state.activeNoteId }),
+      partialize: (state) => ({
+        notesByUser: state.notesByUser,
+        activeNoteIdByUser: state.activeNoteIdByUser,
+      }),
     }
   )
 );

@@ -1,12 +1,10 @@
 import { create } from 'zustand';
 
-export interface User {
+interface User {
   id: string;
   name: string;
   color: string;
   online: boolean;
-  statusMessage?: string;
-  profilePicture?: string;
   lastSeen?: number;
   position?: [number, number, number];
 }
@@ -19,8 +17,6 @@ interface UserState {
   setOnlineStatus: (userId: string, online: boolean) => void;
   updateUserPosition: (userId: string, position: [number, number, number]) => void;
   updateUserColor: (userId: string, color: string) => void;
-  updateUserProfile: (userId: string, updates: Partial<User>) => void;
-  setStatusMessage: (userId: string, statusMessage: string) => void;
   getOnlineUsers: () => User[];
 }
 
@@ -30,16 +26,13 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   addUser: (user) =>
     set((state) => ({
-      users: state.users.filter((u) => u.id !== user.id).concat({
-        ...user,
-        online: user.online ?? false,
-      }),
+      users: state.users.filter(u => u.id !== user.id).concat({ ...user, online: false }),
     })),
 
   removeUser: (userId) =>
     set((state) => ({
       users: state.users.filter((user) => user.id !== userId),
-      onlineUsers: new Set([...state.onlineUsers].filter((id) => id !== userId)),
+      onlineUsers: new Set([...state.onlineUsers].filter(id => id !== userId)),
     })),
 
   setOnlineStatus: (userId, online) =>
@@ -72,20 +65,6 @@ export const useUserStore = create<UserState>((set, get) => ({
     set((state) => ({
       users: state.users.map((user) =>
         user.id === userId ? { ...user, color } : user
-      ),
-    })),
-
-  updateUserProfile: (userId, updates) =>
-    set((state) => ({
-      users: state.users.map((user) =>
-        user.id === userId ? { ...user, ...updates } : user
-      ),
-    })),
-
-  setStatusMessage: (userId, statusMessage) =>
-    set((state) => ({
-      users: state.users.map((user) =>
-        user.id === userId ? { ...user, statusMessage } : user
       ),
     })),
 
