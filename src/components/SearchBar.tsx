@@ -13,7 +13,7 @@ export function SearchBar() {
   );
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full max-w-md z-10">
+    <div className="relative w-full pointer-events-auto">
       <div className="relative">
         <input
           type="text"
@@ -26,7 +26,7 @@ export function SearchBar() {
       </div>
 
       {query && (
-        <div className="absolute w-full mt-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+        <div className="absolute left-0 right-0 mt-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
               <button

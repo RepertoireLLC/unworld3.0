@@ -43,14 +43,23 @@ export function App() {
   };
 
   return (
-    <div className={`relative w-full h-screen ${getBackgroundClass()} transition-colors duration-1000`}>
+    <div className={`relative w-full h-screen overflow-hidden ${getBackgroundClass()} transition-colors duration-1000`}>
       {isAuthenticated ? (
         <>
-          <SearchBar />
-          <ProfileIcon />
-          <ThemeSelector />
-          <FriendRequests />
-          <Scene />
+          <div className="absolute inset-0 z-0">
+            <Scene />
+          </div>
+
+          <div className="absolute inset-x-0 top-6 z-10 flex w-full items-start justify-between gap-4 px-6 pointer-events-none">
+            <div className="w-full max-w-md pointer-events-auto">
+              <SearchBar />
+            </div>
+            <div className="flex items-center gap-3 pointer-events-auto">
+              <ThemeSelector />
+              <ProfileIcon />
+              <FriendRequests />
+            </div>
+          </div>
           {profileUserId && (
             <ProfileModal
               userId={profileUserId}
