@@ -14,3 +14,77 @@ body {
 canvas {
   touch-action: none;
 }
+
+.light-mode {
+  color-scheme: light;
+}
+
+.light-mode body {
+  color: #0f172a;
+}
+
+.light-mode .text-white {
+  color: #0f172a !important;
+}
+
+.light-mode .text-white\/80 {
+  color: rgba(15, 23, 42, 0.8) !important;
+}
+
+.light-mode .text-white\/70 {
+  color: rgba(15, 23, 42, 0.7) !important;
+}
+
+.light-mode .text-white\/60 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+
+.light-mode .text-white\/50 {
+  color: rgba(15, 23, 42, 0.5) !important;
+}
+
+.light-mode .placeholder-white\/50::placeholder {
+  color: rgba(15, 23, 42, 0.5) !important;
+}
+
+.light-mode .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+.light-mode .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.light-mode .bg-white\/20 {
+  background-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.light-mode .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.light-mode .border-white\/30 {
+  border-color: rgba(15, 23, 42, 0.25) !important;
+}
+
+.light-mode .bg-black\/20 {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.light-mode .bg-slate-900\/90,
+.light-mode .bg-slate-900\/80 {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  color: #f8fafc;
+}
+
+.light-mode .text-emerald-300 {
+  color: #047857 !important;
+}
+
+.light-mode .bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+}
+
+.light-mode .bg-emerald-500\/80 {
+  background-color: rgba(16, 185, 129, 0.85) !important;
+}

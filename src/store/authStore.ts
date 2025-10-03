@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
+import { generateColor } from '../utils/color';
 
 interface User {
   id: string;
@@ -10,6 +11,7 @@ interface User {
   password: string;
   profilePicture?: string;
   bio?: string;
+  statusMessage?: string;
 }
 
 interface AuthState {
@@ -17,7 +19,13 @@ interface AuthState {
   isAuthenticated: boolean;
   registeredUsers: User[];
   login: (credentials: { email: string; password: string }) => boolean;
-  register: (userData: { email: string; password: string; name: string; color: string }) => boolean;
+  register: (userData: {
+    email: string;
+    password: string;
+    name: string;
+    color: string;
+    statusMessage?: string;
+  }) => boolean;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => void;
 }
@@ -31,33 +39,35 @@ export const useAuthStore = create<AuthState>()(
 
       register: (userData) => {
         const { registeredUsers } = get();
-        const existingUser = registeredUsers.find(u => u.email === userData.email);
-        
+        const existingUser = registeredUsers.find((u) => u.email === userData.email);
+
         if (existingUser) {
           return false;
         }
 
-        const newUser = {
+        const newUser: User = {
           id: `user_${Date.now()}`,
           name: userData.name || userData.email.split('@')[0],
           email: userData.email,
           password: userData.password,
-          color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          color: userData.color || generateColor(),
+          statusMessage: userData.statusMessage || 'Available',
         };
 
-        set(state => ({
+        set((state) => ({
           registeredUsers: [...state.registeredUsers, newUser],
           user: newUser,
-          isAuthenticated: true
+          isAuthenticated: true,
         }));
 
-        // Add user to the online users
         const { addUser, setOnlineStatus } = useUserStore.getState();
         addUser({
           id: newUser.id,
           name: newUser.name,
           color: newUser.color,
-          online: true
+          online: true,
+          profilePicture: newUser.profilePicture,
+          statusMessage: newUser.statusMessage,
         });
         setOnlineStatus(newUser.id, true);
 
@@ -67,19 +77,20 @@ export const useAuthStore = create<AuthState>()(
       login: (credentials) => {
         const { registeredUsers } = get();
         const user = registeredUsers.find(
-          u => u.email === credentials.email && u.password === credentials.password
+          (u) => u.email === credentials.email && u.password === credentials.password
         );
 
         if (user) {
           set({ user, isAuthenticated: true });
-          
-          // Set user as online
+
           const { addUser, setOnlineStatus } = useUserStore.getState();
           addUser({
             id: user.id,
             name: user.name,
             color: user.color,
-            online: true
+            online: true,
+            profilePicture: user.profilePicture,
+            statusMessage: user.statusMessage,
           });
           setOnlineStatus(user.id, true);
 
@@ -92,7 +103,6 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         const { user } = get();
         if (user) {
-          // Set user as offline before logging out
           const { setOnlineStatus } = useUserStore.getState();
           setOnlineStatus(user.id, false);
         }
@@ -105,20 +115,24 @@ export const useAuthStore = create<AuthState>()(
 
           const updatedUser = { ...state.user, ...updates };
 
-          // Update in registered users list
-          const updatedRegisteredUsers = state.registeredUsers.map(u =>
+          const updatedRegisteredUsers = state.registeredUsers.map((u) =>
             u.id === updatedUser.id ? updatedUser : u
           );
 
-          // Update in user store
-          const { updateUserColor } = useUserStore.getState();
+          const { updateUserColor, updateUserProfile } = useUserStore.getState();
           if (updates.color) {
             updateUserColor(updatedUser.id, updates.color);
           }
+          updateUserProfile(updatedUser.id, {
+            name: updatedUser.name,
+            color: updatedUser.color,
+            profilePicture: updatedUser.profilePicture,
+            statusMessage: updatedUser.statusMessage,
+          });
 
           return {
             user: updatedUser,
-            registeredUsers: updatedRegisteredUsers
+            registeredUsers: updatedRegisteredUsers,
           };
         }),
     }),
