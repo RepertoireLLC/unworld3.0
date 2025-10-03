@@ -494,27 +494,84 @@ canvas {
 }
 
 .chat-window__tools {
-  @apply flex w-72 shrink-0 flex-col rounded-[28px] border border-white/10 bg-black/40 p-6 backdrop-blur-xl;
+  @apply flex w-80 shrink-0 flex-col rounded-[28px] border border-white/10 bg-black/40 p-6 backdrop-blur-xl;
 }
 
-.chat-window__tools h2 {
+.chat-window__notepad {
+  @apply gap-5;
+}
+
+.chat-window__notepad-header {
+  @apply flex items-start gap-3 text-left;
+}
+
+.chat-window__notepad-header h2 {
   @apply text-lg font-semibold text-white;
 }
 
-.chat-window__tools p {
-  @apply mt-1 text-sm text-white/50;
+.chat-window__notepad-header p {
+  @apply mt-0.5 text-sm text-white/50;
 }
 
-.chat-window__tool-grid {
-  @apply mt-5 grid gap-3;
+.chat-window__notepad-actions {
+  @apply flex items-center gap-3;
 }
 
-.chat-window__tool {
-  @apply flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white/80 transition hover:border-white/40 hover:bg-white/10 hover:text-white;
+.chat-window__note-action {
+  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white;
 }
 
-.chat-window__tool span {
-  @apply block text-xs text-white/50;
+.chat-window__note-action.primary {
+  @apply border-emerald-300/60 bg-emerald-400/20 text-emerald-100 hover:border-emerald-300 hover:bg-emerald-400/30 hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/40;
+}
+
+.chat-window__note-grid {
+  @apply grid gap-4;
+}
+
+.chat-window__note-list {
+  @apply flex max-h-60 flex-col gap-2 overflow-y-auto pr-1;
+}
+
+.chat-window__note {
+  @apply flex w-full items-start justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/40 hover:bg-white/10;
+}
+
+.chat-window__note.active {
+  @apply border-emerald-400/60 bg-emerald-400/10;
+}
+
+.chat-window__note-title {
+  @apply text-sm font-medium text-white;
+}
+
+.chat-window__note-meta {
+  @apply mt-1 block text-xs uppercase tracking-wide text-white/40;
+}
+
+.chat-window__note-delete {
+  @apply rounded-full border border-transparent p-1 text-white/50 transition hover:border-white/30 hover:bg-white/10 hover:text-white;
+}
+
+.chat-window__note-empty {
+  @apply rounded-2xl border border-dashed border-white/20 bg-white/5 px-4 py-6 text-center text-sm text-white/50;
+}
+
+.chat-window__note-editor {
+  @apply grid gap-2;
+}
+
+.chat-window__note-label {
+  @apply text-xs font-medium uppercase tracking-wide text-white/50;
+}
+
+.chat-window__note-editor input,
+.chat-window__note-editor textarea {
+  @apply w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 transition focus:border-emerald-300/60 focus:outline-none focus:ring-2 focus:ring-emerald-300/30;
+}
+
+.chat-window__note-editor textarea {
+  @apply resize-none leading-relaxed;
 }
 
 .chat-window__empty {
