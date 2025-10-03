@@ -73,9 +73,11 @@ export function Notepad() {
     deleteNote(id);
   };
 
+  const normalizedDraftTitle = draftTitle.trim() || 'Untitled note';
+
   const hasUnsavedChanges =
     !!activeNote &&
-    (draftTitle.trim() !== activeNote.title || draftContent !== activeNote.content);
+    (normalizedDraftTitle !== activeNote.title || draftContent !== activeNote.content);
 
   useEffect(() => {
     if (!activeNote) return;
@@ -83,7 +85,7 @@ export function Notepad() {
 
     const timeout = window.setTimeout(() => {
       updateNote(activeNote.id, {
-        title: draftTitle.trim() || 'Untitled note',
+        title: normalizedDraftTitle,
         content: draftContent,
       });
       setLastSavedAt(Date.now());
@@ -192,9 +194,7 @@ export function Notepad() {
                             })}`
                           : 'Not yet saved'}
                       </span>
-                      <span className="text-white/30">
-                        {activeNote.content.length} characters
-                      </span>
+                      <span className="text-white/30">{draftContent.length} characters</span>
                     </div>
                   </>
                 ) : (
