@@ -1,0 +1,27 @@
+{
+  "transport": {
+    "host": "0.0.0.0",
+    "port": 4000,
+    "allowRelay": true
+  },
+  "encryption": {
+    "masterKey": "<base64-32-byte-key>",
+    "ratchet": {
+      "maxSkip": 1000,
+      "enablePostQuantum": false
+    }
+  },
+  "presence": {
+    "timeoutSeconds": 45,
+    "enableMesh": true
+  },
+  "media": {
+    "maxBytes": 15728640,
+    "allowBluetoothSync": true
+  },
+  "aetherMode": {
+    "enabled": true,
+    "disguise": "calculator",
+    "unlock": "tone_sequence"
+  }
+}
