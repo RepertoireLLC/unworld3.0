@@ -26,8 +26,15 @@ export const useNotepadStore = create<NotepadState>()(
       activeNoteId: null,
       addNote: (userId) => {
         const timestamp = Date.now();
+        const generateId = () => {
+          if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+            return crypto.randomUUID();
+          }
+          return `${timestamp.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        };
+
         const newNote: Note = {
-          id: timestamp.toString(),
+          id: generateId(),
           userId,
           title: 'Untitled note',
           content: '',
@@ -36,7 +43,7 @@ export const useNotepadStore = create<NotepadState>()(
         };
 
         set((state) => ({
-          notes: [newNote, ...state.notes],
+          notes: [newNote, ...state.notes].sort((a, b) => b.updatedAt - a.updatedAt),
           activeNoteId: newNote.id,
         }));
 
@@ -44,15 +51,18 @@ export const useNotepadStore = create<NotepadState>()(
       },
       updateNote: (id, updates) => {
         set((state) => ({
-          notes: state.notes.map((note) =>
-            note.id === id
-              ? {
-                  ...note,
-                  ...updates,
-                  updatedAt: Date.now(),
-                }
-              : note
-          ),
+          notes: state.notes
+            .map((note) =>
+              note.id === id
+                ? {
+                    ...note,
+                    ...updates,
+                    updatedAt: Date.now(),
+                  }
+                : note
+            )
+            .sort((a, b) => b.updatedAt - a.updatedAt),
+          activeNoteId: id,
         }));
       },
       deleteNote: (id) => {

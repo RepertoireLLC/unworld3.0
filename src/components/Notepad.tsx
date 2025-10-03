@@ -6,19 +6,24 @@ import { useNotepadStore } from '../store/notepadStore';
 export function Notepad() {
   const currentUser = useAuthStore((state) => state.user);
   const [isOpen, setIsOpen] = useState(false);
-  const notes = useNotepadStore((state) =>
-    currentUser ? state.notes.filter((note) => note.userId === currentUser.id) : []
-  );
+  const notes = useNotepadStore((state) => state.notes);
   const activeNoteId = useNotepadStore((state) => state.activeNoteId);
   const setActiveNote = useNotepadStore((state) => state.setActiveNote);
   const addNote = useNotepadStore((state) => state.addNote);
   const updateNote = useNotepadStore((state) => state.updateNote);
   const deleteNote = useNotepadStore((state) => state.deleteNote);
 
-  const activeNote = useMemo(
-    () => notes.find((note) => note.id === activeNoteId) ?? null,
-    [notes, activeNoteId]
-  );
+  const userNotes = useMemo(() => {
+    if (!currentUser) return [];
+    return notes
+      .filter((note) => note.userId === currentUser.id)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [notes, currentUser]);
+
+  const activeNote = useMemo(() => {
+    if (!activeNoteId) return null;
+    return userNotes.find((note) => note.id === activeNoteId) ?? null;
+  }, [userNotes, activeNoteId]);
 
   const [draftTitle, setDraftTitle] = useState('');
   const [draftContent, setDraftContent] = useState('');
@@ -31,14 +36,14 @@ export function Notepad() {
       return;
     }
 
-    if (!activeNote && notes.length > 0) {
-      setActiveNote(notes[0].id);
+    if (!activeNote && userNotes.length > 0) {
+      setActiveNote(userNotes[0].id);
     }
 
-    if (notes.length === 0) {
+    if (userNotes.length === 0) {
       setActiveNote(null);
     }
-  }, [currentUser, notes, activeNote, setActiveNote]);
+  }, [currentUser, userNotes, activeNote, setActiveNote]);
 
   useEffect(() => {
     if (activeNote) {
@@ -61,129 +66,154 @@ export function Notepad() {
     setDraftTitle(newNote.title);
     setDraftContent(newNote.content);
     setLastSavedAt(newNote.updatedAt);
-  };
-
-  const handleSave = () => {
-    if (!activeNote) return;
-
-    updateNote(activeNote.id, {
-      title: draftTitle.trim() || 'Untitled note',
-      content: draftContent,
-    });
-    setLastSavedAt(Date.now());
+    setIsOpen(true);
   };
 
   const handleDelete = (id: string) => {
     deleteNote(id);
   };
 
+  const hasUnsavedChanges =
+    !!activeNote &&
+    (draftTitle.trim() !== activeNote.title || draftContent !== activeNote.content);
+
+  useEffect(() => {
+    if (!activeNote) return;
+    if (!hasUnsavedChanges) return;
+
+    const timeout = window.setTimeout(() => {
+      updateNote(activeNote.id, {
+        title: draftTitle.trim() || 'Untitled note',
+        content: draftContent,
+      });
+      setLastSavedAt(Date.now());
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [activeNote, draftTitle, draftContent, hasUnsavedChanges, updateNote]);
+
   return (
-    <div className="absolute bottom-4 left-4 z-20">
+    <section className="fixed bottom-6 left-6 z-20 flex flex-col items-start gap-2">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center space-x-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+        className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-900/70 px-4 py-2 text-white shadow-lg backdrop-blur transition hover:bg-slate-900/90"
+        aria-expanded={isOpen}
+        aria-controls="notepad-panel"
       >
-        <NotebookPen className="w-4 h-4" />
-        <span>Notepad</span>
+        <NotebookPen className="h-4 w-4" />
+        <span className="text-sm font-medium">Notepad</span>
       </button>
-
       {isOpen && (
-        <div className="mt-3 w-[28rem] max-w-[90vw] bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg overflow-hidden">
-          <div className="flex border-b border-white/10">
-            <div className="w-36 border-r border-white/10">
-              <div className="flex items-center justify-between px-3 py-2">
-                <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">Notes</h3>
-                <button
-                  onClick={handleAddNote}
-                  className="p-1 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition"
-                  aria-label="Create new note"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+        <div
+          id="notepad-panel"
+          className="w-[28rem] max-w-[90vw] overflow-hidden rounded-xl border border-white/10 bg-slate-950/85 shadow-2xl backdrop-blur-xl"
+        >
+            <div className="flex border-b border-white/10">
+              <div className="w-40 border-r border-white/10 bg-slate-900/40">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.15em] text-white/60">
+                    Notes
+                  </h3>
+                  <button
+                    onClick={handleAddNote}
+                    className="rounded-md p-1 text-white/70 transition hover:bg-white/10 hover:text-white"
+                    aria-label="Create new note"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {userNotes.length > 0 ? (
+                    userNotes.map((note) => {
+                      const isActive = activeNote?.id === note.id;
+                      return (
+                        <button
+                          key={note.id}
+                          onClick={() => setActiveNote(note.id)}
+                          className={`flex w-full flex-col gap-1 px-4 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+                            isActive
+                              ? 'bg-white/10 text-white'
+                              : 'text-white/70 hover:bg-white/5 hover:text-white'
+                          }`}
+                        >
+                          <span className="truncate text-sm font-medium">
+                            {note.title || 'Untitled note'}
+                          </span>
+                          <span className="text-xs text-white/40">
+                            {new Date(note.updatedAt).toLocaleString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-10 text-center text-sm text-white/40">
+                      No notes yet. Create one to start jotting ideas.
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="max-h-60 overflow-y-auto">
-                {notes.length > 0 ? (
-                  notes.map((note) => (
-                    <button
-                      key={note.id}
-                      onClick={() => setActiveNote(note.id)}
-                      className={`w-full text-left px-3 py-2 border-b border-white/5 hover:bg-white/10 transition ${
-                        activeNote?.id === note.id ? 'bg-white/10 text-white' : 'text-white/70'
-                      }`}
-                    >
-                      <div className="text-sm font-medium truncate">
-                        {note.title || 'Untitled note'}
-                      </div>
-                      <div className="text-xs text-white/40">
-                        {new Date(note.updatedAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
-                    </button>
-                  ))
+              <div className="flex flex-1 flex-col bg-slate-900/40">
+                {activeNote ? (
+                  <>
+                    <div className="flex items-center gap-2 border-b border-white/10 px-5 py-3">
+                      <input
+                        value={draftTitle}
+                        onChange={(event) => setDraftTitle(event.target.value)}
+                        placeholder="Note title"
+                        className="flex-1 bg-transparent text-base font-semibold text-white placeholder:text-white/40 focus:outline-none"
+                        aria-label="Note title"
+                      />
+                      <button
+                        onClick={() => handleDelete(activeNote.id)}
+                        className="rounded-md p-2 text-red-300 transition hover:bg-red-500/10 hover:text-red-200"
+                        aria-label="Delete note"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <textarea
+                      value={draftContent}
+                      onChange={(event) => setDraftContent(event.target.value)}
+                      placeholder="Write your thoughts here..."
+                      className="min-h-[12rem] flex-1 resize-none bg-transparent px-5 py-4 text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
+                      aria-label="Note content"
+                    />
+                    <div className="flex items-center justify-between border-t border-white/10 px-5 py-3 text-xs text-white/50">
+                      <span>
+                        {hasUnsavedChanges
+                          ? 'Saving…'
+                          : lastSavedAt
+                          ? `Saved ${new Date(lastSavedAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}`
+                          : 'Not yet saved'}
+                      </span>
+                      <span className="text-white/30">
+                        {activeNote.content.length} characters
+                      </span>
+                    </div>
+                  </>
                 ) : (
-                  <div className="px-3 py-6 text-center text-white/40 text-sm">
-                    No notes yet
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center text-white/50">
+                    <p className="text-sm">
+                      Select a note from the list or create a new one to begin writing.
+                    </p>
+                    <button
+                      onClick={handleAddNote}
+                      className="rounded-md bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+                    >
+                      New note
+                    </button>
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex-1 flex flex-col">
-              {activeNote ? (
-                <div className="flex flex-col h-72">
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-                    <input
-                      value={draftTitle}
-                      onChange={(event) => setDraftTitle(event.target.value)}
-                      placeholder="Note title"
-                      className="flex-1 bg-transparent border-none text-lg font-semibold text-white focus:outline-none"
-                    />
-                    <button
-                      onClick={() => handleDelete(activeNote.id)}
-                      className="p-2 text-red-300 hover:text-red-200 hover:bg-red-500/20 rounded-md transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <textarea
-                    value={draftContent}
-                    onChange={(event) => setDraftContent(event.target.value)}
-                    placeholder="Write your thoughts here..."
-                    className="flex-1 bg-transparent text-white/90 placeholder:text-white/40 px-4 py-3 focus:outline-none resize-none"
-                  />
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-white/10 text-xs text-white/50">
-                    <span>
-                      {lastSavedAt
-                        ? `Last saved ${new Date(lastSavedAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}`
-                        : 'Not yet saved'}
-                    </span>
-                    <button
-                      onClick={handleSave}
-                      className="px-3 py-1.5 bg-white/10 text-white rounded-md hover:bg-white/20 transition"
-                    >
-                      Save note
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-white/50 gap-3">
-                  <p>Select a note or create a new one to get started.</p>
-                  <button
-                    onClick={handleAddNote}
-                    className="px-3 py-1.5 bg-white/10 text-white rounded-md hover:bg-white/20 transition"
-                  >
-                    New note
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
