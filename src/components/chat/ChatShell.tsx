@@ -52,6 +52,7 @@ export function ChatShell() {
 
   const sidebarSearchRef = useRef<HTMLInputElement>(null);
   const headerSearchRef = useRef<HTMLInputElement>(null);
+  const navButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const currentUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -102,6 +103,46 @@ export function ChatShell() {
       return () => cancelAnimationFrame(frame);
     }
   }, [activeView]);
+
+  useEffect(() => {
+    const handleGlobalShortcuts = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isInputTarget =
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      if (event.key === 'Escape') {
+        setIsThemeMenuOpen(false);
+        setIsRequestsOpen(false);
+        setShowColorPicker(false);
+        return;
+      }
+
+      if (isInputTarget) {
+        return;
+      }
+
+      if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        setActiveView('search');
+        requestAnimationFrame(() => {
+          headerSearchRef.current?.focus();
+          headerSearchRef.current?.select();
+        });
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        requestAnimationFrame(() => {
+          headerSearchRef.current?.focus();
+          headerSearchRef.current?.select();
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, [setActiveView, setIsRequestsOpen, setIsThemeMenuOpen, setShowColorPicker]);
 
   if (!currentUser) {
     return null;
@@ -158,12 +199,42 @@ export function ChatShell() {
 
   const visibleContacts = activeView === 'search' ? filteredContacts : contacts;
 
+  const handleNavKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const focusable = navButtonRefs.current.filter(
+      (button): button is HTMLButtonElement => Boolean(button)
+    );
+
+    if (!focusable.length) {
+      return;
+    }
+
+    const currentIndex = focusable.indexOf(document.activeElement as HTMLButtonElement);
+    let nextIndex = currentIndex;
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      nextIndex = (currentIndex + 1 + focusable.length) % focusable.length;
+    }
+
+    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      nextIndex = (currentIndex - 1 + focusable.length) % focusable.length;
+    }
+
+    if (nextIndex !== currentIndex && focusable[nextIndex]) {
+      focusable[nextIndex].focus();
+    }
+  };
+
   return (
     <div className="chat-shell p-8">
-      <aside className="chat-shell__nav">
+      <a href="#enclypse-chat-main" className="chat-shell__skip-link">
+        Skip to chat content
+      </a>
+      <aside className="chat-shell__nav" onKeyDown={handleNavKeyDown}>
         <EnclypseLogo />
         <nav className="chat-shell__nav-buttons" aria-label="Primary navigation">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.map((item, index) => {
             const Icon = item.icon;
             const isActive =
               (item.id === 'sphere' && activeView === 'sphere') ||
@@ -173,7 +244,12 @@ export function ChatShell() {
                 key={item.id}
                 type="button"
                 onClick={() => handleNavClick(item.id)}
+                ref={(element) => {
+                  navButtonRefs.current[index] = element;
+                }}
                 className={`chat-shell__nav-button ${isActive ? 'active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+                title={item.label}
               >
                 <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
@@ -181,7 +257,12 @@ export function ChatShell() {
             );
           })}
         </nav>
-        <button type="button" onClick={logout} className="chat-shell__nav-button logout">
+        <button
+          type="button"
+          onClick={logout}
+          className="chat-shell__nav-button logout"
+          title="Logout"
+        >
           <LogOut className="h-5 w-5" />
           <span>Logout</span>
         </button>
@@ -201,6 +282,7 @@ export function ChatShell() {
                 setActiveView('search');
                 requestAnimationFrame(() => sidebarSearchRef.current?.focus());
               }}
+              aria-label="Create a new link"
             >
               <Plus className="h-4 w-4" />
               <span>New Link</span>
@@ -263,7 +345,7 @@ export function ChatShell() {
           </div>
         </section>
 
-        <section className="chat-shell__main">
+        <section className="chat-shell__main" id="enclypse-chat-main">
           <header className="chat-shell__main-header">
             <div className="chat-shell__main-search" aria-expanded={globalSearch.length > 0}>
               <Search className="h-4 w-4" />
@@ -324,11 +406,11 @@ export function ChatShell() {
               )}
             </div>
 
-            <div className="chat-shell__main-actions">
-              <div className="chat-shell__action-group">
-                <button
-                  type="button"
-                  className={`chat-shell__action-button ${isThemeMenuOpen ? 'active' : ''}`}
+              <div className="chat-shell__main-actions">
+                <div className="chat-shell__action-group">
+                  <button
+                    type="button"
+                    className={`chat-shell__action-button ${isThemeMenuOpen ? 'active' : ''}`}
                   onClick={() => {
                     setIsThemeMenuOpen((prev) => !prev);
                     setIsRequestsOpen(false);
@@ -378,27 +460,37 @@ export function ChatShell() {
                 )}
               </div>
 
-              <div className="chat-shell__action-group">
-                <button
-                  type="button"
-                  className={`chat-shell__action-button ${isRequestsOpen ? 'active' : ''}`}
-                  onClick={() => {
-                    setIsRequestsOpen((prev) => !prev);
-                    setIsThemeMenuOpen(false);
-                  }}
-                  aria-haspopup="true"
-                  aria-expanded={isRequestsOpen}
-                >
-                  <Bell className="h-4 w-4" />
-                  {pendingRequests.length > 0 && (
-                    <span className="chat-shell__badge" aria-label={`${pendingRequests.length} pending requests`}>
+                <div className="chat-shell__action-group">
+                  <button
+                    type="button"
+                    className={`chat-shell__action-button ${isRequestsOpen ? 'active' : ''}`}
+                    onClick={() => {
+                      setIsRequestsOpen((prev) => !prev);
+                      setIsThemeMenuOpen(false);
+                    }}
+                    aria-haspopup="true"
+                    aria-expanded={isRequestsOpen}
+                    aria-controls="enclypse-friend-requests"
+                    >
+                    <Bell className="h-4 w-4" />
+                    {pendingRequests.length > 0 && (
+                    <span
+                      className="chat-shell__badge"
+                      aria-label={`${pendingRequests.length} pending requests`}
+                      aria-live="polite"
+                    >
                       {pendingRequests.length}
                     </span>
                   )}
                 </button>
 
                 {isRequestsOpen && (
-                  <div className="chat-shell__dropdown chat-shell__dropdown--right">
+                  <div
+                    className="chat-shell__dropdown chat-shell__dropdown--right"
+                    id="enclypse-friend-requests"
+                    role="dialog"
+                    aria-label="Pending friend requests"
+                  >
                     <header>
                       <h3>Friend Requests</h3>
                     </header>

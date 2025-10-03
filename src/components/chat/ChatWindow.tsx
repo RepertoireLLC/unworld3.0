@@ -46,6 +46,7 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const [activeChannel, setActiveChannel] = useState(CHANNELS[0].id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const channelButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const currentUser = useAuthStore((state) => state.user);
   const otherUser = useUserStore((state) =>
@@ -61,6 +62,33 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeChannel]);
+
+  const handleChannelKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const focusable = channelButtonRefs.current.filter(
+      (button): button is HTMLButtonElement => Boolean(button)
+    );
+
+    if (!focusable.length) {
+      return;
+    }
+
+    const currentIndex = focusable.indexOf(document.activeElement as HTMLButtonElement);
+    let nextIndex = currentIndex;
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      nextIndex = (currentIndex + 1 + focusable.length) % focusable.length;
+    }
+
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      nextIndex = (currentIndex - 1 + focusable.length) % focusable.length;
+    }
+
+    if (nextIndex !== currentIndex && focusable[nextIndex]) {
+      focusable[nextIndex].focus();
+    }
+  };
 
   if (!currentUser) {
     return (
@@ -106,16 +134,28 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
       </header>
 
       <div className="chat-window__channels">
-        {CHANNELS.map((channel) => (
-          <button
-            key={channel.id}
-            type="button"
-            onClick={() => setActiveChannel(channel.id)}
-            className={`chat-window__channel ${activeChannel === channel.id ? 'active' : ''}`}
-          >
-            {channel.label}
-          </button>
-        ))}
+        <div
+          className="chat-window__channel-list"
+          role="tablist"
+          aria-label="Channel filters"
+          onKeyDown={handleChannelKeyDown}
+        >
+          {CHANNELS.map((channel, index) => (
+            <button
+              key={channel.id}
+              type="button"
+              onClick={() => setActiveChannel(channel.id)}
+              className={`chat-window__channel ${activeChannel === channel.id ? 'active' : ''}`}
+              aria-selected={activeChannel === channel.id}
+              role="tab"
+              ref={(element) => {
+                channelButtonRefs.current[index] = element;
+              }}
+            >
+              {channel.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="chat-window__body">
@@ -154,11 +194,19 @@ export function ChatWindow({ activeChatId }: ChatWindowProps) {
               disabled={!activeChatId}
               onChange={(event) => setMessage(event.target.value)}
               placeholder={activeChatId ? 'Compose your transmission…' : 'Select a contact to begin'}
+              aria-label={
+                activeChatId
+                  ? 'Message input. Press enter to send or shift plus enter for a new line.'
+                  : 'Message input disabled until a contact is selected.'
+              }
             />
-            <button type="submit" disabled={!message.trim() || !activeChatId}>
+            <button type="submit" disabled={!message.trim() || !activeChatId} aria-label="Send message">
               <Send className="h-5 w-5" />
             </button>
           </form>
+          <p className="chat-window__composer-hint" role="note">
+            Press <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line.
+          </p>
         </div>
 
         <aside className="chat-window__tools" aria-label="Tools drawer">

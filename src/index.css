@@ -11,12 +11,31 @@ body {
   overflow: hidden;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 canvas {
   touch-action: none;
 }
 
 .chat-shell {
   @apply relative flex h-full w-full gap-6 text-white;
+}
+
+.chat-shell__skip-link {
+  @apply absolute left-[-999px] top-4 z-50 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-sm font-semibold text-white transition;
+}
+
+.chat-shell__skip-link:focus {
+  @apply left-6 outline-none ring-2 ring-emerald-400/70;
 }
 
 .glass-panel {
@@ -70,7 +89,7 @@ canvas {
 }
 
 .chat-shell__nav-button {
-  @apply flex flex-col items-center gap-2 rounded-2xl border border-transparent px-3 py-4 text-xs font-medium uppercase tracking-wide text-white/70 transition duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white;
+  @apply flex flex-col items-center gap-2 rounded-2xl border border-transparent px-3 py-4 text-xs font-medium uppercase tracking-wide text-white/70 transition duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white focus:outline-none;
 }
 
 .chat-shell__nav-button svg {
@@ -79,6 +98,10 @@ canvas {
 
 .chat-shell__nav-button.active {
   @apply border-white/60 bg-white/10 text-white;
+}
+
+.chat-shell__nav-button:focus-visible {
+  @apply ring-2 ring-emerald-400/60;
 }
 
 .chat-shell__nav-button.logout {
@@ -106,7 +129,7 @@ canvas {
 }
 
 .chat-shell__sidebar-action {
-  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white;
+  @apply flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium uppercase tracking-wide text-white/70 transition hover:border-white/40 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/60;
 }
 
 .chat-shell__search-field {
@@ -114,7 +137,7 @@ canvas {
 }
 
 .chat-shell__search-field input {
-  @apply w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
+  @apply w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-0;
 }
 
 .chat-shell__contacts {
@@ -130,11 +153,7 @@ canvas {
 }
 
 .chat-shell__contact-main {
-  @apply flex flex-1 items-center gap-3 rounded-2xl bg-transparent px-1 py-1 text-left text-inherit focus:outline-none;
-}
-
-.chat-shell__contact-main:focus-visible {
-  @apply outline-none ring-2 ring-emerald-400/60;
+  @apply flex flex-1 items-center gap-3 rounded-2xl bg-transparent px-1 py-1 text-left text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60;
 }
 
 .chat-shell__contact-profile {
@@ -196,6 +215,10 @@ canvas {
 
 .chat-shell__main-search {
   @apply relative flex flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70;
+}
+
+.chat-shell__main-search input {
+  @apply w-full bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none;
 }
 
 .chat-shell__main-search input {
@@ -383,15 +406,23 @@ canvas {
 }
 
 .chat-window__channels {
-  @apply mt-6 flex flex-wrap gap-3;
+  @apply mt-6;
+}
+
+.chat-window__channel-list {
+  @apply flex flex-wrap gap-3;
 }
 
 .chat-window__channel {
-  @apply rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 transition hover:border-white/40 hover:text-white;
+  @apply rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/50 transition hover:border-white/40 hover:text-white focus:outline-none;
 }
 
 .chat-window__channel.active {
   @apply border-white/60 bg-white/10 text-white;
+}
+
+.chat-window__channel:focus-visible {
+  @apply ring-2 ring-emerald-400/60;
 }
 
 .chat-window__body {
@@ -452,6 +483,14 @@ canvas {
 
 .chat-window__composer button:disabled {
   @apply cursor-not-allowed border-white/10 bg-white/5 text-white/30;
+}
+
+.chat-window__composer-hint {
+  @apply mt-2 text-xs text-white/40;
+}
+
+.chat-window__composer-hint kbd {
+  @apply rounded border border-white/20 bg-white/10 px-1 py-0.5 font-semibold text-white/70;
 }
 
 .chat-window__tools {
