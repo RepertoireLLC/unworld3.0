@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NotebookPen, Plus, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useNotepadStore } from '../store/notepadStore';
@@ -28,6 +28,7 @@ export function Notepad() {
   const [draftTitle, setDraftTitle] = useState('');
   const [draftContent, setDraftContent] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -56,6 +57,17 @@ export function Notepad() {
       setLastSavedAt(null);
     }
   }, [activeNote]);
+
+  useEffect(() => {
+    if (!isOpen || !activeNote) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen, activeNote?.id]);
 
   if (!currentUser) {
     return null;
@@ -162,6 +174,7 @@ export function Notepad() {
                   <>
                     <div className="flex items-center gap-2 border-b border-white/10 px-5 py-3">
                       <input
+                        ref={titleInputRef}
                         value={draftTitle}
                         onChange={(event) => setDraftTitle(event.target.value)}
                         placeholder="Note title"
@@ -184,7 +197,7 @@ export function Notepad() {
                       aria-label="Note content"
                     />
                     <div className="flex items-center justify-between border-t border-white/10 px-5 py-3 text-xs text-white/50">
-                      <span>
+                      <span role="status" aria-live="polite" aria-atomic="true">
                         {hasUnsavedChanges
                           ? 'Saving…'
                           : lastSavedAt
