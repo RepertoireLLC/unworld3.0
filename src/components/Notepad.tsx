@@ -211,7 +211,7 @@ export function Notepad() {
               </div>
               <div className="flex flex-col items-end gap-3 text-right">
                 <span className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
-                  Select an operator to begin
+                  Select a note to begin
                 </span>
                 <div className="flex items-center gap-3">
                   <button
@@ -258,7 +258,7 @@ export function Notepad() {
                 <div className="mt-4 flex-1 space-y-2 overflow-y-auto pr-1 text-sm">
                   {notes.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-3 py-6 text-center text-xs text-slate-400">
-                      No entries logged. Launch a new note to begin your field report.
+                      No entries logged. Create a new note to begin capturing your thoughts.
                     </div>
                   ) : (
                     notes.map((note) => {
@@ -309,13 +309,13 @@ export function Notepad() {
                       ref={titleInputRef}
                       value={draftTitle}
                       onChange={(event) => setDraftTitle(event.target.value)}
-                      placeholder="Mission headline"
+                      placeholder="Note title"
                       className="mt-4 w-full rounded-2xl border border-white/10 bg-white/[0.07] px-4 py-3 text-lg font-semibold text-white placeholder:text-slate-500 focus:border-sky-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
                     />
                     <textarea
                       value={draftContent}
                       onChange={(event) => setDraftContent(event.target.value)}
-                      placeholder="Log tactical intel, mission learnings, or quick reminders for your squad."
+                      placeholder="Capture key ideas, action items, or quick reminders for your squad."
                       className="mt-4 h-[260px] flex-1 resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-sm leading-relaxed text-slate-100 placeholder:text-slate-500 focus:border-sky-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/30"
                     />
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
@@ -332,9 +332,9 @@ export function Notepad() {
                     <div className="rounded-full border border-white/10 bg-white/[0.03] p-5 text-slate-300">
                       <NotebookPen className="h-6 w-6" />
                     </div>
-                    <h3 className="mt-5 text-lg font-semibold text-white">No transmissions yet</h3>
+                    <h3 className="mt-5 text-lg font-semibold text-white">No notes yet</h3>
                     <p className="mt-2 max-w-sm text-sm text-slate-400">
-                      Create a new note or select an entry from the index to start your secure channel.
+                      Create a new note or select an entry from the index to start writing.
                     </p>
                     <button
                       onClick={handleCreateNote}
@@ -366,7 +366,7 @@ export function Notepad() {
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Compose Notes</p>
                     <p className="mt-2 text-sm text-slate-200">
-                      Draft mission intel, quick reminders, or alliance updates. Entries auto-sync after each pause in typing.
+                      Draft key ideas, quick reminders, or status updates. Entries auto-save after each pause in typing.
                     </p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-3">

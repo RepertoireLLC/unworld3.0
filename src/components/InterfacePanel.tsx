@@ -216,7 +216,7 @@ export function InterfacePanel() {
             className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
             <NotebookPen className="w-4 h-4" />
-            Tools
+            Notepad
           </button>
         </div>
       </div>
