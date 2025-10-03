@@ -191,13 +191,13 @@ export function Notepad() {
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.5em] text-sky-300/70">
-                  Encrypted Relay • Broadcast
+                  Personal Workspace
                 </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-                  Quantum Link Console
+                  Notepad Console
                 </h2>
                 <p className="mt-2 max-w-sm text-sm text-slate-300/80">
-                  A secure notepad for tactical annotations. Capture what matters and sync it across your sphere.
+                  Keep track of your ideas, plans, and reminders in one place. Everything you write here stays with your account.
                 </p>
               </div>
               <div className="flex flex-col items-end gap-3 text-right">
@@ -225,7 +225,7 @@ export function Notepad() {
           </div>
 
           <div className="mt-6 flex items-center gap-3 px-8 text-sm text-slate-300/80">
-            {['Broadcast', 'Alliances', 'Operations', 'Research'].map((label, index) => (
+            {['Personal', 'Work', 'Ideas', 'Archive'].map((label, index) => (
               <span
                 key={label}
                 className={`rounded-full border px-3 py-1 transition ${
@@ -306,7 +306,7 @@ export function Notepad() {
                     <textarea
                       value={draftContent}
                       onChange={(event) => setDraftContent(event.target.value)}
-                      placeholder="Capture key ideas, action items, or quick reminders for your squad."
+                      placeholder="Capture key ideas, action items, or quick reminders for yourself and your team."
                       className="mt-4 h-[260px] flex-1 resize-none rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-sm leading-relaxed text-slate-100 placeholder:text-slate-500 focus:border-sky-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/30"
                     />
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
@@ -361,22 +361,22 @@ export function Notepad() {
                     </p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Saved Logs</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Saved Notes</p>
                     <p className="mt-2 text-sm text-slate-200">
-                      Recent updates bubble to the top of the index so your freshest intel is always within reach.
+                      Recent updates bubble to the top of the index so the information you need stays front and center.
                     </p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Tag with Operator</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Stay Organized</p>
                     <p className="mt-2 text-sm text-slate-200">
-                      Mention teammates and include signal codes so your squad can align quickly when reviewing logs.
+                      Add context or simple tags to keep related notes grouped together and easy to review later.
                     </p>
                   </div>
                 </div>
                 <div className="mt-auto pt-5 text-xs text-slate-500">
                   <div className="flex items-center gap-2 text-slate-400">
                     <ArrowUpRight className="h-3.5 w-3.5" />
-                    <span>Sync to Sphere • Auto uplink enabled</span>
+                    <span>Notes save automatically and stay linked to your profile.</span>
                   </div>
                 </div>
               </aside>
