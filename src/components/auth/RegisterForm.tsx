@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { UserPlus } from 'lucide-react';
+import { generateColor } from '../../utils/color';
 
 export function RegisterForm({ onToggle }: { onToggle: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#' + Math.floor(Math.random()*16777215).toString(16));
+  const [color, setColor] = useState(generateColor());
   const [error, setError] = useState('');
   const register = useAuthStore((state) => state.register);
 

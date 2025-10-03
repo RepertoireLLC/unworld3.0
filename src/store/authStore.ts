@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
+import { generateColor } from '../utils/color';
 
 interface User {
   id: string;
@@ -10,6 +11,7 @@ interface User {
   password: string;
   profilePicture?: string;
   bio?: string;
+  status?: string;
 }
 
 interface AuthState {
@@ -42,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
           name: userData.name || userData.email.split('@')[0],
           email: userData.email,
           password: userData.password,
-          color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          color: userData.color || generateColor(),
         };
 
         set(state => ({
@@ -111,9 +113,31 @@ export const useAuthStore = create<AuthState>()(
           );
 
           // Update in user store
-          const { updateUserColor } = useUserStore.getState();
-          if (updates.color) {
-            updateUserColor(updatedUser.id, updates.color);
+          const { updateUserProfile } = useUserStore.getState();
+          const forwardedUpdates: Parameters<typeof updateUserProfile>[1] = {};
+
+          if (updates.name !== undefined) {
+            forwardedUpdates.name = updates.name;
+          }
+
+          if (updates.color !== undefined) {
+            forwardedUpdates.color = updates.color;
+          }
+
+          if (updates.profilePicture !== undefined) {
+            forwardedUpdates.profilePicture = updates.profilePicture;
+          }
+
+          if (updates.bio !== undefined) {
+            forwardedUpdates.bio = updates.bio;
+          }
+
+          if (updates.status !== undefined) {
+            forwardedUpdates.status = updates.status;
+          }
+
+          if (Object.keys(forwardedUpdates).length > 0) {
+            updateUserProfile(updatedUser.id, forwardedUpdates);
           }
 
           return {

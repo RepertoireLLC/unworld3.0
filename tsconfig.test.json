@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "./dist-test",
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "target": "ES2020",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": false,
+    "rootDir": "."
+  },
+  "include": ["src/store/**/*.ts", "src/utils/**/*.ts"]
+}
