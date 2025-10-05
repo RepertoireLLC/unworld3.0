@@ -11,6 +11,7 @@ import { HeaderBar } from './components/interface/HeaderBar';
 import { ControlPanel } from './components/interface/ControlPanel';
 import { BroadcastPanel } from './components/interface/BroadcastPanel';
 import { FieldNotesPanel } from './components/interface/FieldNotesPanel';
+import { LayerFilterBar } from './components/interface/LayerFilterBar';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -50,6 +51,7 @@ export function App() {
       {isAuthenticated ? (
         <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
           <HeaderBar />
+          <LayerFilterBar />
 
           <main className="grid flex-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]">
             <ControlPanel />

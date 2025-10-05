@@ -7,6 +7,7 @@ import { useStoryStore } from '../../store/storyStore';
 import { useState, useRef } from 'react';
 import { StoryViewer } from './StoryViewer';
 import { StoryCreator } from './StoryCreator';
+import { useLayerStore } from '../../store/layerStore';
 
 interface ProfileModalProps {
   userId: string;
@@ -20,6 +21,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   const { sendFriendRequest, isFriend, hasPendingRequest } = useFriendStore();
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const stories = useStoryStore((state) => state.getActiveStoriesForUser(userId));
+  const isMediaLayerActive = useLayerStore((state) => state.isLayerActive('media'));
   
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
@@ -160,18 +162,25 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
               {isOwnProfile && (
                 <button
                   onClick={() => setShowStoryCreator(true)}
-                  className="text-sm px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-colors"
+                  disabled={!isMediaLayerActive}
+                  className="text-sm px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-colors disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
                 >
                   Add Story
                 </button>
               )}
             </div>
-            {stories.length > 0 ? (
-              <div className="flex space-x-2 overflow-x-auto pb-2">
-                <StoryViewer stories={stories} />
-              </div>
+            {isMediaLayerActive ? (
+              stories.length > 0 ? (
+                <div className="flex space-x-2 overflow-x-auto pb-2">
+                  <StoryViewer stories={stories} />
+                </div>
+              ) : (
+                <p className="text-white/50">No active stories</p>
+              )
             ) : (
-              <p className="text-white/50">No active stories</p>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+                Media Vault layer is dormant. Enable to review shared stories.
+              </div>
             )}
           </div>
 
@@ -207,7 +216,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
           )}
         </div>
 
-        {showStoryCreator && (
+        {showStoryCreator && isMediaLayerActive && (
           <StoryCreator onClose={() => setShowStoryCreator(false)} />
         )}
       </div>
