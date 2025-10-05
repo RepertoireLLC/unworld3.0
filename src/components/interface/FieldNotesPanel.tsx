@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { NotebookPen, Lock, Save, RefreshCcw, Tag } from 'lucide-react';
+import { GlassCard } from './GlassCard';
+import { StatusBadge } from './StatusBadge';
 
 interface SavedLog {
   id: string;
@@ -55,20 +57,18 @@ export function FieldNotesPanel() {
 
   return (
     <aside className="space-y-6">
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+      <GlassCard className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-              Field Notes
-            </p>
-            <h3 className="mt-1 text-lg font-semibold text-white">
-              Tactical Annotations
-            </h3>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Field Notes</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">Tactical Annotations</h3>
           </div>
-          <Lock className="h-5 w-5 text-emerald-300" />
+          <StatusBadge tone="emerald" className="tracking-[0.25em]">
+            <span className="flex items-center gap-2"><Lock className="h-4 w-4" /> Secure</span>
+          </StatusBadge>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+        <GlassCard tone="subtle" className="mt-5 p-4">
           <div className="mb-3 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
             <span>Secure Notepad</span>
             <NotebookPen className="h-4 w-4 text-sky-300" />
@@ -113,10 +113,10 @@ export function FieldNotesPanel() {
               </button>
             </div>
           </div>
-        </div>
-      </section>
+        </GlassCard>
+      </GlassCard>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+      <GlassCard className="p-6">
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
           <span>Saved Logs</span>
           <RefreshCcw className="h-4 w-4 text-white/40" />
@@ -124,9 +124,10 @@ export function FieldNotesPanel() {
         <div className="mt-4 space-y-3">
           {savedLogs.length > 0 ? (
             savedLogs.map((log) => (
-              <div
+              <GlassCard
                 key={log.id}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                tone="subtle"
+                className="p-4"
               >
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
                   <span>{formatTime(log.timestamp)}</span>
@@ -143,15 +144,15 @@ export function FieldNotesPanel() {
                   </span>
                 </div>
                 <p className="mt-3 text-sm text-white/70">{log.content}</p>
-              </div>
+              </GlassCard>
             ))
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
+            <GlassCard tone="subtle" className="p-6 text-center text-sm text-white/50">
               No saved logs yet.
-            </div>
+            </GlassCard>
           )}
         </div>
-      </section>
+      </GlassCard>
     </aside>
   );
 }
