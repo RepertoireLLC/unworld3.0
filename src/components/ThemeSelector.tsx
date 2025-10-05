@@ -12,7 +12,11 @@ const themes: { id: ThemeType; name: string }[] = [
   { id: 'minimal', name: 'Minimal' },
 ];
 
-export function ThemeSelector() {
+interface ThemeSelectorProps {
+  className?: string;
+}
+
+export function ThemeSelector({ className }: ThemeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const { currentTheme, setTheme } = useThemeStore();
@@ -30,7 +34,7 @@ export function ThemeSelector() {
   };
 
   return (
-    <div className="absolute top-4 right-20 z-10">
+    <div className={`relative ${className ?? ''}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
@@ -39,7 +43,7 @@ export function ThemeSelector() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden">
+        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
           {themes.map((theme) => (
             <button
               key={theme.id}
@@ -56,7 +60,7 @@ export function ThemeSelector() {
               {theme.name}
             </button>
           ))}
-          
+
           <div className="border-t border-white/10">
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
