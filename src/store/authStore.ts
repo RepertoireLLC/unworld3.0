@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
+import { apiUpdatePresence } from '../lib/api';
 
 interface User {
   id: string;
@@ -16,9 +17,9 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   registeredUsers: User[];
-  login: (credentials: { email: string; password: string }) => boolean;
-  register: (userData: { email: string; password: string; name: string; color: string }) => boolean;
-  logout: () => void;
+  login: (credentials: { email: string; password: string }) => Promise<boolean>;
+  register: (userData: { email: string; password: string; name: string; color: string }) => Promise<boolean>;
+  logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
 }
 
@@ -29,96 +30,106 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       registeredUsers: [],
 
-      register: (userData) => {
+      register: async (userData) => {
         const { registeredUsers } = get();
-        const existingUser = registeredUsers.find(u => u.email === userData.email);
-        
+        const existingUser = registeredUsers.find((u) => u.email === userData.email);
+
         if (existingUser) {
           return false;
         }
 
-        const newUser = {
-          id: `user_${Date.now()}`,
+        const id = `user_${Date.now()}`;
+        const newUser: User = {
+          id,
           name: userData.name || userData.email.split('@')[0],
           email: userData.email,
           password: userData.password,
-          color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          color: userData.color || `#${Math.floor(Math.random() * 16777215).toString(16)}`,
         };
 
-        set(state => ({
+        set((state) => ({
           registeredUsers: [...state.registeredUsers, newUser],
           user: newUser,
-          isAuthenticated: true
+          isAuthenticated: true,
         }));
 
-        // Add user to the online users
-        const { addUser, setOnlineStatus } = useUserStore.getState();
-        addUser({
+        const userStore = useUserStore.getState();
+        userStore.setCurrentUser(newUser.id);
+        userStore.upsertUser({
           id: newUser.id,
           name: newUser.name,
           color: newUser.color,
-          online: true
-        });
-        setOnlineStatus(newUser.id, true);
+          email: newUser.email,
+        }).catch(() => undefined);
+
+        apiUpdatePresence({ userId: newUser.id, presence: 'online' })
+          .then((remote) => userStore.handlePresenceUpdate(remote))
+          .catch(() => undefined);
 
         return true;
       },
 
-      login: (credentials) => {
+      login: async (credentials) => {
         const { registeredUsers } = get();
         const user = registeredUsers.find(
-          u => u.email === credentials.email && u.password === credentials.password
+          (u) => u.email === credentials.email && u.password === credentials.password
         );
 
-        if (user) {
-          set({ user, isAuthenticated: true });
-          
-          // Set user as online
-          const { addUser, setOnlineStatus } = useUserStore.getState();
-          addUser({
-            id: user.id,
-            name: user.name,
-            color: user.color,
-            online: true
-          });
-          setOnlineStatus(user.id, true);
-
-          return true;
+        if (!user) {
+          return false;
         }
 
-        return false;
+        set({ user, isAuthenticated: true });
+
+        const userStore = useUserStore.getState();
+        userStore.setCurrentUser(user.id);
+        await userStore.upsertUser({
+          id: user.id,
+          name: user.name,
+          color: user.color,
+          email: user.email,
+        }).catch(() => undefined);
+
+        apiUpdatePresence({ userId: user.id, presence: 'online' })
+          .then((remote) => userStore.handlePresenceUpdate(remote))
+          .catch(() => undefined);
+
+        return true;
       },
 
-      logout: () => {
-        const { user } = get();
-        if (user) {
-          // Set user as offline before logging out
-          const { setOnlineStatus } = useUserStore.getState();
-          setOnlineStatus(user.id, false);
-        }
+      logout: async () => {
+        const current = get().user;
         set({ user: null, isAuthenticated: false });
+        const userStore = useUserStore.getState();
+        userStore.setCurrentUser(null);
+        if (current) {
+          apiUpdatePresence({ userId: current.id, presence: 'offline', lastSeen: Date.now() })
+            .then((remote) => userStore.handlePresenceUpdate(remote))
+            .catch(() => undefined);
+        }
       },
 
       updateProfile: (updates) =>
         set((state) => {
           if (!state.user) return state;
 
-          const updatedUser = { ...state.user, ...updates };
+          const updatedUser: User = { ...state.user, ...updates };
 
-          // Update in registered users list
-          const updatedRegisteredUsers = state.registeredUsers.map(u =>
+          const updatedRegisteredUsers = state.registeredUsers.map((u) =>
             u.id === updatedUser.id ? updatedUser : u
           );
 
-          // Update in user store
-          const { updateUserColor } = useUserStore.getState();
-          if (updates.color) {
-            updateUserColor(updatedUser.id, updates.color);
-          }
+          const userStore = useUserStore.getState();
+          userStore.upsertUser({
+            id: updatedUser.id,
+            name: updatedUser.name,
+            color: updatedUser.color,
+            email: updatedUser.email,
+          }).catch(() => undefined);
 
           return {
             user: updatedUser,
-            registeredUsers: updatedRegisteredUsers
+            registeredUsers: updatedRegisteredUsers,
           };
         }),
     }),

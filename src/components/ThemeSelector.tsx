@@ -22,14 +22,13 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   const { currentTheme, setTheme } = useThemeStore();
   const currentUser = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
-  const { updateUserColor, setOnlineStatus } = useUserStore();
+  const setUserColor = useUserStore((state) => state.setUserColor);
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (currentUser) {
       const newColor = e.target.value;
       updateProfile({ color: newColor });
-      updateUserColor(currentUser.id, newColor);
-      setOnlineStatus(currentUser.id, true);
+      setUserColor(currentUser.id, newColor);
     }
   };
 

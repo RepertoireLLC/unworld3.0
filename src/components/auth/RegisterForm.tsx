@@ -7,11 +7,12 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#' + Math.floor(Math.random()*16777215).toString(16));
+  const [color, setColor] = useState('#' + Math.floor(Math.random() * 16777215).toString(16));
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const register = useAuthStore((state) => state.register);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -25,15 +26,22 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
       return;
     }
 
-    const success = register({
-      email,
-      password,
-      name: name || email.split('@')[0],
-      color
-    });
+    setIsSubmitting(true);
+    try {
+      const success = await register({
+        email,
+        password,
+        name: name || email.split('@')[0],
+        color,
+      });
 
-    if (!success) {
-      setError('Email already registered');
+      if (!success) {
+        setError('Email already registered');
+      }
+    } catch (err) {
+      setError('Unable to create account. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -102,9 +110,10 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
         </div>
         <button
           type="submit"
-          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={isSubmitting}
         >
-          Sign Up
+          {isSubmitting ? 'Creating Account…' : 'Sign Up'}
         </button>
       </form>
       <p className="mt-6 text-center text-white/60">

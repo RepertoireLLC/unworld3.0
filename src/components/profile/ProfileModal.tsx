@@ -144,10 +144,10 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                 )}
               </div>
               <p className="flex items-center gap-2">
-                <span className={user.online ? 'text-emerald-400' : 'text-white/60'}>
-                  {user.online ? 'Online' : 'Offline'}
+                <span className={user.presence === 'online' ? 'text-emerald-400' : 'text-white/60'}>
+                  {user.presence === 'online' ? 'Online' : 'Offline'}
                 </span>
-                {user.online && (
+                {user.presence === 'online' && (
                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                 )}
               </p>

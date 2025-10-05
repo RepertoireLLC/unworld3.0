@@ -4,8 +4,8 @@ import { ChatWindow } from './components/chat/ChatWindow';
 import { useAuthStore } from './store/authStore';
 import { useModalStore } from './store/modalStore';
 import { useChatStore } from './store/chatStore';
+import { useUserStore } from './store/userStore';
 import { useEffect } from 'react';
-import { initializeMockData } from './store/mockData';
 import { useThemeStore } from './store/themeStore';
 import { HeaderBar } from './components/interface/HeaderBar';
 import { ControlPanel } from './components/interface/ControlPanel';
@@ -19,12 +19,19 @@ export function App() {
   const activeChat = useChatStore((state) => state.activeChat);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const currentTheme = useThemeStore((state) => state.currentTheme);
+  const currentUser = useAuthStore((state) => state.user);
+  const initializeUsers = useUserStore((state) => state.initialize);
+  const chatInitialize = useChatStore((state) => state.initialize);
+  const resetChat = useChatStore((state) => state.reset);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      initializeMockData();
+    if (isAuthenticated && currentUser) {
+      initializeUsers().catch(() => undefined);
+      chatInitialize({ id: currentUser.id, name: currentUser.name, color: currentUser.color }).catch(() => undefined);
+    } else {
+      resetChat();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentUser?.id, chatInitialize, initializeUsers, resetChat, currentUser?.name, currentUser?.color]);
 
   const getBackgroundClass = () => {
     switch (currentTheme) {

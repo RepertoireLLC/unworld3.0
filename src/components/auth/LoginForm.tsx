@@ -6,16 +6,23 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const login = useAuthStore((state) => state.login);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
-    const success = login({ email, password });
-    
-    if (!success) {
-      setError('Invalid email or password');
+    try {
+      const success = await login({ email, password });
+      if (!success) {
+        setError('Invalid email or password');
+      }
+    } catch (err) {
+      setError('Unable to sign in. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -55,9 +62,10 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
         </div>
         <button
           type="submit"
-          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={isSubmitting}
         >
-          Sign In
+          {isSubmitting ? 'Signing In…' : 'Sign In'}
         </button>
       </form>
       <p className="mt-6 text-center text-white/60">
