@@ -10,6 +10,8 @@ interface User {
   password: string;
   profilePicture?: string;
   bio?: string;
+  roles: string[];
+  location?: { lat: number; lon: number };
 }
 
 interface AuthState {
@@ -32,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
       register: (userData) => {
         const { registeredUsers } = get();
         const existingUser = registeredUsers.find(u => u.email === userData.email);
-        
+
         if (existingUser) {
           return false;
         }
@@ -43,6 +45,8 @@ export const useAuthStore = create<AuthState>()(
           email: userData.email,
           password: userData.password,
           color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          roles: ['user'],
+          location: { lat: 37.7749, lon: -122.4194 },
         };
 
         set(state => ({
@@ -50,6 +54,12 @@ export const useAuthStore = create<AuthState>()(
           user: newUser,
           isAuthenticated: true
         }));
+
+        localStorage.setItem('enclypse_token', btoa(JSON.stringify({
+          id: newUser.id,
+          name: newUser.name,
+          roles: newUser.roles,
+        })));
 
         // Add user to the online users
         const { addUser, setOnlineStatus } = useUserStore.getState();
@@ -71,17 +81,28 @@ export const useAuthStore = create<AuthState>()(
         );
 
         if (user) {
-          set({ user, isAuthenticated: true });
-          
+          const normalizedUser = {
+            ...user,
+            roles: user.roles?.length ? user.roles : ['user'],
+            location: user.location ?? { lat: 37.7749, lon: -122.4194 },
+          };
+          set({ user: normalizedUser, isAuthenticated: true });
+
+          localStorage.setItem('enclypse_token', btoa(JSON.stringify({
+            id: normalizedUser.id,
+            name: normalizedUser.name,
+            roles: normalizedUser.roles,
+          })));
+
           // Set user as online
           const { addUser, setOnlineStatus } = useUserStore.getState();
           addUser({
-            id: user.id,
-            name: user.name,
-            color: user.color,
+            id: normalizedUser.id,
+            name: normalizedUser.name,
+            color: normalizedUser.color,
             online: true
           });
-          setOnlineStatus(user.id, true);
+          setOnlineStatus(normalizedUser.id, true);
 
           return true;
         }
@@ -97,6 +118,7 @@ export const useAuthStore = create<AuthState>()(
           setOnlineStatus(user.id, false);
         }
         set({ user: null, isAuthenticated: false });
+        localStorage.removeItem('enclypse_token');
       },
 
       updateProfile: (updates) =>
@@ -114,6 +136,14 @@ export const useAuthStore = create<AuthState>()(
           const { updateUserColor } = useUserStore.getState();
           if (updates.color) {
             updateUserColor(updatedUser.id, updates.color);
+          }
+
+          if (updates.roles) {
+            localStorage.setItem('enclypse_token', btoa(JSON.stringify({
+              id: updatedUser.id,
+              name: updatedUser.name,
+              roles: updatedUser.roles,
+            })));
           }
 
           return {
