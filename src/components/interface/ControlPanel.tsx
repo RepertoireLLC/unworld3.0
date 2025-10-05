@@ -3,17 +3,25 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { useChatStore } from '../../store/chatStore';
 import { useModalStore } from '../../store/modalStore';
-import { Activity, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
+import { Activity, ShieldCheck, SignalHigh, Waves, Power } from 'lucide-react';
+import { useLayerStore } from '../../store/layerStore';
 
 export function ControlPanel() {
   const currentUser = useAuthStore((state) => state.user);
   const users = useUserStore((state) => state.users);
-  const onlineUsers = users.filter((user) => user.online);
-  const offlineUsers = users.filter((user) => !user.online);
+  const isPresenceLayerActive = useLayerStore((state) => state.isLayerActive('presence'));
+  const onlineUsers = isPresenceLayerActive
+    ? users.filter((user) => user.online)
+    : [];
+  const offlineUsers = isPresenceLayerActive
+    ? users.filter((user) => !user.online)
+    : [];
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
 
-  const otherUsers = users.filter((user) => user.id !== currentUser?.id);
+  const otherUsers = (isPresenceLayerActive ? users : []).filter(
+    (user) => user.id !== currentUser?.id
+  );
 
   return (
     <aside className="space-y-6">
@@ -21,11 +29,11 @@ export function ControlPanel() {
         <div className="pointer-events-none absolute -top-32 -right-10 h-64 w-64 rounded-full bg-cyan-500/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
 
-        <div className="relative flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-                Control Lattice
+          <div className="relative flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">
+                  Control Lattice
               </p>
               <h2 className="mt-1 text-xl font-semibold text-white">
                 Operator Atlas
@@ -38,7 +46,17 @@ export function ControlPanel() {
           </div>
 
           <div className="relative h-64 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60">
-            <Scene variant="embedded" />
+            {isPresenceLayerActive ? (
+              <Scene variant="embedded" />
+            ) : (
+              <div className="flex h-full items-center justify-center text-center text-sm text-white/60">
+                <div className="flex flex-col items-center gap-2">
+                  <Power className="h-6 w-6 text-white/40" />
+                  <p>Presence Mesh layer disabled.</p>
+                  <p className="text-xs text-white/40">Enable it to visualize operator orbits.</p>
+                </div>
+              </div>
+            )}
             <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5" />
           </div>
 
@@ -65,6 +83,11 @@ export function ControlPanel() {
               <p className="mt-2 text-2xl font-semibold text-emerald-300">99.2%</p>
             </div>
           </div>
+          {!isPresenceLayerActive && (
+            <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              Metrics paused while Presence Mesh is offline.
+            </p>
+          )}
         </div>
       </section>
 
@@ -107,43 +130,53 @@ export function ControlPanel() {
         </div>
 
         <div className="mt-4 space-y-3">
-          {otherUsers.length > 0 ? (
-            otherUsers.map((user) => (
-              <div
-                key={user.id}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-10 w-10 rounded-full border border-white/10"
-                    style={{ backgroundColor: user.color }}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-white">{user.name}</p>
-                    <p className={`text-xs ${user.online ? 'text-emerald-300' : 'text-white/50'}`}>
-                      {user.online ? 'Online • Synced' : 'Offline • Standby'}
-                    </p>
+          {isPresenceLayerActive ? (
+            otherUsers.length > 0 ? (
+              otherUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-10 w-10 rounded-full border border-white/10"
+                      style={{ backgroundColor: user.color }}
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-white">{user.name}</p>
+                      <p className={`text-xs ${user.online ? 'text-emerald-300' : 'text-white/50'}`}>
+                        {user.online ? 'Online • Synced' : 'Offline • Standby'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setProfileUserId(user.id)}
+                      className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/60 transition hover:bg-white/20"
+                    >
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => setActiveChat(user.id)}
+                      className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-emerald-300 transition hover:bg-emerald-500/20"
+                    >
+                      Link
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setProfileUserId(user.id)}
-                    className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/60 transition hover:bg-white/20"
-                  >
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => setActiveChat(user.id)}
-                    className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-emerald-300 transition hover:bg-emerald-500/20"
-                  >
-                    Link
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
+                No auxiliary operators registered.
               </div>
-            ))
+            )
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
-              No auxiliary operators registered.
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/60">
+              <div className="flex flex-col items-center gap-2">
+                <Power className="h-5 w-5 text-white/40" />
+                <p>Presence Mesh layer is dormant.</p>
+                <p className="text-xs text-white/40">Enable it to review linked operator dossiers.</p>
+              </div>
             </div>
           )}
         </div>

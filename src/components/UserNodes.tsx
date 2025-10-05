@@ -4,13 +4,19 @@ import { Billboard, Text } from '@react-three/drei';
 import { useUserStore } from '../store/userStore';
 import { useAuthStore } from '../store/authStore';
 import { useModalStore } from '../store/modalStore';
+import { useLayerStore } from '../store/layerStore';
 import * as THREE from 'three';
 
 export function UserNodes() {
   const users = useUserStore((state) => state.users);
   const currentUser = useAuthStore((state) => state.user);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const isPresenceLayerActive = useLayerStore((state) => state.isLayerActive('presence'));
   const groupRef = useRef<THREE.Group>(null);
+
+  if (!isPresenceLayerActive) {
+    return null;
+  }
 
   useFrame(() => {
     if (groupRef.current) {
