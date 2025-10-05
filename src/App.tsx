@@ -11,6 +11,7 @@ import { HeaderBar } from './components/interface/HeaderBar';
 import { ControlPanel } from './components/interface/ControlPanel';
 import { BroadcastPanel } from './components/interface/BroadcastPanel';
 import { FieldNotesPanel } from './components/interface/FieldNotesPanel';
+import { OperationsBoard } from './components/interface/OperationsBoard';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -53,7 +54,10 @@ export function App() {
 
           <main className="grid flex-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]">
             <ControlPanel />
-            <BroadcastPanel />
+            <div className="flex flex-col gap-6">
+              <BroadcastPanel />
+              <OperationsBoard />
+            </div>
             <FieldNotesPanel />
           </main>
 

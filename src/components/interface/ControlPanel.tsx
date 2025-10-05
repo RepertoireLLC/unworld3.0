@@ -3,7 +3,9 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { useChatStore } from '../../store/chatStore';
 import { useModalStore } from '../../store/modalStore';
-import { Activity, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
+import { Activity, ShieldCheck, SignalHigh, Waves, BellRing, Rocket } from 'lucide-react';
+import { useNotificationStore } from '../../store/notificationStore';
+import { useMissionStore } from '../../store/missionStore';
 
 export function ControlPanel() {
   const currentUser = useAuthStore((state) => state.user);
@@ -12,6 +14,10 @@ export function ControlPanel() {
   const offlineUsers = users.filter((user) => !user.online);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const activeAlerts = useNotificationStore((state) => state.getActiveNotifications());
+  const liveMissions = useMissionStore((state) =>
+    state.missions.filter((mission) => mission.status !== 'completed')
+  );
 
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
 
@@ -42,7 +48,7 @@ export function ControlPanel() {
             <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5" />
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
               <div className="flex items-center justify-between text-white/60">
                 <span>Active Nodes</span>
@@ -63,6 +69,13 @@ export function ControlPanel() {
                 <SignalHigh className="h-4 w-4 text-fuchsia-300" />
               </div>
               <p className="mt-2 text-2xl font-semibold text-emerald-300">99.2%</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="flex items-center justify-between text-white/60">
+                <span>Alerts</span>
+                <BellRing className="h-4 w-4 text-rose-300" />
+              </div>
+              <p className="mt-2 text-2xl font-semibold text-white">{activeAlerts.length}</p>
             </div>
           </div>
         </div>
@@ -144,6 +157,40 @@ export function ControlPanel() {
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
               No auxiliary operators registered.
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">
+              Mission Capsules
+            </p>
+            <h3 className="mt-1 text-lg font-semibold text-white">Active Operations</h3>
+          </div>
+          <Rocket className="h-5 w-5 text-emerald-300" />
+        </div>
+        <div className="mt-4 space-y-3 text-sm">
+          {liveMissions.length > 0 ? (
+            liveMissions.slice(0, 3).map((mission) => (
+              <div
+                key={mission.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-3"
+              >
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+                  <span>{mission.title}</span>
+                  <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-emerald-200">
+                    {mission.status.replace('-', ' ')}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-white/60">{mission.objective}</p>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
+              No active operations queued.
             </div>
           )}
         </div>
