@@ -2,6 +2,7 @@ import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { useUserStore } from '../store/userStore';
 import { useModalStore } from '../store/modalStore';
+import { useAuthStore } from '../store/authStore';
 
 interface SearchBarProps {
   className?: string;
@@ -9,7 +10,10 @@ interface SearchBarProps {
 
 export function SearchBar({ className }: SearchBarProps) {
   const [query, setQuery] = useState('');
-  const users = useUserStore((state) => state.users);
+  const currentUser = useAuthStore((state) => state.user);
+  const users = useUserStore((state) =>
+    currentUser ? state.getVisibleUsers(currentUser.id) : []
+  );
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
 
   const filteredUsers = users.filter((user) =>

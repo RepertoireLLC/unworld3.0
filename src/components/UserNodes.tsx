@@ -7,7 +7,7 @@ import { useModalStore } from '../store/modalStore';
 import * as THREE from 'three';
 
 export function UserNodes() {
-  const users = useUserStore((state) => state.users);
+  const getOnlineUsers = useUserStore((state) => state.getOnlineUsers);
   const currentUser = useAuthStore((state) => state.user);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
   const groupRef = useRef<THREE.Group>(null);
@@ -24,7 +24,7 @@ export function UserNodes() {
     }
   }, []);
 
-  const onlineUsers = users.filter(user => user.online);
+  const onlineUsers = currentUser ? getOnlineUsers(currentUser.id) : [];
   const radius = 3;
   const nodeRadius = 0.2;
 

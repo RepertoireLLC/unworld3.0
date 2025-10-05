@@ -7,7 +7,9 @@ import { useAuthStore } from '../../store/authStore';
 export function BroadcastPanel() {
   const { activeChat, setActiveChat, getMessagesForChat } = useChatStore();
   const currentUser = useAuthStore((state) => state.user);
-  const users = useUserStore((state) => state.users);
+  const visibleUsers = useUserStore((state) =>
+    currentUser ? state.getVisibleUsers(currentUser.id) : []
+  );
   const [selectedChannel, setSelectedChannel] = useState(activeChat ?? '');
 
   useEffect(() => {
@@ -15,14 +17,14 @@ export function BroadcastPanel() {
   }, [activeChat]);
 
   const otherUsers = useMemo(
-    () => users.filter((user) => user.id !== currentUser?.id),
-    [users, currentUser]
+    () => visibleUsers.filter((user) => user.id !== currentUser?.id),
+    [visibleUsers, currentUser]
   );
 
   const activeUser = otherUsers.find((user) => user.id === activeChat);
   const transcript =
     currentUser && activeUser
-      ? getMessagesForChat(currentUser.id, activeUser.id)
+      ? getMessagesForChat(currentUser.id, activeUser.id, currentUser.id)
       : [];
 
   return (

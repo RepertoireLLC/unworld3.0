@@ -1,11 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useUserStore } from './userStore';
+import { useUserStore, PresenceUser } from './userStore';
+import { Visibility, resolveLayerIds } from '../lib/permissions';
 
-interface User {
-  id: string;
-  name: string;
-  color: string;
+interface AuthUser extends PresenceUser {
   email: string;
   password: string;
   profilePicture?: string;
@@ -13,13 +11,20 @@ interface User {
 }
 
 interface AuthState {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
-  registeredUsers: User[];
+  registeredUsers: AuthUser[];
   login: (credentials: { email: string; password: string }) => boolean;
-  register: (userData: { email: string; password: string; name: string; color: string }) => boolean;
+  register: (userData: {
+    email: string;
+    password: string;
+    name: string;
+    color: string;
+    layerIds?: string[];
+    visibility?: Visibility;
+  }) => boolean;
   logout: () => void;
-  updateProfile: (updates: Partial<User>) => void;
+  updateProfile: (updates: Partial<AuthUser>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,33 +36,47 @@ export const useAuthStore = create<AuthState>()(
 
       register: (userData) => {
         const { registeredUsers } = get();
-        const existingUser = registeredUsers.find(u => u.email === userData.email);
-        
+        const existingUser = registeredUsers.find(
+          (u) => u.email === userData.email
+        );
+
         if (existingUser) {
           return false;
         }
 
-        const newUser = {
-          id: `user_${Date.now()}`,
+        const layerIds = resolveLayerIds(userData.layerIds);
+        const userId = `user_${Date.now()}`;
+        const newUser: AuthUser = {
+          id: userId,
+          ownerId: userId,
           name: userData.name || userData.email.split('@')[0],
           email: userData.email,
           password: userData.password,
-          color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          color:
+            userData.color ||
+            '#' + Math.floor(Math.random() * 16777215).toString(16),
+          online: true,
+          layerIds,
+          visibility: userData.visibility ?? Visibility.MEMBERS,
         };
+        newUser.ownerId = newUser.id;
 
-        set(state => ({
+        set((state) => ({
           registeredUsers: [...state.registeredUsers, newUser],
           user: newUser,
-          isAuthenticated: true
+          isAuthenticated: true,
         }));
 
-        // Add user to the online users
         const { addUser, setOnlineStatus } = useUserStore.getState();
         addUser({
           id: newUser.id,
           name: newUser.name,
           color: newUser.color,
-          online: true
+          online: true,
+          layerIds: newUser.layerIds,
+          visibility: newUser.visibility,
+          profilePicture: newUser.profilePicture,
+          bio: newUser.bio,
         });
         setOnlineStatus(newUser.id, true);
 
@@ -67,19 +86,24 @@ export const useAuthStore = create<AuthState>()(
       login: (credentials) => {
         const { registeredUsers } = get();
         const user = registeredUsers.find(
-          u => u.email === credentials.email && u.password === credentials.password
+          (u) =>
+            u.email === credentials.email &&
+            u.password === credentials.password
         );
 
         if (user) {
           set({ user, isAuthenticated: true });
-          
-          // Set user as online
+
           const { addUser, setOnlineStatus } = useUserStore.getState();
           addUser({
             id: user.id,
             name: user.name,
             color: user.color,
-            online: true
+            online: true,
+            layerIds: user.layerIds,
+            visibility: user.visibility,
+            profilePicture: user.profilePicture,
+            bio: user.bio,
           });
           setOnlineStatus(user.id, true);
 
@@ -92,7 +116,6 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         const { user } = get();
         if (user) {
-          // Set user as offline before logging out
           const { setOnlineStatus } = useUserStore.getState();
           setOnlineStatus(user.id, false);
         }
@@ -103,22 +126,46 @@ export const useAuthStore = create<AuthState>()(
         set((state) => {
           if (!state.user) return state;
 
-          const updatedUser = { ...state.user, ...updates };
+          const updatedUser: AuthUser = {
+            ...state.user,
+            ...updates,
+            ownerId: state.user.ownerId,
+            layerIds: updates.layerIds
+              ? resolveLayerIds(updates.layerIds)
+              : state.user.layerIds,
+            visibility: updates.visibility ?? state.user.visibility,
+          };
 
-          // Update in registered users list
-          const updatedRegisteredUsers = state.registeredUsers.map(u =>
+          const updatedRegisteredUsers = state.registeredUsers.map((u) =>
             u.id === updatedUser.id ? updatedUser : u
           );
 
-          // Update in user store
-          const { updateUserColor } = useUserStore.getState();
+          const {
+            updateUserColor,
+            updateUserProfile,
+            setUserLayers,
+            setUserVisibility,
+          } = useUserStore.getState();
           if (updates.color) {
             updateUserColor(updatedUser.id, updates.color);
+          }
+          if (updates.name || updates.profilePicture || updates.bio) {
+            updateUserProfile(updatedUser.id, {
+              name: updatedUser.name,
+              profilePicture: updatedUser.profilePicture,
+              bio: updatedUser.bio,
+            });
+          }
+          if (updates.layerIds) {
+            setUserLayers(updatedUser.id, updatedUser.layerIds);
+          }
+          if (updates.visibility) {
+            setUserVisibility(updatedUser.id, updatedUser.visibility);
           }
 
           return {
             user: updatedUser,
-            registeredUsers: updatedRegisteredUsers
+            registeredUsers: updatedRegisteredUsers,
           };
         }),
     }),
