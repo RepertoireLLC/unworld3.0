@@ -175,6 +175,50 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
             )}
           </div>
 
+          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-medium text-white">Signal Overview</h3>
+              <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+                {user.visibilityPreferences.presence.toUpperCase()} Presence
+              </span>
+            </div>
+            <div className="grid gap-2 text-sm text-white/70">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Industries</p>
+                <p>{user.industries?.join(' • ') || 'Not shared'}</p>
+              </div>
+              {user.skills?.length ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">Capabilities</p>
+                  <p>{user.skills.join(', ')}</p>
+                </div>
+              ) : null}
+              {user.location ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">Location</p>
+                  <p>{user.location}</p>
+                </div>
+              ) : null}
+            </div>
+            <div className="grid gap-2 text-xs text-white/50">
+              <p>Visibility Matrix</p>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(user.visibilityLayers).map(([layer, enabled]) => (
+                  <div
+                    key={layer}
+                    className={`rounded-xl border px-3 py-2 text-center ${
+                      enabled
+                        ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
+                        : 'border-white/10 bg-white/5 text-white/60'
+                    }`}
+                  >
+                    {layer.toUpperCase()}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {!isOwnProfile && (
             <div className="flex space-x-4">
               {areFriends ? (
