@@ -4,6 +4,8 @@ import { Billboard, Text } from '@react-three/drei';
 import { useUserStore } from '../store/userStore';
 import { useAuthStore } from '../store/authStore';
 import { useModalStore } from '../store/modalStore';
+import { useLayerStore } from '../store/layerStore';
+import { VISIBILITY_LAYERS } from '../types/visibility';
 import * as THREE from 'three';
 
 export function UserNodes() {
@@ -11,6 +13,7 @@ export function UserNodes() {
   const currentUser = useAuthStore((state) => state.user);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
   const groupRef = useRef<THREE.Group>(null);
+  const activeLayers = useLayerStore((state) => state.activeLayers);
 
   useFrame(() => {
     if (groupRef.current) {
@@ -24,7 +27,13 @@ export function UserNodes() {
     }
   }, []);
 
-  const onlineUsers = users.filter(user => user.online);
+  const onlineUsers = users.filter((user) => {
+    if (!user.online) return false;
+    if (currentUser?.id === user.id) return true;
+    return VISIBILITY_LAYERS.some(
+      ({ value }) => activeLayers[value] && user.visibilityLayers[value]
+    );
+  });
   const radius = 3;
   const nodeRadius = 0.2;
 
@@ -72,6 +81,17 @@ export function UserNodes() {
                 >
                   {user.name}
                 </Text>
+                {user.industries?.length ? (
+                  <Text
+                    position={[0, nodeRadius * 1.4, 0]}
+                    fontSize={0.12}
+                    color="#94a3b8"
+                    anchorX="center"
+                    anchorY="middle"
+                  >
+                    {user.industries[0]}
+                  </Text>
+                ) : null}
                 <mesh position={[user.name.length * 0.05 + 0.2, nodeRadius * 2, 0]}>
                   <sphereGeometry args={[0.04, 16, 16]} />
                   <meshBasicMaterial color="#10b981" />

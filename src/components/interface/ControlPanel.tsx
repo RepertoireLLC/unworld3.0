@@ -4,6 +4,7 @@ import { useUserStore } from '../../store/userStore';
 import { useChatStore } from '../../store/chatStore';
 import { useModalStore } from '../../store/modalStore';
 import { Activity, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
+import { LayerTogglePanel } from './LayerTogglePanel';
 
 export function ControlPanel() {
   const currentUser = useAuthStore((state) => state.user);
@@ -148,6 +149,8 @@ export function ControlPanel() {
           )}
         </div>
       </section>
+
+      <LayerTogglePanel />
     </aside>
   );
 }
