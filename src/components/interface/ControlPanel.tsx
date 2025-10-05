@@ -8,8 +8,8 @@ import { Activity, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
 export function ControlPanel() {
   const currentUser = useAuthStore((state) => state.user);
   const users = useUserStore((state) => state.users);
-  const onlineUsers = users.filter((user) => user.online);
-  const offlineUsers = users.filter((user) => !user.online);
+  const onlineUsers = users.filter((user) => user.presence === 'online');
+  const offlineUsers = users.filter((user) => user.presence !== 'online');
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
 
@@ -120,8 +120,8 @@ export function ControlPanel() {
                   />
                   <div>
                     <p className="text-sm font-medium text-white">{user.name}</p>
-                    <p className={`text-xs ${user.online ? 'text-emerald-300' : 'text-white/50'}`}>
-                      {user.online ? 'Online • Synced' : 'Offline • Standby'}
+                    <p className={`text-xs ${user.presence === 'online' ? 'text-emerald-300' : 'text-white/50'}`}>
+                      {user.presence === 'online' ? 'Online • Synced' : 'Offline • Standby'}
                     </p>
                   </div>
                 </div>

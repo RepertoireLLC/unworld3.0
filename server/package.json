@@ -1,0 +1,10 @@
+{
+  "name": "enclypse-server",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node --experimental-sqlite src/index.js",
+    "dev": "node --watch --experimental-sqlite src/index.js"
+  }
+}

@@ -24,7 +24,7 @@ export function UserNodes() {
     }
   }, []);
 
-  const onlineUsers = users.filter(user => user.online);
+  const onlineUsers = users.filter(user => user.presence === 'online');
   const radius = 3;
   const nodeRadius = 0.2;
 

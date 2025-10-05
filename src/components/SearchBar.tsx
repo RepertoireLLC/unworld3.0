@@ -49,10 +49,10 @@ export function SearchBar({ className }: SearchBarProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-white">{user.name}</span>
-                  <span className={`text-sm ${user.online ? 'text-emerald-400' : 'text-white/50'}`}>
-                    • {user.online ? 'Online' : 'Offline'}
+                  <span className={`text-sm ${user.presence === 'online' ? 'text-emerald-400' : 'text-white/50'}`}>
+                    • {user.presence === 'online' ? 'Online' : 'Offline'}
                   </span>
-                  {user.online && (
+                  {user.presence === 'online' && (
                     <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                   )}
                 </div>

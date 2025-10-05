@@ -85,7 +85,7 @@ export function BroadcastPanel() {
               </option>
               {otherUsers.map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.name} {user.online ? '(Online)' : '(Offline)'}
+                  {user.name} {user.presence === 'online' ? '(Online)' : '(Offline)'}
                 </option>
               ))}
             </select>
