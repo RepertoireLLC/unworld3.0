@@ -10,7 +10,7 @@ interface ProfileIconProps {
 export function ProfileIcon({ className }: ProfileIconProps) {
   const [isOpen, setIsOpen] = useState(false);
   const currentUser = useAuthStore((state) => state.user);
-  const { setProfileUserId } = useModalStore();
+  const openProfileModal = useModalStore((state) => state.openProfileModal);
 
   if (!currentUser) return null;
 
@@ -19,6 +19,7 @@ export function ProfileIcon({ className }: ProfileIconProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors flex items-center space-x-2"
+        aria-label="Open profile menu"
       >
         {currentUser.profilePicture ? (
           <img
@@ -35,7 +36,7 @@ export function ProfileIcon({ className }: ProfileIconProps) {
         <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
           <button
             onClick={() => {
-              setProfileUserId(currentUser.id);
+              openProfileModal(currentUser.id);
               setIsOpen(false);
             }}
             className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
@@ -44,7 +45,7 @@ export function ProfileIcon({ className }: ProfileIconProps) {
           </button>
           <button
             onClick={() => {
-              setProfileUserId(currentUser.id);
+              openProfileModal(currentUser.id, 'edit');
               setIsOpen(false);
             }}
             className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"

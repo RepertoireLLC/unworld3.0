@@ -9,7 +9,7 @@ import * as THREE from 'three';
 export function UserNodes() {
   const users = useUserStore((state) => state.users);
   const currentUser = useAuthStore((state) => state.user);
-  const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const openProfileModal = useModalStore((state) => state.openProfileModal);
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
@@ -45,7 +45,7 @@ export function UserNodes() {
         return (
           <group key={user.id} position={[x, y, z]}>
             <mesh
-              onClick={() => setProfileUserId(user.id)}
+              onClick={() => openProfileModal(user.id)}
               onPointerOver={(e) => {
                 e.stopPropagation();
                 document.body.style.cursor = 'pointer';

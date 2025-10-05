@@ -10,7 +10,7 @@ interface SearchBarProps {
 export function SearchBar({ className }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const users = useUserStore((state) => state.users);
-  const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const openProfileModal = useModalStore((state) => state.openProfileModal);
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(query.toLowerCase())
@@ -36,7 +36,7 @@ export function SearchBar({ className }: SearchBarProps) {
               <button
                 key={user.id}
                 onClick={() => {
-                  setProfileUserId(user.id);
+                  openProfileModal(user.id);
                   setQuery('');
                 }}
                 className="w-full px-4 py-2 flex items-center space-x-3 hover:bg-white/10 transition-colors"
