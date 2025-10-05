@@ -4,7 +4,11 @@ import { useFriendStore } from '../store/friendStore';
 import { useAuthStore } from '../store/authStore';
 import { useUserStore } from '../store/userStore';
 
-export function FriendRequests() {
+interface FriendRequestsProps {
+  className?: string;
+}
+
+export function FriendRequests({ className }: FriendRequestsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const currentUser = useAuthStore((state) => state.user);
   const users = useUserStore((state) => state.users);
@@ -18,7 +22,7 @@ export function FriendRequests() {
   );
 
   return (
-    <div className="absolute top-4 right-4 z-10">
+    <div className={`relative ${className ?? ''}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
@@ -32,7 +36,7 @@ export function FriendRequests() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
           <div className="p-4 border-b border-white/10">
             <h3 className="text-white font-medium">Friend Requests</h3>
           </div>
