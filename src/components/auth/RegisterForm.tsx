@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { UserPlus } from 'lucide-react';
+import { useLayerStore } from '../../store/layerStore';
 
 export function RegisterForm({ onToggle }: { onToggle: () => void }) {
   const [email, setEmail] = useState('');
@@ -8,8 +9,24 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [color, setColor] = useState('#' + Math.floor(Math.random()*16777215).toString(16));
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+  const [proposedDomain, setProposedDomain] = useState('');
   const [error, setError] = useState('');
   const register = useAuthStore((state) => state.register);
+  const availableDomains = useLayerStore((state) => state.availableDomains);
+
+  const sortedDomains = useMemo(
+    () => [...availableDomains].sort((a, b) => a.name.localeCompare(b.name)),
+    [availableDomains]
+  );
+
+  const toggleDomain = (domainId: string) => {
+    setSelectedDomains((prev) =>
+      prev.includes(domainId)
+        ? prev.filter((id) => id !== domainId)
+        : [...prev, domainId]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +42,18 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
       return;
     }
 
+    if (selectedDomains.length === 0 && !proposedDomain.trim()) {
+      setError('Select at least one domain or propose a new domain to continue.');
+      return;
+    }
+
     const success = register({
       email,
       password,
       name: name || email.split('@')[0],
-      color
+      color,
+      layers: selectedDomains,
+      proposedLayer: proposedDomain.trim() || null,
     });
 
     if (!success) {
@@ -90,6 +114,46 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
             required
           />
+        </div>
+        <div>
+          <label className="block text-white/80 mb-3">Select your mission layers</label>
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {sortedDomains.map((domain) => (
+              <label
+                key={domain.id}
+                className="flex items-start space-x-3 p-3 bg-white/5 border border-white/10 rounded-lg hover:border-white/30 transition-colors cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedDomains.includes(domain.id)}
+                  onChange={() => toggleDomain(domain.id)}
+                  className="mt-1 h-4 w-4 rounded border-white/30 bg-transparent text-white focus:ring-white/40"
+                />
+                <div>
+                  <p className="text-white font-medium">{domain.name}</p>
+                  {domain.description && (
+                    <p className="text-sm text-white/60">{domain.description}</p>
+                  )}
+                </div>
+              </label>
+            ))}
+            {sortedDomains.length === 0 && (
+              <p className="text-white/60 text-sm">No domains available yet.</p>
+            )}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-white/80">Request a new layer</label>
+          <input
+            type="text"
+            value={proposedDomain}
+            onChange={(e) => setProposedDomain(e.target.value)}
+            placeholder="Propose a new collaboration domain"
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
+          />
+          <p className="text-xs text-white/60">
+            Tell us if your team operates in a new space. We\'ll review and activate approved layers quickly.
+          </p>
         </div>
         <div>
           <label className="block text-white/80 mb-2">Choose your node color</label>

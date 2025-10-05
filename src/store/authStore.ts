@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
+import { useLayerStore } from './layerStore';
 
 interface User {
   id: string;
@@ -10,6 +11,8 @@ interface User {
   password: string;
   profilePicture?: string;
   bio?: string;
+  layers?: string[];
+  proposedLayer?: string | null;
 }
 
 interface AuthState {
@@ -17,7 +20,14 @@ interface AuthState {
   isAuthenticated: boolean;
   registeredUsers: User[];
   login: (credentials: { email: string; password: string }) => boolean;
-  register: (userData: { email: string; password: string; name: string; color: string }) => boolean;
+  register: (userData: {
+    email: string;
+    password: string;
+    name: string;
+    color: string;
+    layers?: string[];
+    proposedLayer?: string | null;
+  }) => boolean;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => void;
 }
@@ -32,10 +42,13 @@ export const useAuthStore = create<AuthState>()(
       register: (userData) => {
         const { registeredUsers } = get();
         const existingUser = registeredUsers.find(u => u.email === userData.email);
-        
+
         if (existingUser) {
           return false;
         }
+
+        const normalizedLayers = Array.from(new Set((userData.layers || []).filter(Boolean)));
+        const proposedLayer = userData.proposedLayer?.trim() || null;
 
         const newUser = {
           id: `user_${Date.now()}`,
@@ -43,6 +56,8 @@ export const useAuthStore = create<AuthState>()(
           email: userData.email,
           password: userData.password,
           color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          layers: normalizedLayers,
+          proposedLayer,
         };
 
         set(state => ({
@@ -53,13 +68,17 @@ export const useAuthStore = create<AuthState>()(
 
         // Add user to the online users
         const { addUser, setOnlineStatus } = useUserStore.getState();
+        const { assignUserToLayers, proposeDomain } = useLayerStore.getState();
         addUser({
           id: newUser.id,
           name: newUser.name,
           color: newUser.color,
-          online: true
+          online: true,
+          layers: normalizedLayers,
         });
         setOnlineStatus(newUser.id, true);
+        assignUserToLayers(newUser.id, normalizedLayers);
+        proposeDomain(newUser.id, proposedLayer);
 
         return true;
       },
@@ -72,16 +91,20 @@ export const useAuthStore = create<AuthState>()(
 
         if (user) {
           set({ user, isAuthenticated: true });
-          
+
           // Set user as online
           const { addUser, setOnlineStatus } = useUserStore.getState();
+          const { assignUserToLayers, proposeDomain } = useLayerStore.getState();
           addUser({
             id: user.id,
             name: user.name,
             color: user.color,
-            online: true
+            online: true,
+            layers: user.layers || [],
           });
           setOnlineStatus(user.id, true);
+          assignUserToLayers(user.id, user.layers || []);
+          proposeDomain(user.id, user.proposedLayer || null);
 
           return true;
         }
@@ -110,10 +133,25 @@ export const useAuthStore = create<AuthState>()(
             u.id === updatedUser.id ? updatedUser : u
           );
 
-          // Update in user store
-          const { updateUserColor } = useUserStore.getState();
+          // Update in user store & layer store
+          const { updateUserColor, updateUserLayers } = useUserStore.getState();
+          const { assignUserToLayers, proposeDomain } = useLayerStore.getState();
+
           if (updates.color) {
             updateUserColor(updatedUser.id, updates.color);
+          }
+
+          if (updates.layers) {
+            const normalizedLayers = Array.from(new Set(updates.layers.filter(Boolean)));
+            updateUserLayers(updatedUser.id, normalizedLayers);
+            assignUserToLayers(updatedUser.id, normalizedLayers);
+            updatedUser.layers = normalizedLayers;
+          }
+
+          if ('proposedLayer' in updates) {
+            const proposal = updates.proposedLayer?.trim() || null;
+            proposeDomain(updatedUser.id, proposal);
+            updatedUser.proposedLayer = proposal;
           }
 
           return {
