@@ -9,7 +9,7 @@ import { initializeMockData } from './store/mockData';
 import { useThemeStore } from './store/themeStore';
 import { HeaderBar } from './components/interface/HeaderBar';
 import { ControlPanel } from './components/interface/ControlPanel';
-import { BroadcastPanel } from './components/interface/BroadcastPanel';
+import { WorkspacePanel } from './components/interface/WorkspacePanel';
 import { FieldNotesPanel } from './components/interface/FieldNotesPanel';
 
 export function App() {
@@ -53,7 +53,7 @@ export function App() {
 
           <main className="grid flex-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]">
             <ControlPanel />
-            <BroadcastPanel />
+            <WorkspacePanel />
             <FieldNotesPanel />
           </main>
 
