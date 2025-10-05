@@ -28,7 +28,13 @@ export function StoryCreator({ onClose }: StoryCreatorProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentUser && content.trim()) {
-      addStory(currentUser.id, content.trim(), imagePreview || undefined);
+      addStory({
+        userId: currentUser.id,
+        content: content.trim(),
+        image: imagePreview || undefined,
+        layerIds: currentUser.layerIds,
+        visibility: currentUser.visibility,
+      });
       onClose();
     }
   };

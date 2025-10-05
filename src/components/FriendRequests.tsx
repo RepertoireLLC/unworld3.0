@@ -11,12 +11,14 @@ interface FriendRequestsProps {
 export function FriendRequests({ className }: FriendRequestsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const currentUser = useAuthStore((state) => state.user);
-  const users = useUserStore((state) => state.users);
-  const { friendRequests, acceptFriendRequest, rejectFriendRequest } = useFriendStore();
+  const getVisibleUsers = useUserStore((state) => state.getVisibleUsers);
+  const { getVisibleRequests, acceptFriendRequest, rejectFriendRequest } = useFriendStore();
 
   if (!currentUser) return null;
 
-  const pendingRequests = friendRequests.filter(
+  const visibleRequests = getVisibleRequests(currentUser.id);
+  const visibleUsers = getVisibleUsers(currentUser.id);
+  const pendingRequests = visibleRequests.filter(
     (request) =>
       request.status === 'pending' && request.toUserId === currentUser.id
   );
@@ -44,7 +46,7 @@ export function FriendRequests({ className }: FriendRequestsProps) {
           {pendingRequests.length > 0 ? (
             <div className="divide-y divide-white/10">
               {pendingRequests.map((request) => {
-                const fromUser = users.find((u) => u.id === request.fromUserId);
+                const fromUser = visibleUsers.find((u) => u.id === request.fromUserId);
                 if (!fromUser) return null;
 
                 return (
@@ -61,13 +63,13 @@ export function FriendRequests({ className }: FriendRequestsProps) {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => acceptFriendRequest(request.id)}
+                        onClick={() => acceptFriendRequest(request.id, currentUser.id)}
                         className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded hover:bg-emerald-500/30 transition-colors"
                       >
                         Accept
                       </button>
                       <button
-                        onClick={() => rejectFriendRequest(request.id)}
+                        onClick={() => rejectFriendRequest(request.id, currentUser.id)}
                         className="px-3 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 transition-colors"
                       >
                         Reject

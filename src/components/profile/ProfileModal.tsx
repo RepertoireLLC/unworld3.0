@@ -14,27 +14,38 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ userId, onClose }: ProfileModalProps) {
-  const user = useUserStore((state) => state.users.find(u => u.id === userId));
+  const getVisibleUsers = useUserStore((state) => state.getVisibleUsers);
   const currentUser = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const { sendFriendRequest, isFriend, hasPendingRequest } = useFriendStore();
   const setActiveChat = useChatStore((state) => state.setActiveChat);
-  const stories = useStoryStore((state) => state.getActiveStoriesForUser(userId));
+  const getStoriesForUser = useStoryStore((state) => state.getActiveStoriesForUser);
   
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [showStoryCreator, setShowStoryCreator] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (!user || !currentUser) return null;
+  if (!currentUser) return null;
+
+  const visibleUsers = getVisibleUsers(currentUser.id);
+  const user = visibleUsers.find(u => u.id === userId);
+
+  if (!user) return null;
 
   const isOwnProfile = currentUser.id === userId;
-  const areFriends = isFriend(currentUser.id, userId);
-  const hasPending = hasPendingRequest(currentUser.id, userId);
+  const areFriends = isFriend(currentUser.id, userId, currentUser.id);
+  const hasPending = hasPendingRequest(currentUser.id, userId, currentUser.id);
+  const stories = getStoriesForUser(userId, currentUser.id);
 
   const handleFriendRequest = () => {
     if (!hasPending) {
-      sendFriendRequest(currentUser.id, userId);
+      sendFriendRequest({
+        fromUserId: currentUser.id,
+        toUserId: userId,
+        layerIds: currentUser.layerIds,
+        visibility: currentUser.visibility,
+      });
     }
   };
 

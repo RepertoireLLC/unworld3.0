@@ -13,12 +13,16 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((state) => state.user);
-  const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
+  const otherUser = useUserStore((state) =>
+    currentUser
+      ? state.getVisibleUsers(currentUser.id).find((u) => u.id === userId)
+      : undefined
+  );
   const { sendMessage, getMessagesForChat } = useChatStore();
 
   const messages = useMemo(() => {
     if (!currentUser) return [];
-    return getMessagesForChat(currentUser.id, userId);
+    return getMessagesForChat(currentUser.id, userId, currentUser.id);
   }, [currentUser, getMessagesForChat, userId]);
 
   const scrollToBottom = () => {
@@ -33,7 +37,13 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
     e.preventDefault();
     if (!message.trim() || !currentUser) return;
 
-    sendMessage(currentUser.id, userId, message.trim());
+    sendMessage({
+      fromUserId: currentUser.id,
+      toUserId: userId,
+      content: message.trim(),
+      layerIds: currentUser.layerIds,
+      visibility: currentUser.visibility,
+    });
     setMessage('');
   };
 

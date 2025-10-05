@@ -7,13 +7,15 @@ import { Activity, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
 
 export function ControlPanel() {
   const currentUser = useAuthStore((state) => state.user);
-  const users = useUserStore((state) => state.users);
-  const onlineUsers = users.filter((user) => user.online);
-  const offlineUsers = users.filter((user) => !user.online);
+  const visibleUsers = useUserStore((state) =>
+    currentUser ? state.getVisibleUsers(currentUser.id) : []
+  );
+  const onlineUsers = visibleUsers.filter((user) => user.online);
+  const offlineUsers = visibleUsers.filter((user) => !user.online);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
 
-  const otherUsers = users.filter((user) => user.id !== currentUser?.id);
+  const otherUsers = visibleUsers.filter((user) => user.id !== currentUser?.id);
 
   return (
     <aside className="space-y-6">
