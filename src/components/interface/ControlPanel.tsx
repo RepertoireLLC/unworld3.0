@@ -11,7 +11,7 @@ export function ControlPanel() {
   const onlineUsers = users.filter((user) => user.online);
   const offlineUsers = users.filter((user) => !user.online);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
-  const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const openProfileModal = useModalStore((state) => state.openProfileModal);
 
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
 
@@ -87,7 +87,7 @@ export function ControlPanel() {
             <p className="font-mono text-sm text-white">{currentUser?.id ?? 'N/A'}</p>
           </div>
           <button
-            onClick={() => currentUser && setProfileUserId(currentUser.id)}
+            onClick={() => currentUser && openProfileModal(currentUser.id)}
             className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/20"
           >
             Open dossier
@@ -127,7 +127,7 @@ export function ControlPanel() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setProfileUserId(user.id)}
+                    onClick={() => openProfileModal(user.id)}
                     className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/60 transition hover:bg-white/20"
                   >
                     Profile

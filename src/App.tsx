@@ -14,8 +14,9 @@ import { FieldNotesPanel } from './components/interface/FieldNotesPanel';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const profileUserId = useModalStore((state) => state.profileUserId);
-  const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const profileModal = useModalStore((state) => state.profileModal);
+  const closeProfileModal = useModalStore((state) => state.closeProfileModal);
+  const setProfileModalMode = useModalStore((state) => state.setProfileModalMode);
   const activeChat = useChatStore((state) => state.activeChat);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const currentTheme = useThemeStore((state) => state.currentTheme);
@@ -57,10 +58,12 @@ export function App() {
             <FieldNotesPanel />
           </main>
 
-          {profileUserId && (
+          {profileModal && (
             <ProfileModal
-              userId={profileUserId}
-              onClose={() => setProfileUserId(null)}
+              userId={profileModal.userId}
+              mode={profileModal.mode}
+              onClose={closeProfileModal}
+              onModeChange={setProfileModalMode}
             />
           )}
           {activeChat && (

@@ -4,31 +4,49 @@ import { useAuthStore } from '../../store/authStore';
 import { useFriendStore } from '../../store/friendStore';
 import { useChatStore } from '../../store/chatStore';
 import { useStoryStore } from '../../store/storyStore';
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { StoryViewer } from './StoryViewer';
 import { StoryCreator } from './StoryCreator';
+import type { ProfileModalMode } from '../../store/modalStore';
 
 interface ProfileModalProps {
   userId: string;
   onClose: () => void;
+  mode: ProfileModalMode;
+  onModeChange: (mode: ProfileModalMode) => void;
 }
 
-export function ProfileModal({ userId, onClose }: ProfileModalProps) {
+export function ProfileModal({ userId, onClose, mode, onModeChange }: ProfileModalProps) {
   const user = useUserStore((state) => state.users.find(u => u.id === userId));
   const currentUser = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const { sendFriendRequest, isFriend, hasPendingRequest } = useFriendStore();
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const stories = useStoryStore((state) => state.getActiveStoriesForUser(userId));
-  
-  const [isEditing, setIsEditing] = useState(false);
+
   const [editName, setEditName] = useState('');
   const [showStoryCreator, setShowStoryCreator] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isOwnProfile = currentUser?.id === userId;
+  const isEditing = mode === 'edit' && isOwnProfile;
+
+  useEffect(() => {
+    if (mode === 'edit' && !isOwnProfile) {
+      onModeChange('view');
+    }
+  }, [isOwnProfile, mode, onModeChange]);
+
+  useEffect(() => {
+    if (isEditing && user) {
+      setEditName(user.name);
+    } else {
+      setEditName('');
+    }
+  }, [isEditing, user]);
+
   if (!user || !currentUser) return null;
 
-  const isOwnProfile = currentUser.id === userId;
   const areFriends = isFriend(currentUser.id, userId);
   const hasPending = hasPendingRequest(currentUser.id, userId);
 
@@ -57,13 +75,19 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   const handleNameUpdate = () => {
     if (editName.trim()) {
       updateProfile({ name: editName.trim() });
-      setIsEditing(false);
+      onModeChange('view');
     }
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-50" onClick={onClose}>
-      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-50"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">
             {isEditing ? (
@@ -80,6 +104,12 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                   className="text-white/60 hover:text-white"
                 >
                   Save
+                </button>
+                <button
+                  onClick={() => onModeChange('view')}
+                  className="text-white/60 hover:text-white"
+                >
+                  Cancel
                 </button>
               </div>
             ) : (
@@ -112,11 +142,11 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
               )}
               {isOwnProfile && (
                 <>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
-                  >
-                    <Camera className="w-4 h-4 text-white" />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                >
+                  <Camera className="w-4 h-4 text-white" />
                   </button>
                   <input
                     ref={fileInputRef}
@@ -133,10 +163,7 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                 <p className="text-white text-lg font-medium">{user.name}</p>
                 {isOwnProfile && !isEditing && (
                   <button
-                    onClick={() => {
-                      setIsEditing(true);
-                      setEditName(user.name);
-                    }}
+                    onClick={() => onModeChange('edit')}
                     className="text-white/60 hover:text-white"
                   >
                     <Edit2 className="w-4 h-4" />
