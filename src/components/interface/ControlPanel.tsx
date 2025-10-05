@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { useChatStore } from '../../store/chatStore';
 import { useModalStore } from '../../store/modalStore';
+import { useInterfaceStore } from '../../store/interfaceStore';
 import { Activity, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
 
 export function ControlPanel() {
@@ -12,6 +13,8 @@ export function ControlPanel() {
   const offlineUsers = users.filter((user) => !user.online);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const isSphereExpanded = useInterfaceStore((state) => state.isSphereExpanded);
+  const toggleSphereExpanded = useInterfaceStore((state) => state.toggleSphereExpanded);
 
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
 
@@ -37,10 +40,21 @@ export function ControlPanel() {
             </div>
           </div>
 
-          <div className="relative h-64 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60">
+          <button
+            type="button"
+            onClick={toggleSphereExpanded}
+            aria-expanded={isSphereExpanded}
+            className="group relative block h-64 w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+          >
             <Scene variant="embedded" />
             <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5" />
-          </div>
+            <span className="pointer-events-none absolute bottom-4 right-4 rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60 opacity-0 transition group-hover:opacity-100">
+              Expand
+            </span>
+            <span className="sr-only">
+              {isSphereExpanded ? 'Collapse network sphere view' : 'Expand network sphere view'}
+            </span>
+          </button>
 
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
