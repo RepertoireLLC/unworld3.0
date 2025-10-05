@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
 
-interface User {
+export interface User {
   id: string;
   name: string;
   color: string;
@@ -11,6 +11,38 @@ interface User {
   profilePicture?: string;
   bio?: string;
 }
+
+export const DEFAULT_OPERATORS: User[] = [
+  {
+    id: 'user_aurora',
+    name: 'Aurora Chen',
+    email: 'aurora@enclypse.io',
+    password: 'quantum-link',
+    color: '#6366F1',
+    bio: 'Lead signal architect monitoring the deep field relays.',
+  },
+  {
+    id: 'user_orion',
+    name: 'Orion Vega',
+    email: 'orion@enclypse.io',
+    password: 'pulse-array',
+    color: '#22D3EE',
+    bio: 'Operations chief coordinating away team uplinks.',
+  },
+  {
+    id: 'user_lyra',
+    name: 'Lyra Das',
+    email: 'lyra@enclypse.io',
+    password: 'nebula-core',
+    color: '#F97316',
+    bio: 'Intelligence analyst cataloging recovered transmissions.',
+  },
+];
+
+const generateRandomColor = () =>
+  `#${Math.floor(Math.random() * 0xffffff)
+    .toString(16)
+    .padStart(6, '0')}`;
 
 interface AuthState {
   user: User | null;
@@ -27,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
-      registeredUsers: [],
+      registeredUsers: DEFAULT_OPERATORS,
 
       register: (userData) => {
         const { registeredUsers } = get();
@@ -42,7 +74,7 @@ export const useAuthStore = create<AuthState>()(
           name: userData.name || userData.email.split('@')[0],
           email: userData.email,
           password: userData.password,
-          color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          color: userData.color || generateRandomColor(),
         };
 
         set(state => ({

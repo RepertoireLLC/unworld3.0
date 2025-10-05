@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore, DEFAULT_OPERATORS } from '../../store/authStore';
 import { LogIn } from 'lucide-react';
 
 export function LoginForm({ onToggle }: { onToggle: () => void }) {
@@ -60,6 +60,21 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
           Sign In
         </button>
       </form>
+      <div className="mt-8 space-y-3 rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+        <p className="text-xs uppercase tracking-[0.3em] text-white/50">Demo Access</p>
+        <p>
+          Sign in with one of the prelinked operators below or create your own account to explore the console.
+        </p>
+        <ul className="space-y-2 font-mono text-xs">
+          {DEFAULT_OPERATORS.map((operator) => (
+            <li key={operator.id} className="flex flex-wrap items-center gap-2">
+              <span className="rounded px-2 py-1 bg-white/10 text-white">{operator.email}</span>
+              <span className="text-white/50">/</span>
+              <span className="rounded px-2 py-1 bg-white/5 text-white/80">{operator.password}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       <p className="mt-6 text-center text-white/60">
         Don't have an account?{' '}
         <button
