@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Scene } from '../Scene';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
@@ -15,6 +15,8 @@ import {
   Wifi,
   ArrowUpRight,
   ChevronDown,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 type RelayTone = 'emerald' | 'sky' | 'violet';
@@ -84,6 +86,7 @@ export function ControlPanel() {
     workspace: false,
     matrix: false,
   });
+  const [isSphereFullscreen, setIsSphereFullscreen] = useState(false);
 
   const toggleSection = (section: keyof typeof collapsedSections) => {
     setCollapsedSections((previous) => ({
@@ -92,12 +95,26 @@ export function ControlPanel() {
     }));
   };
 
+  useEffect(() => {
+    if (!isSphereFullscreen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSphereFullscreen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSphereFullscreen]);
+
   const onlineUsers = users.filter((user) => user.online && user.id !== currentUser?.id);
   const standbyUsers = users.filter((user) => !user.online && user.id !== currentUser?.id);
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
 
   return (
-    <aside className="space-y-6">
+    <>
+      <aside className="space-y-6">
       <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-slate-950/80 via-slate-950/40 to-cyan-900/30 p-6 shadow-[0_20px_70px_-40px_rgba(14,165,233,0.7)]">
         <div className="pointer-events-none absolute -right-10 -top-24 h-56 w-56 rounded-full bg-cyan-500/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
@@ -122,6 +139,14 @@ export function ControlPanel() {
               <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
                 Ghost Operator
               </div>
+              <button
+                type="button"
+                onClick={() => setIsSphereFullscreen(true)}
+                className="rounded-full border border-white/10 bg-white/10 p-2 text-white/60 transition hover:border-white/30 hover:bg-white/20 hover:text-white"
+              >
+                <Maximize2 className="h-4 w-4" />
+                <span className="sr-only">Expand operator sphere</span>
+              </button>
               <button
                 type="button"
                 onClick={() => toggleSection('operator')}
@@ -317,6 +342,40 @@ export function ControlPanel() {
           </div>
         )}
       </section>
-    </aside>
+      </aside>
+
+      {isSphereFullscreen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 px-6 py-10 backdrop-blur-xl"
+        >
+          <div className="relative h-full w-full max-h-[900px] max-w-6xl">
+            <div className="pointer-events-none absolute -inset-12 rounded-[40px] bg-gradient-to-r from-cyan-500/20 via-sky-500/10 to-violet-500/20 blur-3xl" />
+            <div className="relative flex h-full flex-col gap-6 rounded-[36px] border border-white/10 bg-slate-950/80 p-6 shadow-[0_40px_120px_-60px_rgba(14,165,233,0.7)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-white/50">Operator Sphere</p>
+                  <h3 className="mt-2 text-2xl font-semibold text-white">Presence Constellation</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSphereFullscreen(false)}
+                  className="rounded-full border border-white/10 bg-white/10 p-2 text-white/60 transition hover:border-white/30 hover:bg-white/20 hover:text-white"
+                >
+                  <Minimize2 className="h-4 w-4" />
+                  <span className="sr-only">Exit fullscreen operator sphere</span>
+                </button>
+              </div>
+
+              <div className="relative flex-1 overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/70">
+                <Scene variant="fullscreen" className="h-full w-full" />
+                <div className="pointer-events-none absolute inset-0 rounded-[28px] border border-white/5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
