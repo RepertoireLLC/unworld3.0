@@ -63,7 +63,7 @@ export function BroadcastPanel() {
   const { activeChat, setActiveChat, getMessagesForChat } = useChatStore();
   const currentUser = useAuthStore((state) => state.user);
   const users = useUserStore((state) => state.users);
-  const [selectedChannel, setSelectedChannel] = useState(activeChat ?? '');
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(activeChat ?? null);
   const [collapsedSections, setCollapsedSections] = useState({
     console: false,
     log: false,
@@ -80,7 +80,7 @@ export function BroadcastPanel() {
   };
 
   useEffect(() => {
-    setSelectedChannel(activeChat ?? '');
+    setSelectedChannel(activeChat ?? null);
   }, [activeChat]);
 
   const otherUsers = useMemo(
@@ -88,14 +88,29 @@ export function BroadcastPanel() {
     [users, currentUser]
   );
 
+  useEffect(() => {
+    if (!selectedChannel) return;
+
+    const channelStillAvailable = otherUsers.some((user) => user.id === selectedChannel);
+
+    if (!channelStillAvailable) {
+      setSelectedChannel(otherUsers[0]?.id ?? null);
+    }
+  }, [otherUsers, selectedChannel]);
+
   const activeUser = otherUsers.find((user) => user.id === activeChat);
+  const focusedChannelId = selectedChannel ?? activeChat ?? null;
+  const focusedUser = otherUsers.find((user) => user.id === focusedChannelId);
+  const isFocusedChannelActive = Boolean(focusedUser && activeUser && focusedUser.id === activeUser.id);
+
   const transcript =
     currentUser && activeUser
       ? getMessagesForChat(currentUser.id, activeUser.id)
       : [];
+  const focusedTranscript = isFocusedChannelActive ? transcript : [];
 
-  const transmissionLog = transcript.length
-    ? [...transcript].reverse().slice(0, 5)
+  const transmissionLog = focusedTranscript.length
+    ? [...focusedTranscript].reverse().slice(0, 5)
     : [
         {
           id: 'log-1',
@@ -161,8 +176,8 @@ export function BroadcastPanel() {
                       <div>
                         <label className="text-xs uppercase tracking-[0.3em] text-white/50">Channel Selection</label>
                         <select
-                          value={selectedChannel}
-                          onChange={(event) => setSelectedChannel(event.target.value)}
+                          value={selectedChannel ?? ''}
+                          onChange={(event) => setSelectedChannel(event.target.value || null)}
                           className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-white/30 focus:outline-none"
                         >
                           <option value="" disabled>
@@ -180,28 +195,36 @@ export function BroadcastPanel() {
                         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                           <div className="flex items-center justify-between text-sm text-white/60">
                             <span>Handshake Status</span>
-                            <Shield className={`h-5 w-5 ${activeUser ? 'text-emerald-300' : 'text-white/40'}`} />
+                            <Shield className={`h-5 w-5 ${isFocusedChannelActive ? 'text-emerald-300' : focusedUser ? 'text-sky-300' : 'text-white/40'}`} />
                           </div>
                           <p className="mt-2 text-lg font-semibold text-white">
-                            {activeUser ? 'Secured' : 'Awaiting Link'}
+                            {isFocusedChannelActive
+                              ? 'Secured'
+                              : focusedUser
+                              ? 'Channel Selected'
+                              : 'Awaiting Link'}
                           </p>
                           <p className="text-xs text-white/50">
-                            {activeUser
+                            {isFocusedChannelActive
                               ? 'Channel authenticated. Ready to transmit.'
+                              : focusedUser
+                              ? 'Finalize the secure handshake to begin transmission.'
                               : 'Select a channel to initiate the secure handshake.'}
                           </p>
                         </div>
                         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                           <div className="flex items-center justify-between text-sm text-white/60">
                             <span>Presence State</span>
-                            <Waves className={`h-5 w-5 ${activeUser ? 'text-sky-300' : 'text-white/40'}`} />
+                            <Waves className={`h-5 w-5 ${isFocusedChannelActive ? 'text-sky-300' : focusedUser ? 'text-white/60' : 'text-white/40'}`} />
                           </div>
                           <p className="mt-2 text-lg font-semibold text-white">
-                            {activeUser ? 'Live' : 'Dormant'}
+                            {isFocusedChannelActive ? 'Live' : focusedUser ? 'Linked' : 'Dormant'}
                           </p>
                           <p className="text-xs text-white/50">
-                            {activeUser
+                            {isFocusedChannelActive
                               ? 'Presence telemetry streaming from remote operator.'
+                              : focusedUser
+                              ? 'Channel primed. Activate to begin streaming.'
                               : 'No active link detected. Awaiting handshake.'}
                           </p>
                         </div>
@@ -209,11 +232,17 @@ export function BroadcastPanel() {
 
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
-                          onClick={() => selectedChannel && setActiveChat(selectedChannel)}
-                          disabled={!selectedChannel}
+                          onClick={() => focusedUser && setActiveChat(focusedUser.id)}
+                          disabled={!focusedUser || isFocusedChannelActive}
                           className="flex-1 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-emerald-300 transition hover:border-emerald-400/60 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/40"
                         >
-                          {activeUser ? 'Switch Channel' : 'Prepare Sync Capsule'}
+                          {focusedUser
+                            ? isFocusedChannelActive
+                              ? 'Channel Active'
+                              : activeUser
+                              ? 'Switch Channel'
+                              : 'Prepare Sync Capsule'
+                            : 'Select Channel'}
                         </button>
                         {activeUser && (
                           <button
@@ -231,28 +260,36 @@ export function BroadcastPanel() {
                         <span>Active Transmission</span>
                         <Satellite className="h-4 w-4 text-sky-300" />
                       </div>
-                      {activeUser ? (
+                      {focusedUser ? (
                         <div className="mt-4 space-y-2">
-                          <h3 className="text-xl font-semibold text-white">{activeUser.name}</h3>
-                          <p className="text-sm text-white/60">
-                            {transcript.length > 0
-                              ? `Last signal: ${transcript[transcript.length - 1].content}`
-                              : 'Awaiting first transmission...'}
-                          </p>
-                          <div className="mt-4 space-y-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 text-xs text-white/50">
-                            <div className="flex items-center justify-between">
-                              <span>Packets</span>
-                              <span>{transcript.length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>Latency</span>
-                              <span>14ms</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>Integrity</span>
-                              <span className="text-emerald-300">99.2%</span>
-                            </div>
-                          </div>
+                          <h3 className="text-xl font-semibold text-white">{focusedUser.name}</h3>
+                          {isFocusedChannelActive ? (
+                            <>
+                              <p className="text-sm text-white/60">
+                                {focusedTranscript.length > 0
+                                  ? `Last signal: ${focusedTranscript[focusedTranscript.length - 1].content}`
+                                  : 'Awaiting first transmission...'}
+                              </p>
+                              <div className="mt-4 space-y-2 rounded-xl border border-white/10 bg-slate-950/60 p-3 text-xs text-white/50">
+                                <div className="flex items-center justify-between">
+                                  <span>Packets</span>
+                                  <span>{focusedTranscript.length}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span>Latency</span>
+                                  <span>14ms</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span>Integrity</span>
+                                  <span className="text-emerald-300">99.2%</span>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-sm text-white/60">
+                              Channel staged. Activate handshake to begin transmission.
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <div className="mt-4 space-y-2">
@@ -320,7 +357,7 @@ export function BroadcastPanel() {
                     <span className="flex items-center gap-2">
                       <History className="h-4 w-4" /> Session Buffer
                     </span>
-                    <span>{transcript.length || 2} packets</span>
+                    <span>{isFocusedChannelActive ? focusedTranscript.length : transmissionLog.length} packets</span>
                   </div>
                 </>
               ) : (

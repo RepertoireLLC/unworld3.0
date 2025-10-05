@@ -108,6 +108,17 @@ export function ControlPanel() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSphereFullscreen]);
 
+  useEffect(() => {
+    if (!isSphereFullscreen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isSphereFullscreen]);
+
   const onlineUsers = users.filter((user) => user.online && user.id !== currentUser?.id);
   const standbyUsers = users.filter((user) => !user.online && user.id !== currentUser?.id);
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
