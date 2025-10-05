@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import { Mesh, Color } from 'three';
+import { CORE_SPHERE_RADIUS } from '../layers/LayerManager';
 import { useThemeStore } from '../store/themeStore';
 
 const themeConfigs = {
@@ -112,7 +113,7 @@ export function Sphere() {
 
   return (
     <mesh ref={sphereRef}>
-      <sphereGeometry args={[3, config.segments, config.segments]} />
+      <sphereGeometry args={[CORE_SPHERE_RADIUS, config.segments, config.segments]} />
       <meshPhongMaterial
         color={new Color(config.sphereColor)}
         wireframe={config.wireframe}

@@ -5,6 +5,7 @@ import { useUserStore } from '../store/userStore';
 import { useAuthStore } from '../store/authStore';
 import { useModalStore } from '../store/modalStore';
 import * as THREE from 'three';
+import { CORE_SPHERE_RADIUS } from '../layers/LayerManager';
 
 export function UserNodes() {
   const users = useUserStore((state) => state.users);
@@ -25,7 +26,7 @@ export function UserNodes() {
   }, []);
 
   const onlineUsers = users.filter(user => user.online);
-  const radius = 3;
+  const radius = CORE_SPHERE_RADIUS;
   const nodeRadius = 0.2;
 
   return (
