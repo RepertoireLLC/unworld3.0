@@ -11,6 +11,7 @@ import { HeaderBar } from './components/interface/HeaderBar';
 import { ControlPanel } from './components/interface/ControlPanel';
 import { BroadcastPanel } from './components/interface/BroadcastPanel';
 import { FieldNotesPanel } from './components/interface/FieldNotesPanel';
+import { SphereOverlay } from './components/SphereOverlay';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -56,6 +57,8 @@ export function App() {
             <BroadcastPanel />
             <FieldNotesPanel />
           </main>
+
+          <SphereOverlay />
 
           {profileUserId && (
             <ProfileModal

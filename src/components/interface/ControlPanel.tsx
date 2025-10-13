@@ -3,7 +3,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { useChatStore } from '../../store/chatStore';
 import { useModalStore } from '../../store/modalStore';
-import { Activity, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
+import { Activity, Maximize2, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
+import { useSphereStore } from '../../store/sphereStore';
 
 export function ControlPanel() {
   const currentUser = useAuthStore((state) => state.user);
@@ -12,6 +13,7 @@ export function ControlPanel() {
   const offlineUsers = users.filter((user) => !user.online);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const setSphereFullscreen = useSphereStore((state) => state.setFullscreen);
 
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
 
@@ -37,9 +39,27 @@ export function ControlPanel() {
             </div>
           </div>
 
-          <div className="relative h-64 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setSphereFullscreen(true)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setSphereFullscreen(true);
+              }
+            }}
+            className="group relative h-64 cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 transition-transform duration-300 hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-white/50"
+          >
             <Scene variant="embedded" />
             <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent px-4 py-3 text-xs uppercase tracking-[0.3em] text-white/70">
+              <span className="flex items-center gap-2 text-white/60">
+                Expand sphere
+                <Maximize2 className="h-4 w-4 text-white/50" />
+              </span>
+              <span className="text-white/40">Immersive view</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4 text-sm">
