@@ -337,10 +337,16 @@ export function AIIntegrationPanel() {
                   <select
                     value={form.modelType}
                     onChange={(event) => handleModelTypeChange(event.target.value as AIModelType)}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-white/30 focus:outline-none"
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 focus:border-white/30 focus:outline-none"
+                    style={{ colorScheme: 'dark' }}
                   >
                     {(Object.keys(AI_DEFAULT_ENDPOINTS) as AIModelType[]).map((key) => (
-                      <option key={key} value={key}>
+                      <option
+                        key={key}
+                        value={key}
+                        className="bg-slate-900 text-slate-100"
+                        style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}
+                      >
                         {key}
                       </option>
                     ))}
