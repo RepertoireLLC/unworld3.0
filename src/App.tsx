@@ -12,6 +12,11 @@ import { ControlPanel } from './components/interface/ControlPanel';
 import { BroadcastPanel } from './components/interface/BroadcastPanel';
 import { FieldNotesPanel } from './components/interface/FieldNotesPanel';
 import { SphereOverlay } from './components/SphereOverlay';
+import { AIIntegrationPanel } from './components/ai/AIIntegrationPanel';
+import { ToastStack } from './components/interface/ToastStack';
+import { initializeAIRouter } from './core/aiRouter';
+import { useAIStore } from './store/aiStore';
+import { AIChatDock } from './components/ai/AIChatDock';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -20,12 +25,24 @@ export function App() {
   const activeChat = useChatStore((state) => state.activeChat);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const currentTheme = useThemeStore((state) => state.currentTheme);
+  const hydrateAI = useAIStore((state) => state.hydrate);
+  const isAIHydrated = useAIStore((state) => state.isHydrated);
 
   useEffect(() => {
     if (isAuthenticated) {
       initializeMockData();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    void hydrateAI();
+  }, [hydrateAI]);
+
+  useEffect(() => {
+    if (isAIHydrated) {
+      void initializeAIRouter();
+    }
+  }, [isAIHydrated]);
 
   const getBackgroundClass = () => {
     switch (currentTheme) {
@@ -59,6 +76,7 @@ export function App() {
           </main>
 
           <SphereOverlay />
+          <AIChatDock />
 
           {profileUserId && (
             <ProfileModal
@@ -76,6 +94,8 @@ export function App() {
       ) : (
         <AuthModal />
       )}
+      <AIIntegrationPanel />
+      <ToastStack />
     </div>
   );
 }
