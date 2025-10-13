@@ -27,6 +27,7 @@ export function App() {
   const currentTheme = useThemeStore((state) => state.currentTheme);
   const hydrateAI = useAIStore((state) => state.hydrate);
   const isAIHydrated = useAIStore((state) => state.isHydrated);
+  const currentUserId = useAuthStore((state) => state.user?.id ?? null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -35,14 +36,14 @@ export function App() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    void hydrateAI();
-  }, [hydrateAI]);
+    void hydrateAI(currentUserId);
+  }, [hydrateAI, currentUserId]);
 
   useEffect(() => {
     if (isAIHydrated) {
-      void initializeAIRouter();
+      void initializeAIRouter(currentUserId);
     }
-  }, [isAIHydrated]);
+  }, [isAIHydrated, currentUserId]);
 
   const getBackgroundClass = () => {
     switch (currentTheme) {

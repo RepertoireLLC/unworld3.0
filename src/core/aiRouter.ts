@@ -1,4 +1,5 @@
 import { useAIStore, type AIConnection } from '../store/aiStore';
+import { useAuthStore } from '../store/authStore';
 import { AI_DEFAULT_ENDPOINTS, isOnlineModel } from './aiRegistry';
 import { harmonizeResponse, type HarmonizedResponse } from './harmoniaEthics';
 import {
@@ -252,10 +253,11 @@ async function dispatchModel(
   }
 }
 
-export async function initializeAIRouter() {
+export async function initializeAIRouter(userId?: string | null) {
   const state = useAIStore.getState();
-  if (!state.isHydrated) {
-    await state.hydrate();
+  const effectiveUserId = userId ?? useAuthStore.getState().user?.id ?? null;
+  if (!state.isHydrated || state.hydratedUserId !== effectiveUserId) {
+    await state.hydrate(effectiveUserId);
   }
 }
 

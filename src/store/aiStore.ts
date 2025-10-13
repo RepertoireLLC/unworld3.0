@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persistAIConnections, retrieveAIConnections } from '../utils/encryption';
 import { logAIIntegration } from '../utils/logger';
 import { AI_DEFAULT_ENDPOINTS } from '../core/aiRegistry';
+import { useAuthStore } from './authStore';
 
 export type AIModelType =
   | 'ChatGPT'
@@ -37,7 +38,8 @@ interface AIStoreState {
   connections: AIConnection[];
   activeConnectionId: string | null;
   isHydrated: boolean;
-  hydrate: () => Promise<void>;
+  hydratedUserId: string | null;
+  hydrate: (userId?: string | null) => Promise<void>;
   addConnection: (
     connection: Omit<AIConnection, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'lastError' | 'lastTestedAt'> & {
       id?: string;
@@ -75,8 +77,13 @@ async function ensureScribeConnection(
   set: (
     partial: Partial<AIStoreState> | ((state: AIStoreState) => Partial<AIStoreState>)
   ) => void,
-  get: () => AIStoreState
+  get: () => AIStoreState,
+  userId: string | null
 ) {
+  if (!userId) {
+    return;
+  }
+
   const current = get();
   if (current.connections.length > 0) {
     return;
@@ -97,168 +104,199 @@ async function ensureScribeConnection(
     activeConnectionId: null,
   }));
 
-  await persistAIConnections(get().connections, get().activeConnectionId);
+  await persistAIConnections(get().connections, get().activeConnectionId, userId);
   await logAIIntegration('Initialized default Scribe connection placeholder.');
 }
 
-export const useAIStore = create<AIStoreState>((set, get) => ({
-  connections: [],
-  activeConnectionId: null,
-  isHydrated: false,
-  hydrate: async () => {
-    if (get().isHydrated) {
-      return;
-    }
+export const useAIStore = create<AIStoreState>((set, get) => {
+  const persistForCurrentUser = async () => {
+    const userId = useAuthStore.getState().user?.id ?? null;
+    await persistAIConnections(get().connections, get().activeConnectionId, userId);
+  };
 
-    if (typeof window === 'undefined') {
-      set({ isHydrated: true });
-      return;
-    }
+  const resolveUserId = (provided?: string | null) =>
+    provided ?? useAuthStore.getState().user?.id ?? null;
 
-    try {
-      const { connections, activeConnectionId } = await retrieveAIConnections();
-      set({
-        connections,
-        activeConnectionId: connections.length > 0 ? activeConnectionId ?? connections[0].id : null,
-        isHydrated: true,
+  return {
+    connections: [],
+    activeConnectionId: null,
+    isHydrated: false,
+    hydratedUserId: null,
+    hydrate: async (userId) => {
+      const effectiveUserId = resolveUserId(userId);
+      const alreadyHydratedForUser = get().isHydrated && get().hydratedUserId === effectiveUserId;
+      if (alreadyHydratedForUser) {
+        return;
+      }
+
+      if (!effectiveUserId) {
+        set({ connections: [], activeConnectionId: null, isHydrated: true, hydratedUserId: null });
+        return;
+      }
+
+      try {
+        const { connections, activeConnectionId } = await retrieveAIConnections(effectiveUserId);
+        set({
+          connections,
+          activeConnectionId:
+            connections.length > 0 ? activeConnectionId ?? connections[0].id : null,
+          isHydrated: true,
+          hydratedUserId: effectiveUserId,
+        });
+        await ensureScribeConnection(set, get, effectiveUserId);
+      } catch (error) {
+        await logAIIntegration(`Hydration error: ${(error as Error).message}`);
+        set({
+          connections: [],
+          activeConnectionId: null,
+          isHydrated: true,
+          hydratedUserId: effectiveUserId,
+        });
+        await ensureScribeConnection(set, get, effectiveUserId);
+      }
+    },
+    addConnection: async (connection) => {
+      const nextConnection = createConnectionRecord({
+        ...connection,
+        id: connection.id ?? generateId(),
       });
-      await ensureScribeConnection(set, get);
-    } catch (error) {
-      await logAIIntegration(`Hydration error: ${(error as Error).message}`);
-      set({ connections: [], activeConnectionId: null, isHydrated: true });
-      await ensureScribeConnection(set, get);
-    }
-  },
-  addConnection: async (connection) => {
-    const nextConnection = createConnectionRecord({
-      ...connection,
-      id: connection.id ?? generateId(),
-    });
-    const id = nextConnection.id;
+      const id = nextConnection.id;
 
-    set((state) => ({
-      connections: [...state.connections, nextConnection],
-      activeConnectionId: state.activeConnectionId ?? id,
-    }));
+      set((state) => ({
+        connections: [...state.connections, nextConnection],
+        activeConnectionId: state.activeConnectionId ?? id,
+      }));
 
-    await persistAIConnections(get().connections, get().activeConnectionId);
-    await logAIIntegration(`Connection added: ${nextConnection.name} (${nextConnection.modelType})`);
-    return nextConnection;
-  },
-  updateConnection: async (id, updates) => {
-    const timestamp = new Date().toISOString();
-    set((state) => ({
-      connections: state.connections.map((connection) =>
-        connection.id === id
-          ? {
-              ...connection,
-              ...updates,
-              updatedAt: timestamp,
-            }
-          : connection
-      ),
-    }));
+      await persistForCurrentUser();
+      await logAIIntegration(`Connection added: ${nextConnection.name} (${nextConnection.modelType})`);
+      return nextConnection;
+    },
+    updateConnection: async (id, updates) => {
+      const timestamp = new Date().toISOString();
+      set((state) => ({
+        connections: state.connections.map((connection) =>
+          connection.id === id
+            ? {
+                ...connection,
+                ...updates,
+                updatedAt: timestamp,
+              }
+            : connection
+        ),
+      }));
 
-    await persistAIConnections(get().connections, get().activeConnectionId);
-    await logAIIntegration(`Connection updated: ${id}`);
-  },
-  removeConnection: async (id) => {
-    set((state) => ({
-      connections: state.connections.filter((connection) => connection.id !== id),
-      activeConnectionId: state.activeConnectionId === id ? null : state.activeConnectionId,
-    }));
+      await persistForCurrentUser();
+      await logAIIntegration(`Connection updated: ${id}`);
+    },
+    removeConnection: async (id) => {
+      set((state) => ({
+        connections: state.connections.filter((connection) => connection.id !== id),
+        activeConnectionId: state.activeConnectionId === id ? null : state.activeConnectionId,
+      }));
 
-    const { connections } = get();
-    const nextActive = connections[0]?.id ?? null;
-    set({ activeConnectionId: nextActive });
+      const { connections } = get();
+      const nextActive = connections[0]?.id ?? null;
+      set({ activeConnectionId: nextActive });
 
-    await persistAIConnections(get().connections, get().activeConnectionId);
-    await logAIIntegration(`Connection removed: ${id}`);
+      await persistForCurrentUser();
+      await logAIIntegration(`Connection removed: ${id}`);
 
-    if (get().connections.length === 0) {
-      await ensureScribeConnection(set, get);
-    }
-  },
-  toggleConnection: async (id) => {
-    const connection = get().connections.find((item) => item.id === id);
-    if (!connection) {
-      return;
-    }
-
-    const isEnabled = !connection.isEnabled;
-    set((state) => ({
-      connections: state.connections.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              isEnabled,
-              updatedAt: new Date().toISOString(),
-              status: isEnabled ? item.status : 'idle',
-            }
-          : item
-      ),
-    }));
-
-    await persistAIConnections(get().connections, get().activeConnectionId);
-    await logAIIntegration(`Connection ${isEnabled ? 'enabled' : 'disabled'}: ${connection.name}`);
-  },
-  setActiveConnection: (id) => {
-    set((state) => ({
-      activeConnectionId: id,
-      connections: state.connections.map((connection) =>
-        connection.id === id
-          ? { ...connection, isEnabled: true }
-          : connection
-      ),
-    }));
-    void persistAIConnections(get().connections, id);
-    void logAIIntegration(`Active AI route set to ${id}`);
-  },
-  markStatus: (id, status, errorMessage) => {
-    set((state) => ({
-      connections: state.connections.map((connection) =>
-        connection.id === id
-          ? {
-              ...connection,
-              status,
-              lastTestedAt: status === 'testing' ? connection.lastTestedAt : new Date().toISOString(),
-              lastError: errorMessage,
-            }
-          : connection
-      ),
-    }));
-  },
-  testConnection: async (id, options) => {
-    const connection = get().connections.find((item) => item.id === id);
-    if (!connection) {
-      return { success: false, message: 'Connection not found' };
-    }
-
-    get().markStatus(id, 'testing');
-
-    try {
-      const { testAIConnection } = await import('../core/aiRouter');
-      const result = await testAIConnection(connection);
-      get().markStatus(id, result.success ? 'online' : 'error', result.success ? undefined : result.message);
-      await persistAIConnections(get().connections, get().activeConnectionId);
-      if (!options?.silent) {
-        await logAIIntegration(`Test result for ${connection.name}: ${result.message}`);
+      if (get().connections.length === 0) {
+        await ensureScribeConnection(
+          set,
+          get,
+          useAuthStore.getState().user?.id ?? null
+        );
       }
-      return result;
-    } catch (error) {
-      const message = (error as Error).message;
-      get().markStatus(id, 'error', message);
-      await persistAIConnections(get().connections, get().activeConnectionId);
-      if (!options?.silent) {
-        await logAIIntegration(`Test failed for ${connection.name}: ${message}`);
+    },
+    toggleConnection: async (id) => {
+      const connection = get().connections.find((item) => item.id === id);
+      if (!connection) {
+        return;
       }
-      return { success: false, message };
-    }
-  },
-  clearStore: async () => {
-    set({ connections: [], activeConnectionId: null });
-    await persistAIConnections([], null);
-    await logAIIntegration('AI store cleared.');
-    await ensureScribeConnection(set, get);
-  },
-}));
+
+      const isEnabled = !connection.isEnabled;
+      set((state) => ({
+        connections: state.connections.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                isEnabled,
+                updatedAt: new Date().toISOString(),
+                status: isEnabled ? item.status : 'idle',
+              }
+            : item
+        ),
+      }));
+
+      await persistForCurrentUser();
+      await logAIIntegration(`Connection ${isEnabled ? 'enabled' : 'disabled'}: ${connection.name}`);
+    },
+    setActiveConnection: (id) => {
+      set((state) => ({
+        activeConnectionId: id,
+        connections: state.connections.map((connection) =>
+          connection.id === id
+            ? { ...connection, isEnabled: true }
+            : connection
+        ),
+      }));
+      void (async () => {
+        await persistForCurrentUser();
+        await logAIIntegration(`Active AI route set to ${id}`);
+      })();
+    },
+    markStatus: (id, status, errorMessage) => {
+      set((state) => ({
+        connections: state.connections.map((connection) =>
+          connection.id === id
+            ? {
+                ...connection,
+                status,
+                lastTestedAt:
+                  status === 'testing' ? connection.lastTestedAt : new Date().toISOString(),
+                lastError: errorMessage,
+              }
+            : connection
+        ),
+      }));
+    },
+    testConnection: async (id, options) => {
+      const connection = get().connections.find((item) => item.id === id);
+      if (!connection) {
+        return { success: false, message: 'Connection not found' };
+      }
+
+      get().markStatus(id, 'testing');
+
+      try {
+        const { testAIConnection } = await import('../core/aiRouter');
+        const result = await testAIConnection(connection);
+        get().markStatus(id, result.success ? 'online' : 'error', result.success ? undefined : result.message);
+        await persistForCurrentUser();
+        if (!options?.silent) {
+          await logAIIntegration(`Test result for ${connection.name}: ${result.message}`);
+        }
+        return result;
+      } catch (error) {
+        const message = (error as Error).message;
+        get().markStatus(id, 'error', message);
+        await persistForCurrentUser();
+        if (!options?.silent) {
+          await logAIIntegration(`Test failed for ${connection.name}: ${message}`);
+        }
+        return { success: false, message };
+      }
+    },
+    clearStore: async () => {
+      set({ connections: [], activeConnectionId: null });
+      await persistForCurrentUser();
+      await logAIIntegration('AI store cleared.');
+      await ensureScribeConnection(
+        set,
+        get,
+        useAuthStore.getState().user?.id ?? null
+      );
+    },
+  };
+});

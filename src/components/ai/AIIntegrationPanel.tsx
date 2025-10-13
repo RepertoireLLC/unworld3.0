@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { useModalStore } from '../../store/modalStore';
+import { useAuthStore } from '../../store/authStore';
 import { useAIStore, type AIConnection, type AIModelType } from '../../store/aiStore';
 import { useToastStore } from '../../store/toastStore';
 import { AI_DEFAULT_ENDPOINTS, AI_MODEL_COLORS, isOnlineModel } from '../../core/aiRegistry';
@@ -55,7 +56,9 @@ export function AIIntegrationPanel() {
     setActiveConnection,
     testConnection,
   } = useAIStore();
+  const hydratedUserId = useAIStore((state) => state.hydratedUserId);
   const addToast = useToastStore((state) => state.addToast);
+  const currentUserId = useAuthStore((state) => state.user?.id ?? null);
 
   const [form, setForm] = useState<FormState>({ ...INITIAL_FORM });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,10 +68,10 @@ export function AIIntegrationPanel() {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    if (!isHydrated) {
-      void hydrate();
+    if (!isHydrated || hydratedUserId !== currentUserId) {
+      void hydrate(currentUserId);
     }
-  }, [hydrate, isHydrated]);
+  }, [hydrate, isHydrated, hydratedUserId, currentUserId]);
 
   useEffect(() => {
     if (isOpen) {

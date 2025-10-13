@@ -1,7 +1,9 @@
 import type { AIConnection } from '../store/aiStore';
 
-const STORAGE_KEY = 'harmonia.ai.connections';
-const MASTER_KEY_KEY = 'harmonia.ai.masterKey';
+const STORAGE_KEY_PREFIX = 'harmonia.ai.connections';
+const MASTER_KEY_PREFIX = 'harmonia.ai.masterKey';
+const LEGACY_STORAGE_KEY = 'harmonia.ai.connections';
+const LEGACY_MASTER_KEY_KEY = 'harmonia.ai.masterKey';
 
 interface PersistedConnection {
   id: string;
@@ -42,12 +44,25 @@ function base64ToArrayBuffer(base64: string) {
   return bytes.buffer;
 }
 
-async function getOrCreateKey(): Promise<CryptoKey> {
-  if (typeof window === 'undefined') {
+function hasWindow() {
+  return typeof window !== 'undefined';
+}
+
+function getStorageKey(userId: string) {
+  return `${STORAGE_KEY_PREFIX}.${userId}`;
+}
+
+function getMasterKeyKey(userId: string) {
+  return `${MASTER_KEY_PREFIX}.${userId}`;
+}
+
+async function getOrCreateKey(userId: string): Promise<CryptoKey> {
+  if (!hasWindow()) {
     throw new Error('Encryption is only available in browser environments.');
   }
 
-  const existing = window.localStorage.getItem(MASTER_KEY_KEY);
+  const keyLocation = getMasterKeyKey(userId);
+  const existing = window.localStorage.getItem(keyLocation);
   if (existing) {
     const rawKey = base64ToArrayBuffer(existing);
     return crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, [
@@ -62,12 +77,12 @@ async function getOrCreateKey(): Promise<CryptoKey> {
     'decrypt',
   ]);
   const exported = await crypto.subtle.exportKey('raw', key);
-  window.localStorage.setItem(MASTER_KEY_KEY, bufferToBase64(exported));
+  window.localStorage.setItem(keyLocation, bufferToBase64(exported));
   return key;
 }
 
-async function encryptString(plainText: string) {
-  const key = await getOrCreateKey();
+async function encryptString(plainText: string, userId: string) {
+  const key = await getOrCreateKey(userId);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(plainText);
   const cipherBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
@@ -77,8 +92,8 @@ async function encryptString(plainText: string) {
   };
 }
 
-async function decryptString(cipherText: string, iv: string) {
-  const key = await getOrCreateKey();
+async function decryptString(cipherText: string, iv: string, userId: string) {
+  const key = await getOrCreateKey(userId);
   const cipherBuffer = base64ToArrayBuffer(cipherText);
   const ivBuffer = base64ToArrayBuffer(iv);
   const plainBuffer = await crypto.subtle.decrypt(
@@ -89,11 +104,78 @@ async function decryptString(cipherText: string, iv: string) {
   return new TextDecoder().decode(plainBuffer);
 }
 
+async function decryptLegacyString(cipherText: string, iv: string) {
+  if (!hasWindow()) {
+    throw new Error('Encryption is only available in browser environments.');
+  }
+  const existing = window.localStorage.getItem(LEGACY_MASTER_KEY_KEY);
+  if (!existing) {
+    throw new Error('Legacy encryption key missing.');
+  }
+  const key = await crypto.subtle.importKey(
+    'raw',
+    base64ToArrayBuffer(existing),
+    'AES-GCM',
+    false,
+    ['encrypt', 'decrypt']
+  );
+  const cipherBuffer = base64ToArrayBuffer(cipherText);
+  const ivBuffer = base64ToArrayBuffer(iv);
+  const plainBuffer = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: new Uint8Array(ivBuffer) },
+    key,
+    cipherBuffer
+  );
+  return new TextDecoder().decode(plainBuffer);
+}
+
+async function migrateLegacyState(userId: string) {
+  if (!hasWindow()) {
+    return { connections: [], activeConnectionId: null };
+  }
+
+  const stored = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (!stored) {
+    return { connections: [], activeConnectionId: null };
+  }
+
+  const parsed = JSON.parse(stored) as PersistedState;
+  const connections: AIConnection[] = await Promise.all(
+    parsed.connections.map(async (connection) => ({
+      ...connection,
+      apiKey:
+        connection.credentials?.cipherText && connection.credentials.iv
+          ? await decryptLegacyString(connection.credentials.cipherText, connection.credentials.iv)
+          : undefined,
+      status: 'idle',
+      lastError: undefined,
+    }))
+  );
+
+  // Persist to the user-specific namespace and clean up the legacy storage.
+  await persistAIConnections(connections, parsed.activeConnectionId, userId);
+  window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  window.localStorage.removeItem(LEGACY_MASTER_KEY_KEY);
+
+  return {
+    connections,
+    activeConnectionId: parsed.activeConnectionId,
+  };
+}
+
 export async function persistAIConnections(
   connections: AIConnection[],
-  activeConnectionId: string | null
+  activeConnectionId: string | null,
+  userId: string | null
 ): Promise<void> {
-  if (typeof window === 'undefined') {
+  if (!hasWindow() || !userId) {
+    return;
+  }
+
+  const storageKey = getStorageKey(userId);
+
+  if (connections.length === 0) {
+    window.localStorage.removeItem(storageKey);
     return;
   }
 
@@ -111,26 +193,28 @@ export async function persistAIConnections(
         updatedAt: connection.updatedAt,
         lastTestedAt: connection.lastTestedAt,
         credentials: connection.apiKey
-          ? await encryptString(connection.apiKey)
+          ? await encryptString(connection.apiKey, userId)
           : undefined,
       }))
     ),
   };
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  window.localStorage.setItem(storageKey, JSON.stringify(payload));
 }
 
-export async function retrieveAIConnections(): Promise<{
+export async function retrieveAIConnections(userId: string | null): Promise<{
   connections: AIConnection[];
   activeConnectionId: string | null;
 }> {
-  if (typeof window === 'undefined') {
+  if (!hasWindow() || !userId) {
     return { connections: [], activeConnectionId: null };
   }
 
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const storageKey = getStorageKey(userId);
+  const stored = window.localStorage.getItem(storageKey);
+
   if (!stored) {
-    return { connections: [], activeConnectionId: null };
+    return migrateLegacyState(userId);
   }
 
   const parsed = JSON.parse(stored) as PersistedState;
@@ -139,7 +223,7 @@ export async function retrieveAIConnections(): Promise<{
       ...connection,
       apiKey:
         connection.credentials?.cipherText && connection.credentials.iv
-          ? await decryptString(connection.credentials.cipherText, connection.credentials.iv)
+          ? await decryptString(connection.credentials.cipherText, connection.credentials.iv, userId)
           : undefined,
       status: 'idle',
       lastError: undefined,
