@@ -47,7 +47,8 @@ export const useSphereStore = create<SphereState>((set) => ({
     })),
   unregisterNodePosition: (userId) =>
     set((state) => {
-      const { [userId]: _removed, ...remaining } = state.nodePositions;
+      const remaining = { ...state.nodePositions };
+      delete remaining[userId];
       const shouldClearHighlight = state.highlightedUserId === userId;
       return {
         nodePositions: remaining,

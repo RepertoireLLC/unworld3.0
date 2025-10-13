@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persistAIConnections, retrieveAIConnections } from '../utils/encryption';
 import { logAIIntegration } from '../utils/logger';
 import { testAIConnection } from '../core/aiRouter';
+import { generateId } from '../utils/id';
 
 export type AIModelType =
   | 'ChatGPT'
@@ -75,7 +76,7 @@ export const useAIStore = create<AIStoreState>((set, get) => ({
     }
   },
   addConnection: async (connection) => {
-    const id = connection.id ?? crypto.randomUUID();
+    const id = connection.id ?? generateId('ai');
     const timestamp = new Date().toISOString();
     const nextConnection: AIConnection = {
       ...connection,
