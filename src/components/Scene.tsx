@@ -2,6 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { Sphere } from './Sphere';
 import { UserNodes } from './UserNodes';
+import { AINodes } from './ai/AINodes';
 import { Component, ReactNode, Suspense, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
 import { useThemeStore } from '../store/themeStore';
@@ -103,6 +104,7 @@ export function Scene({ variant = 'fullscreen', className }: SceneProps) {
           <Suspense fallback={null}>
             <Sphere />
             <UserNodes />
+            <AINodes />
             {currentTheme === 'galaxy' && !isEmbedded && (
               <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
             )}
