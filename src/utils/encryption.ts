@@ -2,6 +2,7 @@ import type { AIConnection } from '../store/aiStore';
 
 const STORAGE_KEY_PREFIX = 'harmonia.ai.connections';
 const MASTER_KEY_PREFIX = 'harmonia.ai.masterKey';
+const CHAT_STORAGE_KEY_PREFIX = 'harmonia.ai.chatHistory';
 const LEGACY_STORAGE_KEY = 'harmonia.ai.connections';
 const LEGACY_MASTER_KEY_KEY = 'harmonia.ai.masterKey';
 
@@ -24,6 +25,28 @@ interface PersistedConnection {
 interface PersistedState {
   connections: PersistedConnection[];
   activeConnectionId: string | null;
+}
+
+interface PersistableChatMessage {
+  id: string;
+  connectionId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  status: 'pending' | 'sent' | 'error';
+  reasoning?: string;
+  error?: string;
+}
+
+interface PersistedChatThread {
+  connectionId: string;
+  cipherText: string;
+  iv: string;
+}
+
+interface PersistedChatPayload {
+  version: number;
+  threads: PersistedChatThread[];
 }
 
 function bufferToBase64(buffer: ArrayBuffer) {
@@ -54,6 +77,10 @@ function getStorageKey(userId: string) {
 
 function getMasterKeyKey(userId: string) {
   return `${MASTER_KEY_PREFIX}.${userId}`;
+}
+
+function getChatStorageKey(userId: string) {
+  return `${CHAT_STORAGE_KEY_PREFIX}.${userId}`;
 }
 
 async function getOrCreateKey(userId: string): Promise<CryptoKey> {
@@ -200,6 +227,85 @@ export async function persistAIConnections(
   };
 
   window.localStorage.setItem(storageKey, JSON.stringify(payload));
+}
+
+export async function persistAIChatHistory(
+  messages: Record<string, PersistableChatMessage[]>,
+  userId: string | null
+): Promise<void> {
+  if (!hasWindow() || !userId) {
+    return;
+  }
+
+  const storageKey = getChatStorageKey(userId);
+  const entries = Object.entries(messages);
+
+  if (entries.length === 0) {
+    window.localStorage.removeItem(storageKey);
+    return;
+  }
+
+  const payload: PersistedChatPayload = {
+    version: 1,
+    threads: await Promise.all(
+      entries.map(async ([connectionId, history]) => {
+        const serialised = JSON.stringify(history ?? []);
+        const encrypted = await encryptString(serialised, userId);
+        return {
+          connectionId,
+          cipherText: encrypted.cipherText,
+          iv: encrypted.iv,
+        } satisfies PersistedChatThread;
+      })
+    ),
+  };
+
+  window.localStorage.setItem(storageKey, JSON.stringify(payload));
+}
+
+export async function retrieveAIChatHistory(
+  userId: string | null
+): Promise<Record<string, PersistableChatMessage[]>> {
+  if (!hasWindow() || !userId) {
+    return {};
+  }
+
+  const storageKey = getChatStorageKey(userId);
+  const stored = window.localStorage.getItem(storageKey);
+  if (!stored) {
+    return {};
+  }
+
+  const parsed = JSON.parse(stored) as PersistedChatPayload;
+
+  const historyEntries = await Promise.all(
+    (parsed.threads ?? []).map(async (thread) => {
+      try {
+        const decrypted = await decryptString(thread.cipherText, thread.iv, userId);
+        const messages = JSON.parse(decrypted) as PersistableChatMessage[];
+        return [thread.connectionId, messages] as const;
+      } catch (error) {
+        console.error('Failed to decrypt chat thread', error);
+        return null;
+      }
+    })
+  );
+
+  return historyEntries
+    .filter((entry): entry is readonly [string, PersistableChatMessage[]] => Boolean(entry))
+    .reduce<Record<string, PersistableChatMessage[]>>((accumulator, [connectionId, history]) => {
+      accumulator[connectionId] = history;
+      return accumulator;
+    }, {});
+}
+
+export function clearAIChatHistory(userId: string | null): void {
+  if (!hasWindow() || !userId) {
+    return;
+  }
+
+  const storageKey = getChatStorageKey(userId);
+  window.localStorage.removeItem(storageKey);
 }
 
 export async function retrieveAIConnections(userId: string | null): Promise<{

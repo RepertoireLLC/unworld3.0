@@ -17,6 +17,7 @@ import { ToastStack } from './components/interface/ToastStack';
 import { initializeAIRouter } from './core/aiRouter';
 import { useAIStore } from './store/aiStore';
 import { AIChatDock } from './components/ai/AIChatDock';
+import { useAIChatStore } from './store/aiChatStore';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -28,6 +29,7 @@ export function App() {
   const hydrateAI = useAIStore((state) => state.hydrate);
   const isAIHydrated = useAIStore((state) => state.isHydrated);
   const currentUserId = useAuthStore((state) => state.user?.id ?? null);
+  const hydrateAIChats = useAIChatStore((state) => state.hydrate);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -38,6 +40,10 @@ export function App() {
   useEffect(() => {
     void hydrateAI(currentUserId);
   }, [hydrateAI, currentUserId]);
+
+  useEffect(() => {
+    void hydrateAIChats(currentUserId);
+  }, [hydrateAIChats, currentUserId]);
 
   useEffect(() => {
     if (isAIHydrated) {

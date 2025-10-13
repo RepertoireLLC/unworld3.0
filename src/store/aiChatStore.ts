@@ -3,6 +3,12 @@ import { routeAIQueryForConnection } from '../core/aiRouter';
 import { useAIStore } from './aiStore';
 import { useToastStore } from './toastStore';
 import { logAIIntegration } from '../utils/logger';
+import {
+  persistAIChatHistory,
+  retrieveAIChatHistory,
+  clearAIChatHistory,
+} from '../utils/encryption';
+import { useAuthStore } from './authStore';
 
 export type AIChatRole = 'user' | 'assistant' | 'system';
 
@@ -27,6 +33,10 @@ export interface OpenAIChat {
 interface AIChatState {
   openChats: OpenAIChat[];
   messages: Record<string, AIChatMessage[]>;
+  isHydrated: boolean;
+  hydratedUserId: string | null;
+  hydrate: (userId?: string | null) => Promise<void>;
+  clearChats: () => Promise<void>;
   openChat: (connectionId: string) => void;
   closeChat: (connectionId: string) => void;
   toggleMinimize: (connectionId: string) => void;
@@ -63,148 +73,220 @@ function buildConversationPrompt(history: AIChatMessage[], latest: string) {
   return `${formatted}\nUser: ${latest}`;
 }
 
-export const useAIChatStore = create<AIChatState>((set, get) => ({
-  openChats: [],
-  messages: {},
+export const useAIChatStore = create<AIChatState>((set, get) => {
+  const persistForCurrentUser = async () => {
+    const userId = useAuthStore.getState().user?.id ?? null;
+    await persistAIChatHistory(get().messages, userId);
+  };
 
-  openChat: (connectionId) => {
-    set((state) => {
-      if (state.openChats.some((chat) => chat.connectionId === connectionId)) {
-        return {
-          openChats: state.openChats.map((chat) =>
-            chat.connectionId === connectionId
-              ? { ...chat, minimized: false }
-              : chat
-          ),
-        };
+  const resolveUserId = (provided?: string | null) =>
+    provided ?? useAuthStore.getState().user?.id ?? null;
+
+  return {
+    openChats: [],
+    messages: {},
+    isHydrated: false,
+    hydratedUserId: null,
+
+    hydrate: async (userId) => {
+      const effectiveUserId = resolveUserId(userId);
+      const alreadyHydrated = get().isHydrated && get().hydratedUserId === effectiveUserId;
+      if (alreadyHydrated) {
+        return;
       }
 
-      return {
-        openChats: [
-          ...state.openChats,
-          { connectionId, minimized: false },
-        ],
-      };
-    });
-  },
+      if (!effectiveUserId) {
+        set({
+          openChats: [],
+          messages: {},
+          isHydrated: true,
+          hydratedUserId: null,
+        });
+        return;
+      }
 
-  closeChat: (connectionId) => {
-    set((state) => ({
-      openChats: state.openChats.filter((chat) => chat.connectionId !== connectionId),
-    }));
-  },
+      try {
+        const stored = await retrieveAIChatHistory(effectiveUserId);
+        set({
+          openChats: [],
+          messages: stored,
+          isHydrated: true,
+          hydratedUserId: effectiveUserId,
+        });
+      } catch (error) {
+        console.error('Failed to hydrate AI chat history', error);
+        set({
+          openChats: [],
+          messages: {},
+          isHydrated: true,
+          hydratedUserId: effectiveUserId,
+        });
+        clearAIChatHistory(effectiveUserId);
+      }
+    },
 
-  toggleMinimize: (connectionId) => {
-    set((state) => ({
-      openChats: state.openChats.map((chat) =>
-        chat.connectionId === connectionId
-          ? { ...chat, minimized: !chat.minimized }
-          : chat
-      ),
-    }));
-  },
+    clearChats: async () => {
+      set({ openChats: [], messages: {} });
+      await persistForCurrentUser();
+    },
 
-  sendMessage: async (connectionId, content) => {
-    const trimmed = content.trim();
-    if (!trimmed) {
-      return;
-    }
+    openChat: (connectionId) => {
+      let createdRecord = false;
+      set((state) => {
+        const isAlreadyOpen = state.openChats.some(
+          (chat) => chat.connectionId === connectionId
+        );
 
-    const connection = useAIStore.getState().connections.find((item) => item.id === connectionId);
-    if (!connection) {
-      useToastStore.getState().addToast({
-        title: 'Connection unavailable',
-        description: 'The AI link you selected is no longer available.',
-        variant: 'error',
+        const nextOpenChats = isAlreadyOpen
+          ? state.openChats.map((chat) =>
+              chat.connectionId === connectionId
+                ? { ...chat, minimized: false }
+                : chat
+            )
+          : [...state.openChats, { connectionId, minimized: false }];
+
+        if (!state.messages[connectionId]) {
+          createdRecord = true;
+        }
+
+        return {
+          openChats: nextOpenChats,
+          messages: state.messages[connectionId]
+            ? state.messages
+            : { ...state.messages, [connectionId]: [] },
+        };
       });
-      return;
-    }
 
-    if (!connection.isEnabled) {
-      useToastStore.getState().addToast({
-        title: `${connection.name} is disabled`,
-        description: 'Enable the connection inside the integration panel to start chatting.',
-        variant: 'warning',
-      });
-      return;
-    }
+      if (createdRecord) {
+        void persistForCurrentUser();
+      }
+    },
 
-    const now = new Date().toISOString();
-    const userMessage: AIChatMessage = {
-      id: generateId(),
-      connectionId,
-      role: 'user',
-      content: trimmed,
-      timestamp: now,
-      status: 'sent',
-    };
-
-    const assistantPlaceholderId = generateId();
-    const assistantPlaceholder: AIChatMessage = {
-      id: assistantPlaceholderId,
-      connectionId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date().toISOString(),
-      status: 'pending',
-    };
-
-    set((state) => {
-      const history = state.messages[connectionId] ?? [];
-      return {
-        messages: {
-          ...state.messages,
-          [connectionId]: [...history, userMessage, assistantPlaceholder],
-        },
-      };
-    });
-
-    try {
-      const history = get().messages[connectionId]?.filter((message) => message.id !== assistantPlaceholderId) ?? [];
-      const prompt = buildConversationPrompt(history, trimmed);
-      const response = await routeAIQueryForConnection(connectionId, prompt);
-
+    closeChat: (connectionId) => {
       set((state) => ({
-        messages: {
-          ...state.messages,
-          [connectionId]: state.messages[connectionId]?.map((message) =>
-            message.id === assistantPlaceholderId
-              ? {
-                  ...message,
-                  content: response.text,
-                  status: 'sent',
-                  reasoning: response.reasoning,
-                }
-              : message
-          ) ?? [],
-        },
+        openChats: state.openChats.filter((chat) => chat.connectionId !== connectionId),
       }));
+    },
 
-      await logAIIntegration(`AI chat message exchanged with ${connection.name}.`);
-    } catch (error) {
-      const message = (error as Error).message;
-      const failureNotice = `Harmonia couldn't reach ${connection.name}. ${message}`;
+    toggleMinimize: (connectionId) => {
       set((state) => ({
-        messages: {
-          ...state.messages,
-          [connectionId]: state.messages[connectionId]?.map((item) =>
-            item.id === assistantPlaceholderId
-              ? {
-                  ...item,
-                  content: failureNotice,
-                  status: 'error',
-                  error: message,
-                }
-              : item
-          ) ?? [],
-        },
+        openChats: state.openChats.map((chat) =>
+          chat.connectionId === connectionId
+            ? { ...chat, minimized: !chat.minimized }
+            : chat
+        ),
       }));
+    },
 
-      useToastStore.getState().addToast({
-        title: 'Chat delivery failed',
-        description: failureNotice,
-        variant: 'error',
+    sendMessage: async (connectionId, content) => {
+      const trimmed = content.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      const connection = useAIStore.getState().connections.find((item) => item.id === connectionId);
+      if (!connection) {
+        useToastStore.getState().addToast({
+          title: 'Connection unavailable',
+          description: 'The AI link you selected is no longer available.',
+          variant: 'error',
+        });
+        return;
+      }
+
+      if (!connection.isEnabled) {
+        useToastStore.getState().addToast({
+          title: `${connection.name} is disabled`,
+          description: 'Enable the connection inside the integration panel to start chatting.',
+          variant: 'warning',
+        });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const userMessage: AIChatMessage = {
+        id: generateId(),
+        connectionId,
+        role: 'user',
+        content: trimmed,
+        timestamp: now,
+        status: 'sent',
+      };
+
+      const assistantPlaceholderId = generateId();
+      const assistantPlaceholder: AIChatMessage = {
+        id: assistantPlaceholderId,
+        connectionId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date().toISOString(),
+        status: 'pending',
+      };
+
+      set((state) => {
+        const history = state.messages[connectionId] ?? [];
+        return {
+          messages: {
+            ...state.messages,
+            [connectionId]: [...history, userMessage, assistantPlaceholder],
+          },
+        };
       });
-    }
-  },
-}));
+
+      const history =
+        get().messages[connectionId]?.filter((message) => message.id !== assistantPlaceholderId) ?? [];
+
+      await persistForCurrentUser();
+
+      try {
+        const prompt = buildConversationPrompt(history, trimmed);
+        const response = await routeAIQueryForConnection(connectionId, prompt);
+
+        set((state) => ({
+          messages: {
+            ...state.messages,
+            [connectionId]: state.messages[connectionId]?.map((message) =>
+              message.id === assistantPlaceholderId
+                ? {
+                    ...message,
+                    content: response.text,
+                    status: 'sent',
+                    reasoning: response.reasoning,
+                  }
+                : message
+            ) ?? [],
+          },
+        }));
+
+        await persistForCurrentUser();
+        await logAIIntegration(`AI chat message exchanged with ${connection.name}.`);
+      } catch (error) {
+        const message = (error as Error).message;
+        const failureNotice = `Harmonia couldn't reach ${connection.name}. ${message}`;
+        set((state) => ({
+          messages: {
+            ...state.messages,
+            [connectionId]: state.messages[connectionId]?.map((item) =>
+              item.id === assistantPlaceholderId
+                ? {
+                    ...item,
+                    content: failureNotice,
+                    status: 'error',
+                    error: message,
+                  }
+                : item
+            ) ?? [],
+          },
+        }));
+
+        await persistForCurrentUser();
+
+        useToastStore.getState().addToast({
+          title: 'Chat delivery failed',
+          description: failureNotice,
+          variant: 'error',
+        });
+      }
+    },
+  };
+});
