@@ -129,12 +129,48 @@ async function callOpenAIEndpoint(query: string, connection: AIConnection) {
   };
 }
 
+const GEMINI_DEFAULT_MODEL = 'gemini-1.5-pro-latest';
+
+function normalizeGeminiEndpoint(connection: AIConnection) {
+  const rawEndpoint = resolveEndpoint(connection).trim();
+  if (!rawEndpoint) {
+    throw new Error('Gemini endpoint is required.');
+  }
+
+  const [withoutQuery] = rawEndpoint.split('?');
+  let sanitized = withoutQuery
+    .replace(/:(?:stream)?generate\w*$/i, '')
+    .replace(/\/$/, '');
+
+  if (/\/models\/[A-Za-z0-9_.-]+$/i.test(sanitized)) {
+    // Endpoint already targets a specific model – keep as-is.
+  } else if (sanitized.endsWith('/models')) {
+    sanitized = `${sanitized}/${GEMINI_DEFAULT_MODEL}`;
+  } else if (sanitized.includes('/models/')) {
+    // Handles cases with trailing slashes after the model id.
+    sanitized = sanitized.replace(/\/models\/([^/]+)\/$/i, '/models/$1');
+  } else {
+    sanitized = `${sanitized}/models/${GEMINI_DEFAULT_MODEL}`;
+  }
+
+  const finalUrl = `${sanitized}:generateContent`;
+
+  try {
+    // Validate we still have an absolute URL.
+    void new URL(finalUrl);
+  } catch {
+    throw new Error('Invalid Gemini endpoint. Provide a full https URL.');
+  }
+
+  return finalUrl;
+}
+
 async function callGeminiEndpoint(query: string, connection: AIConnection) {
   if (!connection.apiKey) {
     throw new Error('API key required for Gemini connection.');
   }
 
-  const endpoint = `${resolveEndpoint(connection)}:generateContent?key=${connection.apiKey}`;
+  const endpoint = normalizeGeminiEndpoint(connection);
   const payload = {
     contents: [
       {
@@ -143,7 +179,9 @@ async function callGeminiEndpoint(query: string, connection: AIConnection) {
       },
     ],
   };
-  const data = await performFetch(endpoint, payload, {});
+  const data = await performFetch(endpoint, payload, {
+    'x-goog-api-key': connection.apiKey,
+  });
   return {
     text: extractText(data),
     model: 'Gemini',
