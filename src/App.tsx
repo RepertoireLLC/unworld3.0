@@ -22,6 +22,7 @@ import { SettingsModal } from './components/interface/SettingsModal';
 import { useInterestStore } from './store/interestStore';
 import { useForumStore } from './store/forumStore';
 import { useMeshStore } from './store/meshStore';
+import { useP2PStore } from './store/p2pStore';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -36,6 +37,7 @@ export function App() {
   const ensureInterestProfile = useInterestStore((state) => state.ensureProfile);
   const initializeForumSync = useForumStore((state) => state.initializeSyncChannel);
   const initializeMesh = useMeshStore((state) => state.initialize);
+  const initializeP2P = useP2PStore((state) => state.initialize);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,8 +53,9 @@ export function App() {
     if (currentUser) {
       ensureInterestProfile(currentUser.id);
       initializeMesh(currentUser.name);
+      void initializeP2P();
     }
-  }, [currentUser, ensureInterestProfile, initializeMesh]);
+  }, [currentUser, ensureInterestProfile, initializeMesh, initializeP2P]);
 
   useEffect(() => {
     void hydrateAI();
