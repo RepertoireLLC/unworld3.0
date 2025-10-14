@@ -3,6 +3,7 @@ import { X, Search, ZoomIn } from 'lucide-react';
 import { Scene } from './Scene';
 import { useSphereStore } from '../store/sphereStore';
 import { useUserStore } from '../store/userStore';
+import { cn } from '../utils/cn';
 
 export function SphereOverlay() {
   const isFullscreen = useSphereStore((state) => state.isFullscreen);
@@ -80,22 +81,30 @@ export function SphereOverlay() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className={`absolute inset-0 bg-slate-950/80 backdrop-blur-xl transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}
+        className={cn(
+          'absolute inset-0 backdrop-blur-xl transition-opacity duration-300',
+          isActive ? 'opacity-100' : 'opacity-0'
+        )}
+        style={{ background: 'rgba(2, 6, 23, 0.85)' }}
         aria-hidden="true"
         onClick={handleClose}
       />
       <div
-        className={`relative z-10 flex h-[90vh] w-[90vw] max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/90 shadow-[0_40px_120px_-40px_rgba(15,23,42,0.9)] transition-all duration-300 ${isActive ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+        className={cn(
+          'relative z-10 flex h-[90vh] w-[90vw] max-w-6xl flex-col overflow-hidden rounded-3xl border transition-all duration-300',
+          isActive ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        )}
+        style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-strong)', boxShadow: 'var(--ds-shadow-intense)' }}
       >
-        <header className="flex items-center justify-between border-b border-white/10 bg-white/5 px-8 py-5">
+        <header className="flex items-center justify-between border-b px-8 py-5" style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-muted)' }}>
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Sphere Interface</p>
-            <h2 className="mt-1 text-lg font-semibold text-white">Full-Spectrum Network</h2>
+            <p className="text-xs uppercase tracking-[0.3em] ds-text-subtle">Sphere Interface</p>
+            <h2 className="mt-1 text-lg font-semibold ds-text-primary">Full-Spectrum Network</h2>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+            className="ds-button ds-button-ghost px-4 py-2"
           >
             Collapse
             <X className="h-4 w-4" />
@@ -105,7 +114,7 @@ export function SphereOverlay() {
         <div className="relative flex flex-1 flex-col">
           <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-32 bg-gradient-to-b from-white/10 to-transparent" />
           <div className="relative z-10 flex flex-col gap-4 px-8 pt-6">
-            <label className="text-xs uppercase tracking-[0.3em] text-white/50">
+            <label className="text-xs uppercase tracking-[0.3em] ds-text-subtle">
               Search Linked Nodes
             </label>
             <div className="relative">
@@ -119,11 +128,11 @@ export function SphereOverlay() {
                   }
                 }}
                 placeholder="Scan for operators, nodes, or signals..."
-                className="w-full rounded-xl border border-white/10 bg-white/10 px-12 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
+                className="ds-input pl-12"
               />
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 ds-text-subtle" />
             </div>
-            <div className="max-h-48 overflow-y-auto rounded-xl border border-white/5 bg-white/5">
+            <div className="ds-scrollbar max-h-48 overflow-y-auto rounded-xl border" style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-base)' }}>
               {filteredUsers.length > 0 ? (
                 <ul className="divide-y divide-white/5">
                   {filteredUsers.map((user) => (
@@ -131,23 +140,28 @@ export function SphereOverlay() {
                       <button
                         type="button"
                         onClick={() => handleSelectUser(user.id, user.online)}
-                        className={`flex w-full items-center justify-between px-4 py-3 text-sm transition hover:bg-white/10 ${highlightedUserId === user.id ? 'bg-white/10 text-white' : 'text-white/70'}`}
+                        className={cn(
+                          'flex w-full items-center justify-between px-4 py-3 text-sm transition',
+                          highlightedUserId === user.id
+                            ? 'bg-[color:var(--ds-surface-muted)] ds-text-primary'
+                            : 'ds-text-secondary hover:bg-[color:var(--ds-surface-muted)]/70'
+                        )}
                       >
                         <div className="flex items-center gap-3">
                           <span
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-white"
+                            className="ds-avatar h-8 w-8"
                             style={{ backgroundColor: user.color }}
                           >
                             {user.name.slice(0, 2).toUpperCase()}
                           </span>
                           <div className="text-left">
-                            <p className="font-medium text-white">{user.name}</p>
-                            <p className="text-xs text-white/50">
+                            <p className="font-medium ds-text-primary">{user.name}</p>
+                            <p className="text-xs ds-text-subtle">
                               {user.online ? 'Live presence detected' : 'Offline — awaiting sync'}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em]">
+                        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] ds-text-secondary">
                           <ZoomIn className="h-4 w-4" />
                           Focus
                         </div>
@@ -156,18 +170,18 @@ export function SphereOverlay() {
                   ))}
                 </ul>
               ) : (
-                <div className="px-4 py-6 text-center text-sm text-white/60">
+                <div className="px-4 py-6 text-center text-sm ds-text-subtle">
                   No matching nodes. Adjust your query.
                 </div>
               )}
             </div>
             {focusError && (
-              <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              <div className="rounded-xl border px-4 py-3 text-sm" style={{ borderColor: 'rgba(251, 191, 36, 0.4)', background: 'rgba(251, 191, 36, 0.12)', color: 'var(--ds-warning)' }}>
                 {focusError}
               </div>
             )}
             {activeUser && (
-              <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+              <div className="rounded-xl border px-4 py-3 text-sm" style={{ borderColor: 'rgba(52, 211, 153, 0.4)', background: 'rgba(52, 211, 153, 0.12)', color: 'var(--ds-positive)' }}>
                 Tracking {activeUser.name}. Camera synced to node trajectory.
               </div>
             )}

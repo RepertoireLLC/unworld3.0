@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 export type ThemeType = 'classic' | 'neon' | 'galaxy' | 'matrix' | 'minimal';
 
+export const THEME_OPTIONS: ThemeType[] = ['classic', 'neon', 'galaxy', 'matrix', 'minimal'];
+
 interface ThemeState {
   currentTheme: ThemeType;
   setTheme: (theme: ThemeType) => void;

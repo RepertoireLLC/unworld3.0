@@ -3,6 +3,7 @@ import { X, Send } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
+import { cn } from '../../utils/cn';
 
 interface ChatWindowProps {
   userId: string;
@@ -40,37 +41,38 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   if (!currentUser || !otherUser) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white/10 backdrop-blur-md rounded-xl shadow-xl flex flex-col overflow-hidden">
-      <div className="p-4 border-b border-white/10 flex items-center justify-between">
+    <div className="fixed bottom-4 right-4 flex w-80 flex-col overflow-hidden rounded-xl border shadow-xl" style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-base)', backdropFilter: 'blur(var(--ds-blur-base))' }}>
+      <div className="flex items-center justify-between border-b px-4 py-4" style={{ borderColor: 'var(--ds-border-subtle)' }}>
         <div className="flex items-center space-x-3">
           <div
             className="w-8 h-8 rounded-full"
             style={{ backgroundColor: otherUser.color }}
           />
-          <span className="text-white font-medium">{otherUser.name}</span>
+          <span className="font-medium ds-text-primary">{otherUser.name}</span>
         </div>
         <button
           onClick={onClose}
-          className="text-white/60 hover:text-white"
+          className="ds-text-secondary transition hover:opacity-100 opacity-70"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-96">
+      <div className="ds-scrollbar flex-1 max-h-96 space-y-4 overflow-y-auto px-4 py-4">
         {messages.map((msg) => {
           const isOwn = msg.fromUserId === currentUser.id;
           return (
             <div
               key={msg.id}
-              className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+              className={cn('flex', isOwn ? 'justify-end' : 'justify-start')}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-lg ${
+                className={cn(
+                  'max-w-[80%] rounded-lg px-3 py-2 text-sm',
                   isOwn
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/10 text-white'
-                }`}
+                    ? 'bg-[color:var(--ds-accent-soft)] text-[color:var(--ds-accent)]'
+                    : 'bg-[color:var(--ds-surface-muted)] ds-text-primary'
+                )}
               >
                 {msg.content}
               </div>
@@ -80,18 +82,18 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t border-white/10">
-        <div className="flex space-x-2">
+      <form onSubmit={handleSubmit} className="border-t px-4 py-3" style={{ borderColor: 'var(--ds-border-subtle)' }}>
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
+            className="ds-input flex-1"
           />
           <button
             type="submit"
-            className="p-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+            className="ds-button ds-button-secondary px-3 py-2"
           >
             <Send className="w-5 h-5" />
           </button>

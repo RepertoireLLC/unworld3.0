@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useFriendStore } from '../store/friendStore';
 import { useAuthStore } from '../store/authStore';
 import { useUserStore } from '../store/userStore';
+import { cn } from '../utils/cn';
 
 interface FriendRequestsProps {
   className?: string;
@@ -22,27 +23,28 @@ export function FriendRequests({ className }: FriendRequestsProps) {
   );
 
   return (
-    <div className={`relative ${className ?? ''}`}>
+    <div className={cn('relative', className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+        className="ds-button ds-button-ghost relative h-12 w-12 rounded-full p-0"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="h-5 w-5" />
         {pendingRequests.length > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--ds-critical)] text-[10px] font-semibold text-[color:var(--ds-accent-contrast)]">
             {pendingRequests.length}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
-          <div className="p-4 border-b border-white/10">
-            <h3 className="text-white font-medium">Friend Requests</h3>
+        <div className="ds-panel ds-panel-overlay absolute right-0 z-30 mt-2 w-80 overflow-hidden">
+          <div className="flex items-center justify-between border-b ds-border-base px-4 py-3">
+            <h3 className="text-sm font-semibold ds-text-primary">Friend Requests</h3>
+            <span className="text-xs uppercase tracking-[0.3em] ds-text-subtle">{pendingRequests.length} Pending</span>
           </div>
 
           {pendingRequests.length > 0 ? (
-            <div className="divide-y divide-white/10">
+            <div className="divide-y ds-border-base">
               {pendingRequests.map((request) => {
                 const fromUser = users.find((u) => u.id === request.fromUserId);
                 if (!fromUser) return null;
@@ -50,25 +52,28 @@ export function FriendRequests({ className }: FriendRequestsProps) {
                 return (
                   <div
                     key={request.id}
-                    className="p-4 flex items-center justify-between"
+                    className="flex items-center justify-between px-4 py-3"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className="w-10 h-10 rounded-full"
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="ds-avatar h-10 w-10"
                         style={{ backgroundColor: fromUser.color }}
                       />
-                      <span className="text-white">{fromUser.name}</span>
+                      <div>
+                        <p className="text-sm font-semibold ds-text-primary">{fromUser.name}</p>
+                        <p className="text-xs ds-text-subtle">Secure link request</p>
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => acceptFriendRequest(request.id)}
-                        className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded hover:bg-emerald-500/30 transition-colors"
+                        className="ds-button ds-button-success px-3 py-2"
                       >
                         Accept
                       </button>
                       <button
                         onClick={() => rejectFriendRequest(request.id)}
-                        className="px-3 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 transition-colors"
+                        className="ds-button ds-button-danger px-3 py-2"
                       >
                         Reject
                       </button>
@@ -78,7 +83,7 @@ export function FriendRequests({ className }: FriendRequestsProps) {
               })}
             </div>
           ) : (
-            <div className="p-4 text-white/50 text-center">
+            <div className="px-4 py-6 text-center text-sm ds-text-subtle">
               No pending friend requests
             </div>
           )}

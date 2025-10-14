@@ -1,7 +1,8 @@
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { useUserStore } from '../store/userStore';
-import { useModalStore } from '../store/modalStore';
+import { useInterfaceActions } from '../hooks/useInterfaceActions';
+import { cn } from '../utils/cn';
 
 interface SearchBarProps {
   className?: string;
@@ -10,57 +11,59 @@ interface SearchBarProps {
 export function SearchBar({ className }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const users = useUserStore((state) => state.users);
-  const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const { openProfile } = useInterfaceActions();
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
-    <div className={`relative w-full ${className ?? ''}`}>
+    <div className={cn('relative w-full', className)}>
       <div className="relative">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search users..."
-          className="w-full px-4 py-2 pl-10 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
+          className="ds-input pl-10"
         />
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ds-text-subtle" />
       </div>
 
       {query && (
-        <div className="absolute left-0 right-0 mt-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden max-h-96 overflow-y-auto z-20">
+        <div className="ds-panel ds-panel-overlay absolute left-0 right-0 z-20 mt-2 max-h-96 overflow-hidden">
+          <div className="ds-scrollbar max-h-96 overflow-y-auto">
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
               <button
                 key={user.id}
                 onClick={() => {
-                  setProfileUserId(user.id);
+                  openProfile(user.id);
                   setQuery('');
                 }}
-                className="w-full px-4 py-2 flex items-center space-x-3 hover:bg-white/10 transition-colors"
+                className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-[color:var(--ds-surface-muted)]/80"
               >
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: user.color }}
-                >
-                  <span className="text-white text-sm">{user.name[0].toUpperCase()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-white">{user.name}</span>
-                  <span className={`text-sm ${user.online ? 'text-emerald-400' : 'text-white/50'}`}>
-                    • {user.online ? 'Online' : 'Offline'}
+                <div className="flex items-center gap-3">
+                  <span
+                    className="ds-avatar h-8 w-8"
+                    style={{ backgroundColor: user.color }}
+                  >
+                    {user.name[0].toUpperCase()}
                   </span>
-                  {user.online && (
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  )}
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold ds-text-primary">{user.name}</span>
+                    <span className={cn('text-xs', user.online ? 'ds-text-positive' : 'ds-text-subtle')}>
+                      {user.online ? 'Online • Synced' : 'Offline • Standby'}
+                    </span>
+                  </div>
                 </div>
+                {user.online && <span className="h-2 w-2 rounded-full bg-[var(--ds-positive)]" />}
               </button>
             ))
           ) : (
-            <div className="px-4 py-2 text-white/50">No users found</div>
+            <div className="px-4 py-3 text-sm ds-text-subtle">No users found</div>
           )}
+          </div>
         </div>
       )}
     </div>

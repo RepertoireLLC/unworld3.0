@@ -13,15 +13,17 @@ export function HeaderBar() {
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="space-y-1">
-        <span className="text-sm uppercase tracking-[0.3em] text-white/50">
+        <span className="text-sm uppercase tracking-[0.3em] ds-text-subtle">
           Encrypted Relay // Broadcast
         </span>
-        <h1 className="text-3xl font-semibold text-white">
+        <h1 className="text-3xl font-semibold ds-text-primary">
           Quantum Link Console
         </h1>
         {currentUser && (
-          <p className="text-sm text-white/60">
-            Linked operator: <span className="text-white">{currentUser.name}</span> · Theme vector: <span className="uppercase tracking-[0.2em] text-white/50">{currentTheme}</span>
+          <p className="text-sm ds-text-secondary">
+            Linked operator:{' '}
+            <span className="ds-text-primary">{currentUser.name}</span> · Theme vector:{' '}
+            <span className="uppercase tracking-[0.2em] ds-text-subtle">{currentTheme}</span>
           </p>
         )}
       </div>
