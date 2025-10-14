@@ -75,6 +75,8 @@ export function Scene({ variant = 'fullscreen', className }: SceneProps) {
         return '#001100';
       case 'minimal':
         return '#1a1a1a';
+      case 'technoPunk':
+        return '#050012';
       default:
         return '#0F172A';
     }
@@ -108,6 +110,7 @@ export function Scene({ variant = 'fullscreen', className }: SceneProps) {
             {currentTheme === 'galaxy' && !isEmbedded && (
               <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
             )}
+            {currentTheme === 'technoPunk' && !isEmbedded && <TechnoPunkEffects />}
           </Suspense>
 
           <OrbitControls
@@ -187,4 +190,34 @@ function CameraSynchronizer({
   });
 
   return null;
+}
+
+function TechnoPunkEffects() {
+  const gridRef = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    if (gridRef.current) {
+      const elapsed = clock.getElapsedTime();
+      gridRef.current.rotation.z = Math.sin(elapsed * 0.1) * 0.05;
+      gridRef.current.position.y = Math.sin(elapsed * 0.8) * 0.3 - 5.5;
+    }
+  });
+
+  return (
+    <group ref={gridRef}>
+      <gridHelper args={[40, 80, '#22d3ee', '#f472b6']} rotation={[Math.PI / 2, 0, 0]} position={[0, -5.5, 0]} />
+      <mesh position={[0, -5.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[40, 40]} />
+        <meshBasicMaterial
+          color="#0b1120"
+          transparent
+          opacity={0.6}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+      <pointLight position={[0, 4, 0]} intensity={1.5} color="#38bdf8" distance={20} decay={2} />
+      <pointLight position={[4, -2, 6]} intensity={1.2} color="#22c55e" distance={18} decay={2.2} />
+      <pointLight position={[-4, -1, -6]} intensity={1.2} color="#f472b6" distance={18} decay={2.2} />
+    </group>
+  );
 }

@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 
-export type ThemeType = 'classic' | 'neon' | 'galaxy' | 'matrix' | 'minimal';
+export type ThemeType =
+  | 'classic'
+  | 'neon'
+  | 'galaxy'
+  | 'matrix'
+  | 'minimal'
+  | 'technoPunk';
 
 interface ThemeState {
   currentTheme: ThemeType;

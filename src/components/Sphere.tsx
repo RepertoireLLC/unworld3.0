@@ -54,6 +54,16 @@ const themeConfigs = {
     pulseIntensity: 0.05,
     pulseSpeed: 0.5,
   },
+  technoPunk: {
+    sphereColor: '#22d3ee',
+    wireframe: true,
+    opacity: 0.28,
+    emissive: '#f472b6',
+    rotationSpeed: 0.0025,
+    segments: 72,
+    pulseIntensity: 0.35,
+    pulseSpeed: 2.8,
+  },
 };
 
 export function Sphere() {
@@ -71,7 +81,7 @@ export function Sphere() {
       // Theme-specific animations
       switch (currentTheme) {
         case 'neon':
-          sphereRef.current.material.emissiveIntensity = 
+          sphereRef.current.material.emissiveIntensity =
             0.5 + Math.sin(time * config.pulseSpeed) * config.pulseIntensity;
           sphereRef.current.rotation.z = Math.sin(time * 0.5) * 0.1;
           break;
@@ -92,7 +102,18 @@ export function Sphere() {
         case 'minimal':
           sphereRef.current.rotation.x = Math.sin(time * 0.2) * 0.1;
           break;
-          
+
+        case 'technoPunk': {
+          const scale = 1 + Math.sin(time * config.pulseSpeed) * config.pulseIntensity;
+          sphereRef.current.scale.setScalar(scale);
+          sphereRef.current.rotation.x = Math.sin(time * 1.2) * 0.2;
+          sphereRef.current.rotation.z += 0.0015;
+          sphereRef.current.material.emissiveIntensity =
+            0.7 + Math.sin(time * 4) * 0.35;
+          sphereRef.current.material.opacity = 0.25 + Math.sin(time * 3) * 0.05;
+          break;
+        }
+
         default:
           sphereRef.current.scale.setScalar(
             1 + Math.sin(time * config.pulseSpeed) * 0.03
