@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { X, Search, ZoomIn } from 'lucide-react';
 import { Scene } from './Scene';
 import { useSphereStore } from '../store/sphereStore';
@@ -17,6 +17,8 @@ export function SphereOverlay() {
   const [query, setQuery] = useState('');
   const [shouldRender, setShouldRender] = useState(false);
   const [isActive, setIsActive] = useState(false);
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (isFullscreen) {
@@ -40,6 +42,50 @@ export function SphereOverlay() {
       clearFocusState();
     }
   }, [isFullscreen, clearFocusState]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const element = overlayRef.current;
+
+    if (isFullscreen && element && document.fullscreenElement !== element) {
+      void element
+        .requestFullscreen()
+        .catch((error) => {
+          console.error('Failed to enter fullscreen mode:', error);
+        });
+    }
+
+    if (!isFullscreen && document.fullscreenElement === element) {
+      void document.exitFullscreen().catch((error) => {
+        console.error('Failed to exit fullscreen mode:', error);
+      });
+    }
+  }, [isFullscreen]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const handleFullscreenChange = () => {
+      const element = overlayRef.current;
+      const isActiveFullscreen = document.fullscreenElement === element;
+      setIsBrowserFullscreen(isActiveFullscreen);
+
+      if (!isActiveFullscreen && isFullscreen) {
+        setFullscreen(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isFullscreen, setFullscreen]);
 
   const filteredUsers = useMemo(() => {
     if (!query) {
@@ -82,7 +128,9 @@ export function SphereOverlay() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-6"
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto ${
+        isBrowserFullscreen ? 'p-0' : 'p-6'
+      }`}
       role="dialog"
       aria-modal="true"
       aria-label="Sphere overlay"
@@ -93,7 +141,10 @@ export function SphereOverlay() {
         onClick={handleClose}
       />
       <div
-        className={`relative z-10 flex h-[90vh] w-[90vw] max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/90 shadow-[0_40px_120px_-40px_rgba(15,23,42,0.9)] transition-all duration-300 ${isActive ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+        ref={overlayRef}
+        className={`relative z-10 flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/90 shadow-[0_40px_120px_-40px_rgba(15,23,42,0.9)] transition-all duration-300 ${
+          isBrowserFullscreen ? 'h-full w-full max-w-none' : 'h-[90vh] w-[90vw] max-w-6xl'
+        } ${isActive ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
       >
         <header className="flex items-center justify-between border-b border-white/10 bg-white/5 px-8 py-5">
           <div>
