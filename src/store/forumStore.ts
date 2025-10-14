@@ -93,15 +93,55 @@ const curiosityRandom = (seed: number) => {
 
 let broadcastChannel: BroadcastChannel | null = null;
 let hasInitializedChannel = false;
+const STORAGE_SYNC_KEY = 'harmonia_forum_sync_channel';
+let storageListener: ((event: StorageEvent) => void) | null = null;
 
 function getBroadcastChannel() {
   if (typeof window === 'undefined') {
     return null;
   }
-  if (!broadcastChannel) {
-    broadcastChannel = new BroadcastChannel('harmonia_forum');
+
+  if (typeof window.BroadcastChannel === 'undefined') {
+    return null;
   }
+
+  if (!broadcastChannel) {
+    try {
+      broadcastChannel = new window.BroadcastChannel('harmonia_forum');
+    } catch (error) {
+      console.warn('Failed to initialize BroadcastChannel. Falling back to storage events.', error);
+      broadcastChannel = null;
+      return null;
+    }
+  }
+
   return broadcastChannel;
+}
+
+function setupStorageSyncListener(handler: (data: unknown) => void) {
+  if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+    return false;
+  }
+
+  if (storageListener) {
+    return true;
+  }
+
+  storageListener = (event: StorageEvent) => {
+    if (event.key !== STORAGE_SYNC_KEY || !event.newValue) {
+      return;
+    }
+
+    try {
+      const payload = JSON.parse(event.newValue) as { data: unknown };
+      handler(payload.data);
+    } catch (error) {
+      console.warn('Failed to parse forum storage sync payload', error);
+    }
+  };
+
+  window.addEventListener('storage', storageListener);
+  return true;
 }
 
 function detectMediaType(url?: string): ForumPost['mediaType'] {
@@ -120,10 +160,34 @@ function detectMediaType(url?: string): ForumPost['mediaType'] {
 
 function broadcastSync(payload: unknown) {
   const channel = getBroadcastChannel();
+  if (channel) {
+    try {
+      channel.postMessage(payload);
+      return;
+    } catch (error) {
+      console.warn('Failed to broadcast forum payload via BroadcastChannel', error);
+    }
+  }
+
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
   try {
-    channel?.postMessage(payload);
+    const envelope = JSON.stringify({
+      data: payload,
+      nonce: `${Date.now()}-${Math.random()}`,
+    });
+    window.localStorage.setItem(STORAGE_SYNC_KEY, envelope);
+    window.setTimeout(() => {
+      try {
+        window.localStorage.removeItem(STORAGE_SYNC_KEY);
+      } catch (removeError) {
+        console.warn('Failed to clear forum storage sync payload', removeError);
+      }
+    }, 0);
   } catch (error) {
-    console.warn('Failed to broadcast forum sync payload', error);
+    console.warn('Failed to broadcast forum payload via storage events', error);
   }
 }
 
@@ -417,13 +481,14 @@ export const useForumStore = create<ForumState>((set, get) => ({
     if (hasInitializedChannel) {
       return;
     }
-    hasInitializedChannel = true;
-    const channel = getBroadcastChannel();
-    if (!channel) {
-      return;
-    }
-    channel.onmessage = (event) => {
-      const { type, post, comment } = event.data ?? {};
+
+    const handleMessage = (data: unknown) => {
+      const { type, post, comment } = (data ?? {}) as {
+        type?: string;
+        post?: ForumPost;
+        comment?: ForumComment;
+      };
+
       if (type === 'post' && post) {
         set((state) => {
           if (state.posts[post.post_id]) {
@@ -440,6 +505,7 @@ export const useForumStore = create<ForumState>((set, get) => ({
           };
         });
       }
+
       if (type === 'comment' && comment) {
         set((state) => {
           if (state.comments[comment.comment_id]) {
@@ -465,5 +531,17 @@ export const useForumStore = create<ForumState>((set, get) => ({
         });
       }
     };
+
+    const channel = getBroadcastChannel();
+    if (channel) {
+      channel.onmessage = (event) => handleMessage(event.data);
+      hasInitializedChannel = true;
+      return;
+    }
+
+    const attached = setupStorageSyncListener(handleMessage);
+    if (attached) {
+      hasInitializedChannel = true;
+    }
   },
 }));
