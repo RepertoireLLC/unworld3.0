@@ -1,0 +1,77 @@
+Harmonia Agora Integration Log
+==============================
+
+Date: 2025-10-14T17:57:00Z
+
+New Data Schemas
+----------------
+1. public_forum.post document
+   {
+     "post_id": string,
+     "author_id": string,
+     "title": string,
+     "body": string,
+     "tags": string[],
+     "media_url": string | undefined,
+     "visibility": "public" | "friends" | "private",
+     "interest_vector": Record<string, number>,
+     "timestamp": number (epoch ms),
+     "engagement_score": number,
+     "mediaType": "text" | "image" | "video",
+     "commentIds": string[],
+     "metadata": Record<string, unknown> | undefined
+   }
+
+2. public_forum.comment document
+   {
+     "comment_id": string,
+     "post_id": string,
+     "author_id": string,
+     "body": string,
+     "interest_vector": Record<string, number>,
+     "timestamp": number (epoch ms),
+     "parent_comment_id": string | undefined,
+     "engagement_score": number
+   }
+
+3. interest profile entry (stored in interestStore)
+   {
+     "value": number,
+     "lastUpdated": number,
+     "locked": boolean
+   }
+   Profile metadata: { halfLifeDays?: number, entries: Record<string, entry> }
+
+New Client Modules
+------------------
+- src/store/forumStore.ts
+  * addPost, addComment, updatePostInterestVector, recordEngagement
+  * getFeedForUser(userId, { mode, limit, curiosityRatio })
+  * initializeSyncChannel() // BroadcastChannel-powered realtime fan-out
+
+- src/store/interestStore.ts
+  * ensureProfile(userId, seed?)
+  * getInterestVector(userId, { applyDecay })
+  * recordInteraction / integratePublicContent
+  * setInterestValue / toggleInterestLock / setHalfLifeDays / getHalfLifeDays
+  * getInterestDescriptors(userId) & importInterests(userId, vector)
+
+- src/store/agoraStore.ts
+  * UI state for Harmonia Agora tab + resonance transparency preferences
+
+Public API Notes
+----------------
+No existing endpoints were modified. All forum and recommendation logic is encapsulated in new Zustand stores. Realtime sync leverages the browser BroadcastChannel API for peer tab coordination without impacting backend services.
+
+UI Extensions
+-------------
+- HarmoniaCentralPanel introduces the "Harmonia Agora" tab beside the legacy Quantum Broadcast console.
+- HarmoniaAgoraPanel provides post composer, resonance filters, infinite scroll feed, and transparency toggle.
+- InterestVectorEditor embeds in ProfileModal for manual tuning and locking of interest vectors.
+
+Security & Privacy
+------------------
+- Recommendation engine only consumes public forum posts and declared interests.
+- Private and friends-only posts are filtered by friendStore relationships.
+- Interest decay uses configurable exponential half-life; locked topics bypass automated decay.
+

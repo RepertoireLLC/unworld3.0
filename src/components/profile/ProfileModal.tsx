@@ -7,6 +7,7 @@ import { useStoryStore } from '../../store/storyStore';
 import { useState, useRef } from 'react';
 import { StoryViewer } from './StoryViewer';
 import { StoryCreator } from './StoryCreator';
+import { InterestVectorEditor } from './InterestVectorEditor';
 
 interface ProfileModalProps {
   userId: string;
@@ -174,6 +175,10 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
               <p className="text-white/50">No active stories</p>
             )}
           </div>
+
+          {isOwnProfile && (
+            <InterestVectorEditor userId={userId} />
+          )}
 
           {!isOwnProfile && (
             <div className="flex space-x-4">
