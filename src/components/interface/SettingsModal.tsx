@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useCallback, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useCallback, useRef, type ChangeEvent } from 'react';
 import { X, Globe2, RefreshCcw } from 'lucide-react';
 import { useModalStore } from '../../store/modalStore';
 import { useTimeStore, getEffectiveTimezone, getSystemTimezone } from '../../store/timeStore';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useToastStore } from '../../store/toastStore';
+import { ThemeCustomizationPanel } from './ThemeCustomizationPanel';
 
 const FALLBACK_TIMEZONES = [
   'UTC',
@@ -38,6 +39,8 @@ const resolveTimezones = () => {
 export function SettingsModal() {
   const isOpen = useModalStore((state) => state.isSettingsOpen);
   const setIsOpen = useModalStore((state) => state.setSettingsOpen);
+  const settingsSection = useModalStore((state) => state.settingsActiveSection);
+  const setSettingsSection = useModalStore((state) => state.setSettingsActiveSection);
   const autoDetect = useTimeStore((state) => state.autoDetect);
   const manualTimezone = useTimeStore((state) => state.manualTimezone);
   const detectedTimezone = useTimeStore((state) => state.detectedTimezone);
@@ -45,6 +48,7 @@ export function SettingsModal() {
   const setManualTimezone = useTimeStore((state) => state.setManualTimezone);
   const setDetectedTimezone = useTimeStore((state) => state.setDetectedTimezone);
   const addToast = useToastStore((state) => state.addToast);
+  const themeSectionRef = useRef<HTMLDivElement | null>(null);
 
   const timezoneOptions = useMemo(() => resolveTimezones(), []);
 
@@ -56,7 +60,14 @@ export function SettingsModal() {
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
-  }, [setIsOpen]);
+    setSettingsSection('general');
+  }, [setIsOpen, setSettingsSection]);
+
+  useEffect(() => {
+    if (isOpen && settingsSection === 'theme' && themeSectionRef.current) {
+      themeSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isOpen, settingsSection]);
 
   useEscapeKey(handleClose, isOpen);
 
@@ -148,13 +159,14 @@ export function SettingsModal() {
           </button>
         </header>
 
-        <div className="grid gap-6 px-8 py-8 md:grid-cols-[1fr_320px]">
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Time Settings</p>
-                <h3 className="mt-1 text-lg font-semibold text-white">Chrono Alignment</h3>
-              </div>
+        <div className="space-y-8 px-8 py-8">
+          <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">Time Settings</p>
+                  <h3 className="mt-1 text-lg font-semibold text-white">Chrono Alignment</h3>
+                </div>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
                 {autoDetect ? 'Auto' : 'Manual'}
               </span>
@@ -207,24 +219,32 @@ export function SettingsModal() {
                 Re-detect
               </button>
             </div>
-          </section>
+            </section>
 
-          <aside className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">Current Sync</p>
-              <Globe2 className="h-4 w-4 text-emerald-300" />
-            </div>
-            <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-white/40">Active Timezone</p>
-              <p className="mt-2 text-lg font-semibold text-white">{activeTimezone}</p>
-              <p className="text-xs text-white/50">{timezoneLabel}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-white/40">Temporal Preview</p>
-              <p className="mt-2 font-mono text-sm text-white">{preview}</p>
-              <p className="text-xs text-white/50">Updated live every second.</p>
-            </div>
-          </aside>
+            <aside className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Current Sync</p>
+                <Globe2 className="h-4 w-4 text-emerald-300" />
+              </div>
+              <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
+                <p className="text-[10px] uppercase tracking-[0.4em] text-white/40">Active Timezone</p>
+                <p className="mt-2 text-lg font-semibold text-white">{activeTimezone}</p>
+                <p className="text-xs text-white/50">{timezoneLabel}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4">
+                <p className="text-[10px] uppercase tracking-[0.4em] text-white/40">Temporal Preview</p>
+                <p className="mt-2 font-mono text-sm text-white">{preview}</p>
+                <p className="text-xs text-white/50">Updated live every second.</p>
+              </div>
+            </aside>
+          </div>
+
+          <div
+            ref={themeSectionRef}
+            className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.8)]"
+          >
+            <ThemeCustomizationPanel />
+          </div>
         </div>
       </div>
     </div>

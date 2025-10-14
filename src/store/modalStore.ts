@@ -7,6 +7,8 @@ interface ModalState {
   setAIIntegrationOpen: (isOpen: boolean) => void;
   isSettingsOpen: boolean;
   setSettingsOpen: (isOpen: boolean) => void;
+  settingsActiveSection: 'general' | 'theme';
+  setSettingsActiveSection: (section: 'general' | 'theme') => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -16,4 +18,6 @@ export const useModalStore = create<ModalState>((set) => ({
   setAIIntegrationOpen: (isOpen) => set({ isAIIntegrationOpen: isOpen }),
   isSettingsOpen: false,
   setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
+  settingsActiveSection: 'general',
+  setSettingsActiveSection: (section) => set({ settingsActiveSection: section }),
 }));

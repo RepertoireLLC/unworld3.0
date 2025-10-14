@@ -1,17 +1,13 @@
-import { Palette } from 'lucide-react';
-import { useState } from 'react';
-import { useThemeStore, ThemeType } from '../store/themeStore';
+import { Palette, PenTool } from 'lucide-react';
+import { useMemo, useState, type ChangeEvent } from 'react';
+import {
+  useThemeStore,
+  getBuiltInThemes,
+  type ThemeId,
+} from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { useUserStore } from '../store/userStore';
-
-const themes: { id: ThemeType; name: string }[] = [
-  { id: 'classic', name: 'Classic' },
-  { id: 'neon', name: 'Neon' },
-  { id: 'galaxy', name: 'Galaxy' },
-  { id: 'matrix', name: 'Matrix' },
-  { id: 'minimal', name: 'Minimal' },
-  { id: 'technoPunk', name: 'Techno Punk' },
-];
+import { useModalStore } from '../store/modalStore';
 
 interface ThemeSelectorProps {
   className?: string;
@@ -20,18 +16,47 @@ interface ThemeSelectorProps {
 export function ThemeSelector({ className }: ThemeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const { currentTheme, setTheme } = useThemeStore();
+  const currentThemeId = useThemeStore((state) => state.currentThemeId);
+  const customThemes = useThemeStore((state) => state.customThemes);
+  const setTheme = useThemeStore((state) => state.setTheme);
   const currentUser = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const { updateUserColor, setOnlineStatus } = useUserStore();
+  const setSettingsOpen = useModalStore((state) => state.setSettingsOpen);
+  const setSettingsSection = useModalStore((state) => state.setSettingsActiveSection);
 
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const builtInThemes = useMemo(() => getBuiltInThemes(), []);
+
+  const handleColorChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (currentUser) {
-      const newColor = e.target.value;
+      const newColor = event.target.value;
       updateProfile({ color: newColor });
       updateUserColor(currentUser.id, newColor);
       setOnlineStatus(currentUser.id, true);
     }
+  };
+
+  const handleThemeSelection = (themeId: ThemeId) => {
+    setTheme(themeId);
+    const snapshot = useThemeStore.getState().exportPreferences();
+    const mergedSnapshot = {
+      ...snapshot,
+      activeThemeId: themeId,
+    };
+
+    if (currentUser) {
+      updateProfile({
+        themePreferences: mergedSnapshot,
+      });
+    }
+
+    setIsOpen(false);
+  };
+
+  const openCustomizer = () => {
+    setIsOpen(false);
+    setSettingsOpen(true);
+    setSettingsSection('theme');
   };
 
   return (
@@ -45,22 +70,53 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
-          {themes.map((theme) => (
+          <div className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
+            System Themes
+          </div>
+          {builtInThemes.map((theme) => (
             <button
               key={theme.id}
-              onClick={() => {
-                setTheme(theme.id);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
-                currentTheme === theme.id
-                  ? 'text-white bg-white/20'
-                  : 'text-white/80'
+              onClick={() => handleThemeSelection(theme.id)}
+              className={`flex w-full items-center justify-between px-4 py-2 text-left transition-colors hover:bg-white/10 ${
+                currentThemeId === theme.id ? 'bg-white/20 text-white' : 'text-white/80'
               }`}
             >
-              {theme.name}
+              <span>{theme.name}</span>
+              {currentThemeId === theme.id && (
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/60">
+                  Active
+                </span>
+              )}
             </button>
           ))}
+
+          <div className="border-t border-white/10" />
+
+          <div className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
+            Custom Themes
+          </div>
+          {customThemes.length === 0 ? (
+            <p className="px-4 pb-3 text-xs text-white/50">
+              Build your own palette via the theme studio.
+            </p>
+          ) : (
+            customThemes.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => handleThemeSelection(theme.id)}
+                className={`flex w-full items-center justify-between px-4 py-2 text-left transition-colors hover:bg-white/10 ${
+                  currentThemeId === theme.id ? 'bg-white/20 text-white' : 'text-white/80'
+                }`}
+              >
+                <span>{theme.name}</span>
+                {currentThemeId === theme.id && (
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-white/60">
+                    Active
+                  </span>
+                )}
+              </button>
+            ))
+          )}
 
           <div className="border-t border-white/10">
             <button
@@ -79,6 +135,13 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
                 />
               </div>
             )}
+            <button
+              onClick={openCustomizer}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-white/80 transition-colors hover:bg-white/10"
+            >
+              <PenTool className="h-4 w-4" />
+              Theme Studio
+            </button>
           </div>
         </div>
       )}

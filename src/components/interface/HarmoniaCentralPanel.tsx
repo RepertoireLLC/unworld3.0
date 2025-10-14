@@ -23,7 +23,7 @@ export function HarmoniaCentralPanel() {
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-3xl border border-white/10 bg-white/5 p-3 text-xs uppercase tracking-[0.3em] text-white/50">
+      <div className="theme-surface flex flex-wrap items-center gap-2 rounded-3xl p-3 text-xs uppercase tracking-[0.3em] text-white/50">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -32,10 +32,10 @@ export function HarmoniaCentralPanel() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-1 min-w-[180px] items-center justify-between gap-2 rounded-2xl border px-4 py-3 transition ${
+              className={`flex flex-1 min-w-[180px] items-center justify-between gap-2 rounded-2xl px-4 py-3 transition ${
                 isActive
-                  ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200 shadow-[0_10px_30px_-20px_rgba(16,185,129,0.8)]'
-                  : 'border-white/10 bg-white/10 text-white/60 hover:bg-white/20'
+                  ? 'border border-emerald-400/60 bg-emerald-500/10 text-emerald-200 shadow-[0_10px_30px_-20px_rgba(16,185,129,0.8)]'
+                  : 'theme-chip text-white/60 hover:bg-white/20'
               }`}
             >
               <div className="flex flex-col text-left">
@@ -48,7 +48,7 @@ export function HarmoniaCentralPanel() {
             </button>
           );
         })}
-        <div className="ml-auto hidden items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white/60 lg:flex">
+        <div className="theme-chip ml-auto hidden items-center gap-2 rounded-2xl px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-white/60 lg:flex">
           <Users className="h-4 w-4" />
           Agora Linked
         </div>
