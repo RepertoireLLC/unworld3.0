@@ -68,8 +68,21 @@ const themeConfigs = {
 
 export function Sphere() {
   const sphereRef = useRef<Mesh>(null);
-  const currentTheme = useThemeStore((state) => state.currentTheme);
-  const config = themeConfigs[currentTheme];
+  const themeVisual = useThemeStore((state) => state.getResolvedTheme());
+  const builtInConfig = themeConfigs[themeVisual.id as keyof typeof themeConfigs];
+  const tokens = themeVisual.tokens;
+  const config =
+    builtInConfig ?? {
+      sphereColor: tokens.accentColor,
+      wireframe: true,
+      opacity: 0.25,
+      emissive: tokens.primaryColor,
+      rotationSpeed: 0.0015,
+      segments: 56,
+      pulseIntensity: 0.25,
+      pulseSpeed: 1.5,
+    };
+  const themeKey = builtInConfig ? (themeVisual.id as keyof typeof themeConfigs) : 'custom';
 
   useFrame(({ clock }) => {
     if (sphereRef.current) {
@@ -79,7 +92,7 @@ export function Sphere() {
       sphereRef.current.rotation.y += config.rotationSpeed;
       
       // Theme-specific animations
-      switch (currentTheme) {
+      switch (themeKey) {
         case 'neon':
           sphereRef.current.material.emissiveIntensity =
             0.5 + Math.sin(time * config.pulseSpeed) * config.pulseIntensity;

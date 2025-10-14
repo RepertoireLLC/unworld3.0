@@ -4,11 +4,13 @@ import { ThemeSelector } from '../ThemeSelector';
 import { ProfileIcon } from '../ProfileIcon';
 import { AIIntegrationButton } from '../ai/AIIntegrationButton';
 import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
+import { useThemeStore, getThemeDisplayName } from '../../store/themeStore';
 
 export function HeaderBar() {
   const currentUser = useAuthStore((state) => state.user);
-  const currentTheme = useThemeStore((state) => state.currentTheme);
+  const currentThemeId = useThemeStore((state) => state.currentThemeId);
+  const customThemes = useThemeStore((state) => state.customThemes);
+  const themeLabel = getThemeDisplayName(currentThemeId, customThemes);
 
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -21,7 +23,7 @@ export function HeaderBar() {
         </h1>
         {currentUser && (
           <p className="text-sm text-white/60">
-            Linked operator: <span className="text-white">{currentUser.name}</span> · Theme vector: <span className="uppercase tracking-[0.2em] text-white/50">{currentTheme}</span>
+            Linked operator: <span className="text-white">{currentUser.name}</span> · Theme vector: <span className="uppercase tracking-[0.2em] text-white/50">{themeLabel}</span>
           </p>
         )}
       </div>

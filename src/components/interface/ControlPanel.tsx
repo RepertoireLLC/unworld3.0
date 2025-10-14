@@ -19,7 +19,7 @@ export function ControlPanel() {
 
   return (
     <aside className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+      <section className="theme-surface relative overflow-hidden rounded-3xl p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
         <div className="pointer-events-none absolute -top-32 -right-10 h-64 w-64 rounded-full bg-cyan-500/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
 
@@ -49,7 +49,7 @@ export function ControlPanel() {
                 setSphereFullscreen(true);
               }
             }}
-            className="group relative h-64 cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 transition-transform duration-300 hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="theme-surface-muted group relative h-64 cursor-pointer overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             <Scene variant="embedded" />
             <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5" />
@@ -63,21 +63,21 @@ export function ControlPanel() {
           </div>
 
           <div className="grid grid-cols-3 gap-4 text-sm">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="theme-surface-muted rounded-2xl p-3">
               <div className="flex items-center justify-between text-white/60">
                 <span>Active Nodes</span>
                 <Activity className="h-4 w-4 text-emerald-300" />
               </div>
               <p className="mt-2 text-2xl font-semibold text-white">{onlineUsers.length}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="theme-surface-muted rounded-2xl p-3">
               <div className="flex items-center justify-between text-white/60">
                 <span>Standby</span>
                 <ShieldCheck className="h-4 w-4 text-sky-300" />
               </div>
               <p className="mt-2 text-2xl font-semibold text-white">{offlineUsers.length}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="theme-surface-muted rounded-2xl p-3">
               <div className="flex items-center justify-between text-white/60">
                 <span>Signal Integrity</span>
                 <SignalHigh className="h-4 w-4 text-fuchsia-300" />
@@ -88,7 +88,7 @@ export function ControlPanel() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+      <section className="theme-surface rounded-3xl p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">
@@ -97,25 +97,25 @@ export function ControlPanel() {
             <h3 className="mt-1 text-lg font-semibold text-white">
               {currentUser?.name ?? 'Unassigned'}</h3>
           </div>
-          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+          <div className="theme-chip rounded-full px-3 py-1 text-xs text-white/60">
             {currentUser ? 'Ghost Operator' : 'Awaiting link'}
           </div>
         </div>
-        <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="theme-surface-muted mt-4 flex items-center justify-between rounded-2xl p-4">
           <div>
             <p className="text-xs text-white/40">Node signature</p>
             <p className="font-mono text-sm text-white">{currentUser?.id ?? 'N/A'}</p>
           </div>
           <button
             onClick={() => currentUser && setProfileUserId(currentUser.id)}
-            className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/20"
+            className="theme-chip rounded-lg px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/70 transition hover:bg-white/20"
           >
             Open dossier
           </button>
         </div>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+      <section className="theme-surface rounded-3xl p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">
@@ -131,7 +131,7 @@ export function ControlPanel() {
             otherUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3"
+                className="theme-surface-muted flex items-center justify-between rounded-2xl p-3"
               >
                 <div className="flex items-center gap-3">
                   <div
@@ -148,7 +148,7 @@ export function ControlPanel() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setProfileUserId(user.id)}
-                    className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/60 transition hover:bg-white/20"
+                    className="theme-chip rounded-lg px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/60 transition hover:bg-white/20"
                   >
                     Profile
                   </button>
@@ -162,7 +162,7 @@ export function ControlPanel() {
               </div>
             ))
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
+            <div className="theme-surface-muted rounded-2xl p-6 text-center text-sm text-white/50">
               No auxiliary operators registered.
             </div>
           )}
