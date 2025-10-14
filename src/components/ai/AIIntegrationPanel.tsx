@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -16,6 +16,7 @@ import { useModalStore } from '../../store/modalStore';
 import { useAIStore, type AIConnection, type AIModelType } from '../../store/aiStore';
 import { useToastStore } from '../../store/toastStore';
 import { AI_DEFAULT_ENDPOINTS, AI_MODEL_COLORS, isOnlineModel } from '../../core/aiRegistry';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 interface FormState {
   name: string;
@@ -124,10 +125,12 @@ export function AIIntegrationPanel() {
     return null;
   }
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsAnimating(false);
     setTimeout(() => setOpen(false), 200);
-  };
+  }, [setOpen]);
+
+  useEscapeKey(handleClose, isOpen);
 
   const handleModelTypeChange = (modelType: AIModelType) => {
     setForm((prev) => ({
@@ -270,7 +273,12 @@ export function AIIntegrationPanel() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI integration panel"
+    >
       <div
         className={`absolute inset-0 bg-slate-950/80 backdrop-blur-xl transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
         onClick={handleClose}
@@ -288,7 +296,7 @@ export function AIIntegrationPanel() {
             <button
               type="button"
               onClick={handleClose}
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:bg-white/20"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
             >
               Collapse
               <X className="h-4 w-4" />

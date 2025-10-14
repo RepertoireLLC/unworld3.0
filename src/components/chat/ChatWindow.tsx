@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { X, Send } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 interface ChatWindowProps {
   userId: string;
@@ -46,10 +47,16 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
     setMessage('');
   };
 
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(handleClose, Boolean(currentUser && otherUser));
+
   if (!currentUser || !otherUser) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 bg-white/10 backdrop-blur-md rounded-xl shadow-xl flex flex-col overflow-hidden">
+    <div className="fixed bottom-4 right-4 flex w-80 flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-950/80 shadow-xl backdrop-blur-xl">
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div
@@ -59,14 +66,16 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
           <span className="text-white font-medium">{otherUser.name}</span>
         </div>
         <button
-          onClick={onClose}
-          className="text-white/60 hover:text-white"
+          onClick={handleClose}
+          className="rounded-full p-1 text-white/60 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+          type="button"
+          aria-label="Close chat"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-96">
+      <div className="flex-1 space-y-4 overflow-y-auto p-4">
         {messages.map((msg) => {
           const isOwn = msg.fromUserId === currentUser.id;
           return (
@@ -89,18 +98,18 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t border-white/10">
+      <form onSubmit={handleSubmit} className="border-t border-white/10 p-4">
         <div className="flex space-x-2">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
+            className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/50 focus:border-white/30 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
           />
           <button
             type="submit"
-            className="p-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+            className="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
           >
             <Send className="w-5 h-5" />
           </button>
