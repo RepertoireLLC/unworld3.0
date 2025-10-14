@@ -4,9 +4,9 @@ import { ChatWindow } from './components/chat/ChatWindow';
 import { useAuthStore } from './store/authStore';
 import { useModalStore } from './store/modalStore';
 import { useChatStore } from './store/chatStore';
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { initializeMockData } from './store/mockData';
-import { useThemeStore } from './store/themeStore';
+import { useThemeStore, type BuiltInThemeId } from './store/themeStore';
 import { HeaderBar } from './components/interface/HeaderBar';
 import { ControlPanel } from './components/interface/ControlPanel';
 import { BroadcastPanel } from './components/interface/BroadcastPanel';
@@ -23,7 +23,9 @@ export function App() {
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
   const activeChat = useChatStore((state) => state.activeChat);
   const setActiveChat = useChatStore((state) => state.setActiveChat);
-  const currentTheme = useThemeStore((state) => state.currentTheme);
+  const themeVisual = useThemeStore((state) => state.getResolvedTheme());
+  const derivedThemeId =
+    themeVisual.origin === 'builtin' ? (themeVisual.id as BuiltInThemeId) : undefined;
   const hydrateAI = useAIStore((state) => state.hydrate);
   const isAIHydrated = useAIStore((state) => state.isHydrated);
 
@@ -44,7 +46,11 @@ export function App() {
   }, [isAIHydrated]);
 
   const getBackgroundClass = () => {
-    switch (currentTheme) {
+    if (!derivedThemeId) {
+      return themeVisual.backgroundClass ?? 'bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950';
+    }
+
+    switch (derivedThemeId) {
       case 'neon':
         return 'bg-gradient-to-b from-cyan-950 via-slate-950 to-slate-950';
       case 'galaxy':
@@ -53,16 +59,38 @@ export function App() {
         return 'bg-gradient-to-b from-green-950 via-emerald-950 to-slate-950';
       case 'minimal':
         return 'bg-gradient-to-b from-gray-900 via-gray-950 to-black';
+      case 'technoPunk':
+        return 'bg-gradient-to-b from-fuchsia-950 via-slate-950 to-slate-950';
       default:
         return 'bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950';
     }
   };
 
   return (
-    <div className={`relative min-h-screen w-full overflow-hidden text-white ${getBackgroundClass()} transition-colors duration-1000`}>
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-[-20%] right-[-10%] h-[32rem] w-[32rem] rounded-full bg-purple-500/20 blur-3xl" />
-      <div className="pointer-events-none absolute top-1/2 left-[-15%] h-[24rem] w-[24rem] -translate-y-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
+    <div
+      className={`relative min-h-screen w-full overflow-hidden text-white ${getBackgroundClass()} transition-colors duration-1000`}
+      style={{
+        ...(themeVisual.backgroundStyle ?? {}),
+        fontFamily: themeVisual.tokens.fontFamily,
+        color: themeVisual.tokens.textColor,
+      } as CSSProperties}
+    >
+      {themeVisual.accentBlurs.map((accent, index) => (
+        <div
+          key={`accent-${index}`}
+          className={`pointer-events-none absolute ${accent.className ?? ''}`}
+          style={accent.style}
+          aria-hidden="true"
+        />
+      ))}
+      {themeVisual.overlays?.map((overlay, index) => (
+        <div
+          key={`overlay-${index}`}
+          className={`pointer-events-none absolute inset-0 ${overlay.className ?? ''}`}
+          style={overlay.style}
+          aria-hidden="true"
+        />
+      ))}
 
       {isAuthenticated ? (
         <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
