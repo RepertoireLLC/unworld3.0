@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
+import { useThemeStore, type ThemePreferencesSnapshot } from './themeStore';
 
 interface User {
   id: string;
@@ -10,6 +11,7 @@ interface User {
   password: string;
   profilePicture?: string;
   bio?: string;
+  themePreferences?: ThemePreferencesSnapshot;
 }
 
 interface AuthState {
@@ -37,12 +39,18 @@ export const useAuthStore = create<AuthState>()(
           return false;
         }
 
-        const newUser = {
+        const defaultThemePreferences: ThemePreferencesSnapshot = {
+          activeThemeId: 'classic',
+          customThemes: [],
+        };
+
+        const newUser: User = {
           id: `user_${Date.now()}`,
           name: userData.name || userData.email.split('@')[0],
           email: userData.email,
           password: userData.password,
           color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          themePreferences: defaultThemePreferences,
         };
 
         set(state => ({
@@ -50,6 +58,8 @@ export const useAuthStore = create<AuthState>()(
           user: newUser,
           isAuthenticated: true
         }));
+
+        useThemeStore.getState().hydrateFromPreferences(defaultThemePreferences);
 
         // Add user to the online users
         const { addUser, setOnlineStatus } = useUserStore.getState();
@@ -72,6 +82,8 @@ export const useAuthStore = create<AuthState>()(
 
         if (user) {
           set({ user, isAuthenticated: true });
+
+          useThemeStore.getState().hydrateFromPreferences(user.themePreferences);
           
           // Set user as online
           const { addUser, setOnlineStatus } = useUserStore.getState();
@@ -97,13 +109,32 @@ export const useAuthStore = create<AuthState>()(
           setOnlineStatus(user.id, false);
         }
         set({ user: null, isAuthenticated: false });
+        useThemeStore.getState().hydrateFromPreferences(undefined);
       },
 
       updateProfile: (updates) =>
         set((state) => {
           if (!state.user) return state;
 
-          const updatedUser = { ...state.user, ...updates };
+          const mergedThemePreferences: ThemePreferencesSnapshot | undefined =
+            updates.themePreferences
+              ? {
+                  activeThemeId:
+                    updates.themePreferences.activeThemeId ??
+                    state.user.themePreferences?.activeThemeId ??
+                    'classic',
+                  customThemes:
+                    updates.themePreferences.customThemes ??
+                    state.user.themePreferences?.customThemes ??
+                    [],
+                }
+              : state.user.themePreferences;
+
+          const updatedUser: User = {
+            ...state.user,
+            ...updates,
+            themePreferences: mergedThemePreferences,
+          };
 
           // Update in registered users list
           const updatedRegisteredUsers = state.registeredUsers.map(u =>
@@ -115,6 +146,8 @@ export const useAuthStore = create<AuthState>()(
           if (updates.color) {
             updateUserColor(updatedUser.id, updates.color);
           }
+
+          useThemeStore.getState().hydrateFromPreferences(updatedUser.themePreferences);
 
           return {
             user: updatedUser,
