@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { X, Search, ZoomIn } from 'lucide-react';
 import { Scene } from './Scene';
 import { useSphereStore } from '../store/sphereStore';
 import { useUserStore } from '../store/userStore';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export function SphereOverlay() {
   const isFullscreen = useSphereStore((state) => state.isFullscreen);
@@ -54,13 +55,15 @@ export function SphereOverlay() {
     return null;
   }
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsActive(false);
     setTimeout(() => {
       setFullscreen(false);
       clearFocusState();
     }, 250);
-  };
+  }, [clearFocusState, setFullscreen]);
+
+  useEscapeKey(handleClose, isFullscreen);
 
   const handleSelectUser = (userId: string, online: boolean) => {
     if (!online) {
@@ -78,7 +81,12 @@ export function SphereOverlay() {
     : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sphere overlay"
+    >
       <div
         className={`absolute inset-0 bg-slate-950/80 backdrop-blur-xl transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}
         aria-hidden="true"
@@ -95,7 +103,7 @@ export function SphereOverlay() {
           <button
             type="button"
             onClick={handleClose}
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white transition hover:bg-white/20"
+            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
           >
             Collapse
             <X className="h-4 w-4" />
@@ -119,7 +127,7 @@ export function SphereOverlay() {
                   }
                 }}
                 placeholder="Scan for operators, nodes, or signals..."
-                className="w-full rounded-xl border border-white/10 bg-white/10 px-12 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-white/10 px-12 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
               />
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
             </div>
@@ -131,7 +139,7 @@ export function SphereOverlay() {
                       <button
                         type="button"
                         onClick={() => handleSelectUser(user.id, user.online)}
-                        className={`flex w-full items-center justify-between px-4 py-3 text-sm transition hover:bg-white/10 ${highlightedUserId === user.id ? 'bg-white/10 text-white' : 'text-white/70'}`}
+                        className={`flex w-full items-center justify-between px-4 py-3 text-sm transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${highlightedUserId === user.id ? 'bg-white/10 text-white' : 'text-white/70'}`}
                       >
                         <div className="flex items-center gap-3">
                           <span

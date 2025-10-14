@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useStoryStore } from '../../store/storyStore';
 import { useAuthStore } from '../../store/authStore';
 import { Image, X } from 'lucide-react';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 interface StoryCreatorProps {
   onClose: () => void;
@@ -25,20 +26,40 @@ export function StoryCreator({ onClose }: StoryCreatorProps) {
     }
   };
 
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(handleClose);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentUser && content.trim()) {
       addStory(currentUser.id, content.trim(), imagePreview || undefined);
-      onClose();
+      handleClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-50">
-      <div className="w-full max-w-md p-6 bg-white/10 backdrop-blur-md rounded-xl shadow-xl">
-        <div className="flex justify-between items-center mb-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-6 backdrop-blur-sm"
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Create story"
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950/85 p-6 shadow-xl backdrop-blur-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-bold text-white">Create Story</h3>
-          <button onClick={onClose} className="text-white/60 hover:text-white">
+          <button
+            onClick={handleClose}
+            className="rounded-full p-1 text-white/60 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+            type="button"
+            aria-label="Close story creator"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -71,7 +92,7 @@ export function StoryCreator({ onClose }: StoryCreatorProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-12 border-2 border-dashed border-white/10 rounded-lg text-white/60 hover:text-white hover:border-white/30 transition-colors"
+              className="w-full rounded-lg border-2 border-dashed border-white/10 py-12 text-white/60 transition-colors hover:border-white/30 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
             >
               <Image className="w-8 h-8 mx-auto mb-2" />
               <span>Add an image</span>
@@ -89,7 +110,7 @@ export function StoryCreator({ onClose }: StoryCreatorProps) {
           <button
             type="submit"
             disabled={!content.trim()}
-            className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-white/20 px-4 py-3 text-white transition-colors hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Share Story
           </button>

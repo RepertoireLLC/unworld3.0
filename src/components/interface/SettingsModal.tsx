@@ -1,7 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback, type ChangeEvent } from 'react';
 import { X, Globe2, RefreshCcw } from 'lucide-react';
 import { useModalStore } from '../../store/modalStore';
 import { useTimeStore, getEffectiveTimezone, getSystemTimezone } from '../../store/timeStore';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useToastStore } from '../../store/toastStore';
 
 const FALLBACK_TIMEZONES = [
   'UTC',
@@ -42,6 +44,7 @@ export function SettingsModal() {
   const setAutoDetect = useTimeStore((state) => state.setAutoDetect);
   const setManualTimezone = useTimeStore((state) => state.setManualTimezone);
   const setDetectedTimezone = useTimeStore((state) => state.setDetectedTimezone);
+  const addToast = useToastStore((state) => state.addToast);
 
   const timezoneOptions = useMemo(() => resolveTimezones(), []);
 
@@ -50,6 +53,44 @@ export function SettingsModal() {
       setDetectedTimezone(getSystemTimezone());
     }
   }, [autoDetect, isOpen, setDetectedTimezone]);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, [setIsOpen]);
+
+  useEscapeKey(handleClose, isOpen);
+
+  const handleAutoDetectChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const nextValue = event.target.checked;
+    setAutoDetect(nextValue);
+    addToast({
+      title: nextValue ? 'Auto-detect enabled' : 'Manual mode enabled',
+      variant: 'success',
+      description: nextValue
+        ? 'Harmonia is synchronizing with your system clock.'
+        : 'Select a timezone override to customize the interface clock.',
+    });
+  }, [addToast, setAutoDetect]);
+
+  const handleManualTimezoneChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
+    const nextZone = event.target.value;
+    setManualTimezone(nextZone);
+    addToast({
+      title: 'Timezone updated',
+      variant: 'success',
+      description: `Interface clock set to ${nextZone}.`,
+    });
+  }, [addToast, setManualTimezone]);
+
+  const handleRedetect = useCallback(() => {
+    const systemZone = getSystemTimezone();
+    setDetectedTimezone(systemZone);
+    addToast({
+      title: 'System timezone detected',
+      variant: 'success',
+      description: `Aligned with ${systemZone}.`,
+    });
+  }, [addToast, setDetectedTimezone]);
 
   if (!isOpen) {
     return null;
@@ -81,8 +122,17 @@ export function SettingsModal() {
     .find((part) => part.type === 'timeZoneName')?.value ?? activeTimezone;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-xl">
-      <div className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-slate-950/80 shadow-[0_40px_120px_-40px_rgba(15,23,42,0.95)]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-6 backdrop-blur-xl"
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Harmonia settings"
+    >
+      <div
+        className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-slate-950/80 shadow-[0_40px_120px_-40px_rgba(15,23,42,0.95)]"
+        onClick={(event) => event.stopPropagation()}
+      >
         <header className="flex items-center justify-between border-b border-white/10 bg-white/5 px-8 py-6">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">Harmonia Settings</p>
@@ -90,8 +140,8 @@ export function SettingsModal() {
           </div>
           <button
             type="button"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:bg-white/20"
+            onClick={handleClose}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
           >
             Collapse
             <X className="h-4 w-4" />
@@ -120,7 +170,7 @@ export function SettingsModal() {
                   <input
                     type="checkbox"
                     checked={autoDetect}
-                    onChange={(event) => setAutoDetect(event.target.checked)}
+                    onChange={handleAutoDetectChange}
                     className="peer sr-only"
                   />
                   <div className="relative h-6 w-11 rounded-full border border-white/20 bg-white/10 transition peer-checked:border-emerald-400/60 peer-checked:bg-emerald-500/20">
@@ -133,7 +183,7 @@ export function SettingsModal() {
                 <label className="text-xs uppercase tracking-[0.3em] text-white/50">Timezone Override</label>
                 <select
                   value={manualTimezone}
-                  onChange={(event) => setManualTimezone(event.target.value)}
+                  onChange={handleManualTimezoneChange}
                   disabled={autoDetect}
                   className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white focus:border-white/30 focus:outline-none disabled:cursor-not-allowed disabled:border-white/5 disabled:bg-white/5 disabled:text-white/40"
                 >
@@ -150,8 +200,8 @@ export function SettingsModal() {
 
               <button
                 type="button"
-                onClick={() => setDetectedTimezone(getSystemTimezone())}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:bg-white/20"
+                onClick={handleRedetect}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
               >
                 <RefreshCcw className="h-4 w-4" />
                 Re-detect

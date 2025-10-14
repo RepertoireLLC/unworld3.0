@@ -4,10 +4,11 @@ import { useAuthStore } from '../../store/authStore';
 import { useFriendStore } from '../../store/friendStore';
 import { useChatStore } from '../../store/chatStore';
 import { useStoryStore } from '../../store/storyStore';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { StoryViewer } from './StoryViewer';
 import { StoryCreator } from './StoryCreator';
 import { InterestVectorEditor } from './InterestVectorEditor';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 interface ProfileModalProps {
   userId: string;
@@ -32,6 +33,12 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   const isOwnProfile = currentUser.id === userId;
   const areFriends = isFriend(currentUser.id, userId);
   const hasPending = hasPendingRequest(currentUser.id, userId);
+
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(handleClose, !showStoryCreator);
 
   const handleFriendRequest = () => {
     if (!hasPending) {
@@ -63,9 +70,18 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-50" onClick={onClose}>
-      <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl shadow-xl" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-6 backdrop-blur-sm"
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${user.name}'s profile`}
+    >
+      <div
+        className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950/80 p-8 shadow-xl backdrop-blur-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
             {isEditing ? (
               <div className="flex items-center space-x-2">
@@ -87,7 +103,12 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
               <span>{user.name}'s Profile</span>
             )}
           </h2>
-          <button onClick={onClose} className="text-white/60 hover:text-white">
+          <button
+            onClick={handleClose}
+            className="rounded-full p-1 text-white/60 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+            type="button"
+            aria-label="Close profile"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -115,7 +136,8 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
                 <>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 p-1 bg-white/20 rounded-full hover:bg-white/30 transition-colors"
+                    className="absolute bottom-0 right-0 rounded-full bg-white/20 p-1 transition-colors hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    type="button"
                   >
                     <Camera className="w-4 h-4 text-white" />
                   </button>

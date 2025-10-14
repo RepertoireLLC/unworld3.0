@@ -204,7 +204,7 @@ export function App() {
 
   return (
     <div
-      className={`relative min-h-screen w-full overflow-hidden text-white ${backgroundClass} transition-colors duration-1000`}
+      className={`relative flex min-h-screen w-full flex-col overflow-x-hidden overflow-y-auto text-white ${backgroundClass} transition-colors duration-1000`}
     >
       {accentBlurs.map((accent, index) => (
         <div
@@ -226,13 +226,19 @@ export function App() {
       <TimeDisplay />
 
       {isAuthenticated ? (
-        <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
           <HeaderBar />
 
-          <main className="grid flex-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]">
-            <ControlPanel />
-            <HarmoniaCentralPanel />
-            <FieldNotesPanel />
+          <main className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]">
+            <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
+              <ControlPanel />
+            </div>
+            <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
+              <HarmoniaCentralPanel />
+            </div>
+            <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
+              <FieldNotesPanel />
+            </div>
           </main>
 
           <SphereOverlay />
