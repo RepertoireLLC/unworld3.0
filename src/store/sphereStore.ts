@@ -6,6 +6,7 @@ interface SphereState {
   isFullscreen: boolean;
   highlightedUserId: string | null;
   nodePositions: Record<string, Vec3Tuple>;
+  nodeRegistrationCounts: Record<string, number>;
   focusError: string | null;
   setFullscreen: (isFullscreen: boolean) => void;
   focusUser: (userId: string | null) => void;
@@ -19,6 +20,7 @@ export const useSphereStore = create<SphereState>((set) => ({
   isFullscreen: false,
   highlightedUserId: null,
   nodePositions: {},
+  nodeRegistrationCounts: {},
   focusError: null,
   setFullscreen: (isFullscreen) =>
     set((state) => ({
@@ -42,20 +44,41 @@ export const useSphereStore = create<SphereState>((set) => ({
         ...state.nodePositions,
         [userId]: position,
       },
+      nodeRegistrationCounts: {
+        ...state.nodeRegistrationCounts,
+        [userId]: (state.nodeRegistrationCounts[userId] ?? 0) + 1,
+      },
       focusError:
         state.highlightedUserId === userId ? null : state.focusError,
     })),
   unregisterNodePosition: (userId) =>
     set((state) => {
-      const remaining = { ...state.nodePositions };
-      delete remaining[userId];
-      const shouldClearHighlight = state.highlightedUserId === userId;
+      const currentCount = state.nodeRegistrationCounts[userId] ?? 0;
+
+      if (currentCount <= 1) {
+        const { [userId]: _removedPosition, ...remainingPositions } =
+          state.nodePositions;
+        const { [userId]: _removedCount, ...remainingCounts } =
+          state.nodeRegistrationCounts;
+        const shouldClearHighlight = state.highlightedUserId === userId;
+
+        return {
+          nodePositions: remainingPositions,
+          nodeRegistrationCounts: remainingCounts,
+          highlightedUserId: shouldClearHighlight
+            ? null
+            : state.highlightedUserId,
+          focusError: shouldClearHighlight
+            ? 'Node signal lost. Returning to network view.'
+            : state.focusError,
+        };
+      }
+
       return {
-        nodePositions: remaining,
-        highlightedUserId: shouldClearHighlight ? null : state.highlightedUserId,
-        focusError: shouldClearHighlight
-          ? 'Node signal lost. Returning to network view.'
-          : state.focusError,
+        nodeRegistrationCounts: {
+          ...state.nodeRegistrationCounts,
+          [userId]: currentCount - 1,
+        },
       };
     }),
   setFocusError: (message) => set({ focusError: message }),
@@ -64,5 +87,6 @@ export const useSphereStore = create<SphereState>((set) => ({
       highlightedUserId: null,
       focusError: null,
       nodePositions: state.nodePositions,
+      nodeRegistrationCounts: state.nodeRegistrationCounts,
     })),
 }));
