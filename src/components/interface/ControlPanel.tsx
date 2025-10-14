@@ -3,8 +3,9 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
 import { useChatStore } from '../../store/chatStore';
 import { useModalStore } from '../../store/modalStore';
-import { Activity, Maximize2, ShieldCheck, SignalHigh, Waves } from 'lucide-react';
+import { Activity, Maximize2, ShieldCheck, SignalHigh, Waves, Share2, Link2 } from 'lucide-react';
 import { useSphereStore } from '../../store/sphereStore';
+import { useMeshStore } from '../../store/meshStore';
 
 export function ControlPanel() {
   const currentUser = useAuthStore((state) => state.user);
@@ -14,8 +15,11 @@ export function ControlPanel() {
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
   const setSphereFullscreen = useSphereStore((state) => state.setFullscreen);
+  const meshPeers = useMeshStore((state) => state.peers);
+  const meshPreferences = useMeshStore((state) => state.preferences);
 
   const otherUsers = users.filter((user) => user.id !== currentUser?.id);
+  const connectedPeers = Object.values(meshPeers).filter((peer) => peer.status === 'connected');
 
   return (
     <aside className="space-y-6">
@@ -84,6 +88,13 @@ export function ControlPanel() {
               </div>
               <p className="mt-2 text-2xl font-semibold text-emerald-300">99.2%</p>
             </div>
+            <div className="theme-surface-muted rounded-2xl p-3">
+              <div className="flex items-center justify-between text-white/60">
+                <span>Mesh Links</span>
+                <Share2 className="h-4 w-4 text-cyan-300" />
+              </div>
+              <p className="mt-2 text-2xl font-semibold text-white">{connectedPeers.length}</p>
+            </div>
           </div>
         </div>
       </section>
@@ -127,11 +138,19 @@ export function ControlPanel() {
         </div>
 
         <div className="mt-4 space-y-3">
+          {connectedPeers.length > 0 && (
+            <div className="theme-surface-muted rounded-2xl border border-white/10 p-3 text-xs uppercase tracking-[0.2em] text-white/60">
+              <div className="flex items-center justify-between">
+                <span>Decentralized mesh active</span>
+                <span>{meshPreferences.allowPublicDiscovery ? 'Discoverable' : 'Private beacon'}</span>
+              </div>
+            </div>
+          )}
           {otherUsers.length > 0 ? (
             otherUsers.map((user) => (
               <div
                 key={user.id}
-                className="theme-surface-muted flex items-center justify-between rounded-2xl p-3"
+                className="theme-surface-muted flex flex-col gap-3 rounded-2xl p-3 lg:flex-row lg:items-center lg:justify-between"
               >
                 <div className="flex items-center gap-3">
                   <div
@@ -145,18 +164,26 @@ export function ControlPanel() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="grid gap-2 text-xs uppercase tracking-[0.2em] text-white/60 sm:grid-cols-2 lg:flex lg:flex-row lg:items-center lg:gap-2">
                   <button
                     onClick={() => setProfileUserId(user.id)}
-                    className="theme-chip rounded-lg px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/60 transition hover:bg-white/20"
+                    className="theme-chip rounded-lg px-3 py-2 transition hover:bg-white/20"
                   >
                     Profile
                   </button>
                   <button
                     onClick={() => setActiveChat(user.id)}
-                    className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-xs uppercase tracking-[0.2em] text-emerald-300 transition hover:bg-emerald-500/20"
+                    className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-emerald-300 transition hover:bg-emerald-500/20"
                   >
                     Link
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-cyan-200 transition hover:bg-cyan-500/20"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Link2 className="h-4 w-4" /> Mesh Invite
+                    </span>
                   </button>
                 </div>
               </div>

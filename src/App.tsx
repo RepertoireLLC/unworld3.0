@@ -21,6 +21,7 @@ import { TimeDisplay } from './components/interface/TimeDisplay';
 import { SettingsModal } from './components/interface/SettingsModal';
 import { useInterestStore } from './store/interestStore';
 import { useForumStore } from './store/forumStore';
+import { useMeshStore } from './store/meshStore';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -34,6 +35,7 @@ export function App() {
   const isAIHydrated = useAIStore((state) => state.isHydrated);
   const ensureInterestProfile = useInterestStore((state) => state.ensureProfile);
   const initializeForumSync = useForumStore((state) => state.initializeSyncChannel);
+  const initializeMesh = useMeshStore((state) => state.initialize);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -48,8 +50,9 @@ export function App() {
   useEffect(() => {
     if (currentUser) {
       ensureInterestProfile(currentUser.id);
+      initializeMesh(currentUser.name);
     }
-  }, [currentUser, ensureInterestProfile]);
+  }, [currentUser, ensureInterestProfile, initializeMesh]);
 
   useEffect(() => {
     void hydrateAI();

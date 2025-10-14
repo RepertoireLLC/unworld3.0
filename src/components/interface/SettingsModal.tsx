@@ -5,6 +5,8 @@ import { useTimeStore, getEffectiveTimezone, getSystemTimezone } from '../../sto
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useToastStore } from '../../store/toastStore';
 import { ThemeCustomizationPanel } from './ThemeCustomizationPanel';
+import { useMeshStore } from '../../store/meshStore';
+import { useStorageStore } from '../../store/storageStore';
 
 const FALLBACK_TIMEZONES = [
   'UTC',
@@ -49,6 +51,12 @@ export function SettingsModal() {
   const setDetectedTimezone = useTimeStore((state) => state.setDetectedTimezone);
   const addToast = useToastStore((state) => state.addToast);
   const themeSectionRef = useRef<HTMLDivElement | null>(null);
+  const meshPreferences = useMeshStore((state) => state.preferences);
+  const setMeshPreferences = useMeshStore((state) => state.setPreferences);
+  const assets = useStorageStore((state) => state.assets);
+  const hydrateAssets = useStorageStore((state) => state.hydrate);
+  const updateAssetVisibility = useStorageStore((state) => state.updateVisibility);
+  const deleteAsset = useStorageStore((state) => state.deleteAsset);
 
   const timezoneOptions = useMemo(() => resolveTimezones(), []);
 
@@ -57,6 +65,12 @@ export function SettingsModal() {
       setDetectedTimezone(getSystemTimezone());
     }
   }, [autoDetect, isOpen, setDetectedTimezone]);
+
+  useEffect(() => {
+    if (isOpen) {
+      void hydrateAssets();
+    }
+  }, [hydrateAssets, isOpen]);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
@@ -102,6 +116,30 @@ export function SettingsModal() {
       description: `Aligned with ${systemZone}.`,
     });
   }, [addToast, setDetectedTimezone]);
+
+  const handleMeshDiscoveryToggle = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const allowPublicDiscovery = event.target.checked;
+    setMeshPreferences({ allowPublicDiscovery });
+    addToast({
+      title: allowPublicDiscovery ? 'Discovery enabled' : 'Discovery disabled',
+      variant: 'success',
+      description: allowPublicDiscovery
+        ? 'Your node will advertise availability to trusted indexers.'
+        : 'Your node is now private. Only direct invites can connect.',
+    });
+  }, [addToast, setMeshPreferences]);
+
+  const handleAutoAcceptToggle = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const autoAcceptTrusted = event.target.checked;
+    setMeshPreferences({ autoAcceptTrusted });
+    addToast({
+      title: autoAcceptTrusted ? 'Trusted auto-link enabled' : 'Manual approval required',
+      variant: 'info',
+      description: autoAcceptTrusted
+        ? 'Trusted peers may establish channels instantly.'
+        : 'Review each mesh request before connecting.',
+    });
+  }, [addToast, setMeshPreferences]);
 
   if (!isOpen) {
     return null;
@@ -245,6 +283,104 @@ export function SettingsModal() {
           >
             <ThemeCustomizationPanel />
           </div>
+
+          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.8)]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Security & Privacy</p>
+                <h3 className="mt-1 text-lg font-semibold text-white">Mesh Governance</h3>
+              </div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
+                {meshPreferences.allowPublicDiscovery ? 'Discoverable' : 'Stealth'}
+              </span>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-white">Public Discovery Opt-In</p>
+                    <p className="text-xs text-white/50">Allow trusted indexers to relay your presence.</p>
+                  </div>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={meshPreferences.allowPublicDiscovery}
+                      onChange={handleMeshDiscoveryToggle}
+                      className="peer sr-only"
+                    />
+                    <div className="relative h-6 w-11 rounded-full border border-white/20 bg-white/10 transition peer-checked:border-cyan-400/60 peer-checked:bg-cyan-500/20">
+                      <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-all duration-300 peer-checked:translate-x-5 peer-checked:bg-cyan-300" />
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-white">Auto-Link Trusted Peers</p>
+                    <p className="text-xs text-white/50">Skip approval when a trusted node initiates contact.</p>
+                  </div>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={meshPreferences.autoAcceptTrusted}
+                      onChange={handleAutoAcceptToggle}
+                      className="peer sr-only"
+                    />
+                    <div className="relative h-6 w-11 rounded-full border border-white/20 bg-white/10 transition peer-checked:border-emerald-400/60 peer-checked:bg-emerald-500/20">
+                      <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-all duration-300 peer-checked:translate-x-5 peer-checked:bg-emerald-300" />
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Encrypted Vault</p>
+                <span className="text-xs text-white/50">{assets.length} stored asset{assets.length === 1 ? '' : 's'}</span>
+              </div>
+              <div className="mt-3 space-y-3">
+                {assets.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
+                    No encrypted files stored yet. Uploads remain on this device only.
+                  </div>
+                ) : (
+                  assets.slice(0, 5).map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-white">{asset.name}</p>
+                        <p className="text-xs text-white/50">
+                          {(asset.size / 1024).toFixed(1)} KB • {asset.mimeType || 'binary'} • {new Date(asset.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/50">
+                        <select
+                          value={asset.visibility}
+                          onChange={(event) => void updateAssetVisibility(asset.id, event.target.value as typeof asset.visibility)}
+                          className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-1"
+                        >
+                          <option value="private">Private</option>
+                          <option value="trusted">Trusted Peers</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => void deleteAsset(asset.id)}
+                          className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-1 text-rose-200 transition hover:bg-rose-500/20"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
