@@ -9,7 +9,7 @@ import { initializeMockData } from './store/mockData';
 import { useThemeStore, type ThemeType } from './store/themeStore';
 import { HeaderBar } from './components/interface/HeaderBar';
 import { ControlPanel } from './components/interface/ControlPanel';
-import { BroadcastPanel } from './components/interface/BroadcastPanel';
+import { HarmoniaCentralPanel } from './components/interface/HarmoniaCentralPanel';
 import { FieldNotesPanel } from './components/interface/FieldNotesPanel';
 import { SphereOverlay } from './components/SphereOverlay';
 import { AIIntegrationPanel } from './components/ai/AIIntegrationPanel';
@@ -19,6 +19,8 @@ import { useAIStore } from './store/aiStore';
 import { initializeConsciousCore, dispatchConsciousEvent } from './core/consciousCore';
 import { TimeDisplay } from './components/interface/TimeDisplay';
 import { SettingsModal } from './components/interface/SettingsModal';
+import { useInterestStore } from './store/interestStore';
+import { useForumStore } from './store/forumStore';
 
 type ThemeVisual = {
   backgroundClass: string;
@@ -151,6 +153,7 @@ const themeVisuals: Record<ThemeType, ThemeVisual> = {
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentUser = useAuthStore((state) => state.user);
   const profileUserId = useModalStore((state) => state.profileUserId);
   const setProfileUserId = useModalStore((state) => state.setProfileUserId);
   const activeChat = useChatStore((state) => state.activeChat);
@@ -158,12 +161,24 @@ export function App() {
   const currentTheme = useThemeStore((state) => state.currentTheme);
   const hydrateAI = useAIStore((state) => state.hydrate);
   const isAIHydrated = useAIStore((state) => state.isHydrated);
+  const ensureInterestProfile = useInterestStore((state) => state.ensureProfile);
+  const initializeForumSync = useForumStore((state) => state.initializeSyncChannel);
 
   useEffect(() => {
     if (isAuthenticated) {
       initializeMockData();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    initializeForumSync();
+  }, [initializeForumSync]);
+
+  useEffect(() => {
+    if (currentUser) {
+      ensureInterestProfile(currentUser.id);
+    }
+  }, [currentUser, ensureInterestProfile]);
 
   useEffect(() => {
     void hydrateAI();
@@ -216,7 +231,7 @@ export function App() {
 
           <main className="grid flex-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]">
             <ControlPanel />
-            <BroadcastPanel />
+            <HarmoniaCentralPanel />
             <FieldNotesPanel />
           </main>
 
