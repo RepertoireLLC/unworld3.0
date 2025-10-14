@@ -42,7 +42,7 @@ export function BroadcastPanel() {
       <div className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-slate-950/60 p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold text-white">Encrypted Relay // Broadcast</h2>
+            <h2 className="text-2xl font-semibold text-white">Harmonia</h2>
             <p className="mt-2 max-w-xl text-sm text-white/60">
               Choose a channel to open a secure quantum link. All transmissions are end-to-end encrypted and logged to the vault for 72 hours.
             </p>

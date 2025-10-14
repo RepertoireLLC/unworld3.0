@@ -3,27 +3,11 @@ import { FriendRequests } from '../FriendRequests';
 import { ThemeSelector } from '../ThemeSelector';
 import { ProfileIcon } from '../ProfileIcon';
 import { AIIntegrationButton } from '../ai/AIIntegrationButton';
-import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
-
 export function HeaderBar() {
-  const currentUser = useAuthStore((state) => state.user);
-  const currentTheme = useThemeStore((state) => state.currentTheme);
-
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="space-y-1">
-        <span className="text-sm uppercase tracking-[0.3em] text-white/50">
-          Encrypted Relay // Broadcast
-        </span>
-        <h1 className="text-3xl font-semibold text-white">
-          Quantum Link Console
-        </h1>
-        {currentUser && (
-          <p className="text-sm text-white/60">
-            Linked operator: <span className="text-white">{currentUser.name}</span> · Theme vector: <span className="uppercase tracking-[0.2em] text-white/50">{currentTheme}</span>
-          </p>
-        )}
+        <h1 className="text-3xl font-semibold text-white">Harmonia</h1>
       </div>
 
       <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center lg:justify-end">
