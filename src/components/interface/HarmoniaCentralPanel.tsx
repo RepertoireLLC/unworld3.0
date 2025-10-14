@@ -1,7 +1,11 @@
 import { useAgoraStore } from '../../store/agoraStore';
+import { useEffect, useMemo, useCallback } from 'react';
 import { BroadcastPanel } from './BroadcastPanel';
 import { HarmoniaAgoraPanel } from '../agora/HarmoniaAgoraPanel';
 import { RadioTower, Atom, Users } from 'lucide-react';
+import { WorkspaceTabs } from './WorkspaceTabs';
+import { useWorkspaceStore } from '../../store/workspaceStore';
+import { ForumThreadPanel } from '../forum/ForumThreadPanel';
 
 const tabs = [
   {
@@ -20,9 +24,69 @@ const tabs = [
 
 export function HarmoniaCentralPanel() {
   const { activeTab, setActiveTab } = useAgoraStore();
+  const [ensureTab, workspaceActiveTab, openThreadTab, setWorkspaceActiveTab, workspaceTabs] = useWorkspaceStore((state) => [
+    state.ensureTab,
+    state.getActiveTab(),
+    state.openThreadTab,
+    state.setActiveTab,
+    state.tabs,
+  ]);
+
+  useEffect(() => {
+    ensureTab({ id: 'broadcast', title: 'Quantum Broadcast', type: 'broadcast', closable: false });
+    ensureTab({ id: 'agora', title: 'Harmonia Agora', type: 'agora', closable: false });
+  }, [ensureTab]);
+
+  useEffect(() => {
+    if (!workspaceActiveTab) {
+      return;
+    }
+    if (workspaceActiveTab.id === 'broadcast' && activeTab !== 'broadcast') {
+      setActiveTab('broadcast');
+    }
+    if (workspaceActiveTab.id === 'agora' && activeTab !== 'agora') {
+      setActiveTab('agora');
+    }
+  }, [workspaceActiveTab, activeTab, setActiveTab]);
+
+  useEffect(() => {
+    if (activeTab === 'broadcast') {
+      setWorkspaceActiveTab('broadcast');
+    }
+    if (activeTab === 'agora') {
+      setWorkspaceActiveTab('agora');
+    }
+  }, [activeTab, setWorkspaceActiveTab]);
+
+  const handleOpenThread = useCallback(
+    (postId: string, title: string) => {
+      openThreadTab({ postId, title });
+    },
+    [openThreadTab]
+  );
+
+  const content = useMemo(() => {
+    if (!workspaceActiveTab) {
+      return null;
+    }
+    if (workspaceActiveTab.id === 'broadcast') {
+      return <BroadcastPanel />;
+    }
+    if (workspaceActiveTab.id === 'agora') {
+      return <HarmoniaAgoraPanel onOpenThread={handleOpenThread} />;
+    }
+    if (workspaceActiveTab.type === 'thread') {
+      const postId = workspaceActiveTab.data?.postId;
+      if (typeof postId === 'string') {
+        return <ForumThreadPanel postId={postId} />;
+      }
+    }
+    return null;
+  }, [workspaceActiveTab, handleOpenThread]);
 
   return (
     <div className="flex h-full flex-col gap-4">
+      {workspaceTabs.length > 0 && <WorkspaceTabs />}
       <div className="theme-surface flex flex-wrap items-center gap-2 rounded-3xl p-3 text-xs uppercase tracking-[0.3em] text-white/50">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -54,7 +118,11 @@ export function HarmoniaCentralPanel() {
         </div>
       </div>
 
-      {activeTab === 'agora' ? <HarmoniaAgoraPanel /> : <BroadcastPanel />}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="h-full overflow-hidden">
+          {content}
+        </div>
+      </div>
     </div>
   );
 }

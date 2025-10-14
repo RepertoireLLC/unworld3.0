@@ -17,6 +17,7 @@ interface AgoraPostCardProps {
   currentUserId: string;
   userVector: InterestVector;
   transparencyEnabled: boolean;
+  onOpenThread?: (postId: string, title: string) => void;
 }
 
 const LABEL_STYLES: Record<FeedEntry['label'], string> = {
@@ -95,6 +96,7 @@ export function AgoraPostCard({
   currentUserId,
   userVector,
   transparencyEnabled,
+  onOpenThread,
 }: AgoraPostCardProps) {
   const recordEngagement = useForumStore((state) => state.recordEngagement);
   const addComment = useForumStore((state) => state.addComment);
@@ -264,6 +266,16 @@ export function AgoraPostCard({
             <MessageCircle className="h-4 w-4" />
             Thread {comments.length}
           </button>
+          {onOpenThread && (
+            <button
+              type="button"
+              onClick={() => onOpenThread(entry.post.post_id, entry.post.title)}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-white/60 transition hover:bg-white/20"
+            >
+              <Layers className="h-4 w-4" />
+              Open Thread
+            </button>
+          )}
           {entry.post.mediaType === 'video' && (
             <span className="flex items-center gap-2 rounded-xl border border-fuchsia-400/40 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-200">
               <Play className="h-4 w-4" /> Video Capsule

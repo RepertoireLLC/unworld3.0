@@ -35,7 +35,11 @@ function tokenizeTags(input: string): string[] {
     .filter(Boolean);
 }
 
-export function HarmoniaAgoraPanel() {
+interface HarmoniaAgoraPanelProps {
+  onOpenThread?: (postId: string, title: string) => void;
+}
+
+export function HarmoniaAgoraPanel({ onOpenThread }: HarmoniaAgoraPanelProps) {
   const currentUser = useAuthStore((state) => state.user);
   const [posts, postOrder] = useForumStore((state) => [state.posts, state.postOrder]);
   const getFeedForUser = useForumStore((state) => state.getFeedForUser);
@@ -465,6 +469,7 @@ export function HarmoniaAgoraPanel() {
               currentUserId={currentUser?.id ?? ''}
               userVector={userVector}
               transparencyEnabled={transparencyEnabled}
+              onOpenThread={onOpenThread}
             />
           ))
         ) : (
