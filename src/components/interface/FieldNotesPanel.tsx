@@ -1,45 +1,42 @@
 import { useState } from 'react';
-import { NotebookPen, Lock, Save, RefreshCcw, Tag } from 'lucide-react';
+import { NotebookPen, Lock, Save, RefreshCcw, Tag, Layers } from 'lucide-react';
+import { useLayerStore } from '../../store/layerStore';
+import {
+  TAG_TO_LAYER,
+  type LayerTag,
+  useLayerContentStore,
+} from '../../store/layerContentStore';
+import { LAYERS } from '../../utils/permissions';
+import { useAuthStore } from '../../store/authStore';
 
-interface SavedLog {
-  id: string;
-  content: string;
-  timestamp: number;
-  tag: 'Priority' | 'Beacon' | 'Harmony';
-}
-
-const tags: SavedLog['tag'][] = ['Priority', 'Beacon', 'Harmony'];
+const tags: LayerTag[] = ['Priority', 'Beacon', 'Harmony'];
 
 export function FieldNotesPanel() {
   const [draft, setDraft] = useState('');
-  const [selectedTag, setSelectedTag] = useState<SavedLog['tag']>('Priority');
-  const [savedLogs, setSavedLogs] = useState<SavedLog[]>([
-    {
-      id: '1',
-      content: 'Awaiting decoded intel from Node Sigma. Maintain passive watch.',
-      timestamp: Date.now() - 1000 * 60 * 12,
-      tag: 'Beacon',
-    },
-    {
-      id: '2',
-      content: 'Authorize sync capsule for Ops team. Request new clearance tokens.',
-      timestamp: Date.now() - 1000 * 60 * 45,
-      tag: 'Priority',
-    },
-  ]);
+  const [selectedTag, setSelectedTag] = useState<LayerTag>('Priority');
+  const currentUser = useAuthStore((state) => state.user);
+
+  const availableLayers = useLayerStore((state) => state.availableLayers);
+  const toggleLayer = useLayerStore((state) => state.toggleLayer);
+  const isLayerAccessible = useLayerStore((state) => state.isLayerAccessible);
+  const isLayerActive = useLayerStore((state) => state.isLayerActive);
+  const visibleLayers = useLayerStore((state) => state.getVisibleLayers());
+  const permissionContext = useLayerStore((state) => state.permissionContext);
+
+  const createEntry = useLayerContentStore((state) => state.createEntry);
+  const visibleEntries = useLayerContentStore((state) =>
+    state.getVisibleEntries(visibleLayers, permissionContext),
+  );
 
   const handleSave = () => {
     if (!draft.trim()) return;
 
-    setSavedLogs((prev) => [
-      {
-        id: Date.now().toString(),
-        content: draft.trim(),
-        timestamp: Date.now(),
-        tag: selectedTag,
-      },
-      ...prev,
-    ]);
+    createEntry({
+      content: draft.trim(),
+      layer: TAG_TO_LAYER[selectedTag],
+      tag: selectedTag,
+      ownerId: currentUser?.id ?? 'system',
+    });
     setDraft('');
   };
 
@@ -66,6 +63,41 @@ export function FieldNotesPanel() {
             </h3>
           </div>
           <Lock className="h-5 w-5 text-emerald-300" />
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="mb-3 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+            <span className="flex items-center gap-2">
+              <Layers className="h-4 w-4" /> Layer Visibility
+            </span>
+            <span className="text-white/60">
+              {visibleLayers.length} / {availableLayers.length} active
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2" data-testid="layer-toggle-group">
+            {availableLayers.map((layerId) => {
+              const metadata = LAYERS.find((layer) => layer.id === layerId)!;
+              const accessible = isLayerAccessible(layerId);
+              const active = isLayerActive(layerId);
+              return (
+                <button
+                  key={layerId}
+                  type="button"
+                  onClick={() => toggleLayer(layerId)}
+                  disabled={!accessible}
+                  data-testid={`layer-toggle-${layerId}`}
+                  aria-pressed={active}
+                  className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.3em] transition ${
+                    active
+                      ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-300'
+                      : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10'
+                  } ${!accessible ? 'cursor-not-allowed opacity-40' : ''}`}
+                >
+                  {metadata.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
@@ -109,7 +141,9 @@ export function FieldNotesPanel() {
                 onClick={handleSave}
                 className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-emerald-300 transition hover:bg-emerald-500/20"
               >
-                <span className="flex items-center gap-2"><Save className="h-4 w-4" /> Save Log</span>
+                <span className="flex items-center gap-2">
+                  <Save className="h-4 w-4" /> Save Log
+                </span>
               </button>
             </div>
           </div>
@@ -122,14 +156,14 @@ export function FieldNotesPanel() {
           <RefreshCcw className="h-4 w-4 text-white/40" />
         </div>
         <div className="mt-4 space-y-3">
-          {savedLogs.length > 0 ? (
-            savedLogs.map((log) => (
+          {visibleEntries.length > 0 ? (
+            visibleEntries.map((log) => (
               <div
                 key={log.id}
                 className="rounded-2xl border border-white/10 bg-white/5 p-4"
               >
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
-                  <span>{formatTime(log.timestamp)}</span>
+                  <span>{formatTime(log.createdAt)}</span>
                   <span
                     className={`rounded-full border px-3 py-1 ${
                       log.tag === 'Priority'
