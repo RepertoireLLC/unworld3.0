@@ -16,7 +16,6 @@ import { AIIntegrationPanel } from './components/ai/AIIntegrationPanel';
 import { ToastStack } from './components/interface/ToastStack';
 import { initializeAIRouter } from './core/aiRouter';
 import { useAIStore } from './store/aiStore';
-import { initializeConsciousCore, dispatchConsciousEvent } from './core/consciousCore';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -41,18 +40,8 @@ export function App() {
   useEffect(() => {
     if (isAIHydrated) {
       void initializeAIRouter();
-      void initializeConsciousCore();
     }
   }, [isAIHydrated]);
-
-  useEffect(() => {
-    if (profileUserId) {
-      void dispatchConsciousEvent({
-        type: 'profile:opened',
-        nodeId: profileUserId,
-      });
-    }
-  }, [profileUserId]);
 
   const getBackgroundClass = () => {
     switch (currentTheme) {

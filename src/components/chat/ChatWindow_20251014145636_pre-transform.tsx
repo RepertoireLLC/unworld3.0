@@ -13,45 +13,17 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((state) => state.user);
-  const otherUser = useUserStore((state) => state.users.find((u) => u.id === userId));
-  const sendMessage = useChatStore((state) => state.sendMessage);
-  const loadMessagesForChat = useChatStore((state) => state.loadMessagesForChat);
-  const currentUserId = currentUser?.id ?? null;
-  const messageSelector = useMemo(
-    () =>
-      (state: ReturnType<typeof useChatStore.getState>) => {
-        if (!currentUserId) {
-          return [];
-        }
+  const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
+  const { sendMessage, getMessagesForChat } = useChatStore();
 
-        return state.messages
-          .filter(
-            (msg) =>
-              (msg.fromUserId === currentUserId && msg.toUserId === userId) ||
-              (msg.fromUserId === userId && msg.toUserId === currentUserId)
-          )
-          .sort((a, b) => a.timestamp - b.timestamp);
-      },
-    [currentUserId, userId]
-  );
-  const messages = useChatStore(messageSelector);
-
-  const formatResonanceTag = (tag: string) =>
-    tag
-      .split('-')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+  const messages = useMemo(() => {
+    if (!currentUser) return [];
+    return getMessagesForChat(currentUser.id, userId);
+  }, [currentUser, getMessagesForChat, userId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-    void loadMessagesForChat(currentUser.id, userId);
-  }, [currentUser, loadMessagesForChat, userId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -100,16 +72,7 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
                     : 'bg-white/10 text-white'
                 }`}
               >
-                <div className="flex items-center justify-between gap-3 text-[0.6rem] uppercase tracking-[0.3em] text-white/60">
-                  <span>{formatResonanceTag(msg.resonanceTag)}</span>
-                  <span>{new Date(msg.timestamp).toLocaleTimeString()}</span>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-white/90">{msg.content}</p>
-                {msg.annotations?.empathyCue && (
-                  <p className="mt-2 text-[0.65rem] italic text-white/70">
-                    {msg.annotations.empathyCue}
-                  </p>
-                )}
+                {msg.content}
               </div>
             </div>
           );

@@ -14,13 +14,6 @@ interface ModelInvocationResult {
   reasoning?: string;
 }
 
-type SanitizedPayload = Record<string, unknown> | undefined;
-
-interface HeuristicSummary {
-  summary: string;
-  reasoning: string;
-}
-
 function resolveEndpoint(connection: AIConnection) {
   if (connection.endpoint) {
     return connection.endpoint;
@@ -97,115 +90,6 @@ function extractText(data: unknown) {
   }
 
   return JSON.stringify(candidate);
-}
-
-function limitWords(text: string, maxWords: number) {
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length <= maxWords || maxWords <= 0) {
-    return text;
-  }
-  const trimmed = words.slice(0, maxWords).join(' ');
-  return `${trimmed}…`;
-}
-
-function createHeuristicSummary(
-  query: string,
-  payload: SanitizedPayload
-): HeuristicSummary {
-  const transcript = typeof payload?.transcript === 'string' ? payload.transcript : '';
-  const lines = transcript
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const participants = new Set<string>();
-  const sentiments: string[] = [];
-  for (const line of lines) {
-    const [speaker, ...rest] = line.split(':');
-    if (speaker) {
-      participants.add(speaker.trim());
-    }
-    if (rest.length > 0) {
-      sentiments.push(rest.join(':').trim());
-    }
-  }
-
-  const resonanceRaw = Array.isArray(payload?.resonance)
-    ? (payload?.resonance as unknown[])
-        .map((tag) => String(tag).trim())
-        .filter(Boolean)
-    : [];
-  const primaryResonance = resonanceRaw.length > 0 ? resonanceRaw.join(', ') : 'default resonance';
-
-  let hermeticPrinciple = '';
-  let empathyCue = '';
-  const alignment = payload?.alignment;
-  if (alignment && typeof alignment === 'object') {
-    const alignmentRecord = alignment as Record<string, unknown>;
-    const alignmentData = alignmentRecord.data;
-    if (alignmentData && typeof alignmentData === 'object') {
-      const dataRecord = alignmentData as Record<string, unknown>;
-      if (typeof dataRecord.hermeticPrinciple === 'string') {
-        hermeticPrinciple = dataRecord.hermeticPrinciple;
-      }
-      if (typeof dataRecord.empathyCue === 'string') {
-        empathyCue = dataRecord.empathyCue;
-      }
-    }
-  }
-
-  const messageCount = lines.length;
-  const participantsLabel =
-    participants.size > 0 ? Array.from(participants).join(' & ') : 'Participants';
-  const latestReflectionRaw = sentiments.at(-1) ?? '';
-  const latestReflection = latestReflectionRaw ? latestReflectionRaw.replace(/\s+/g, ' ') : '';
-
-  const segments: string[] = [];
-  segments.push(
-    `${participantsLabel} exchanged ${messageCount || 'several'} signal${
-      messageCount === 1 ? '' : 's'
-    } exploring ${primaryResonance}.`
-  );
-  if (hermeticPrinciple) {
-    segments.push(hermeticPrinciple);
-  }
-  if (latestReflection) {
-    segments.push(`Latest reflection: "${limitWords(latestReflection, 30)}".`);
-  }
-  segments.push(
-    `Suggested next step: ${
-      empathyCue || 'continue listening together and affirm the shared intention.'
-    }`
-  );
-
-  const summary = limitWords(segments.join(' '), 120);
-  const reasoning = `Generated locally from ${messageCount} message${
-    messageCount === 1 ? '' : 's'
-  } and ${resonanceRaw.length} resonance tag${resonanceRaw.length === 1 ? '' : 's'}.`;
-
-  if (!summary) {
-    return {
-      summary: limitWords(query, 80),
-      reasoning: 'Defaulted to summarizing the provided prompt because no transcript data was available.',
-    };
-  }
-
-  return { summary, reasoning };
-}
-
-async function generateHeuristicResponse(
-  reason: string,
-  query: string,
-  payload: SanitizedPayload
-): Promise<HarmonizedResponse> {
-  const { summary, reasoning } = createHeuristicSummary(query, payload);
-  await logAIIntegration(`Local heuristic synthesis executed (${reason}).`);
-  return harmonizeResponse({
-    text: summary,
-    model: 'HeuristicSynthesizer',
-    reasoning: `${reasoning} Fallback reason: ${reason}.`,
-    timestamp: new Date().toISOString(),
-  });
 }
 
 async function callOpenAIEndpoint(query: string, connection: AIConnection) {
@@ -371,18 +255,17 @@ export async function routeAIQuery(
   options: AIQueryOptions = {}
 ): Promise<HarmonizedResponse> {
   const { connections, activeConnectionId } = useAIStore.getState();
-  const payload = options.payload ? sanitizePayloadForAI(options.payload) : undefined;
-
   if (connections.length === 0) {
-    return generateHeuristicResponse('no AI connections configured', query, payload);
+    throw new Error('No AI connections configured.');
   }
 
+  const payload = options.payload ? sanitizePayloadForAI(options.payload) : undefined;
   const ordered = connections
     .filter((connection) => connection.isEnabled)
     .sort((a, b) => (a.id === activeConnectionId ? -1 : b.id === activeConnectionId ? 1 : 0));
 
   if (ordered.length === 0) {
-    return generateHeuristicResponse('no enabled AI connections available', query, payload);
+    throw new Error('No enabled AI connections available.');
   }
 
   for (const connection of ordered) {
@@ -404,7 +287,7 @@ export async function routeAIQuery(
     }
   }
 
-  return generateHeuristicResponse('all AI connections failed', query, payload);
+  throw new Error('All AI connections failed.');
 }
 
 async function probeEndpoint(connection: AIConnection) {

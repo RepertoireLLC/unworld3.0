@@ -2,7 +2,6 @@ import type { AIConnection } from '../store/aiStore';
 
 const STORAGE_KEY = 'harmonia.ai.connections';
 const MASTER_KEY_KEY = 'harmonia.ai.masterKey';
-const MEMORY_STORAGE_VERSION = 'harmonia.memory.v1';
 
 interface PersistedConnection {
   id: string;
@@ -90,81 +89,6 @@ async function decryptString(cipherText: string, iv: string) {
   return new TextDecoder().decode(plainBuffer);
 }
 
-async function encryptPayload<T>(payload: T) {
-  const serialized = JSON.stringify(payload);
-  return encryptString(serialized);
-}
-
-async function decryptPayload<T>(cipherText: string, iv: string): Promise<T> {
-  const plain = await decryptString(cipherText, iv);
-  return JSON.parse(plain) as T;
-}
-
-async function writeEncryptedPayload<T>(
-  storageKey: string,
-  payload: T,
-  metadata?: Record<string, string>
-) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const encrypted = await encryptPayload(payload);
-  const envelope = {
-    ...encrypted,
-    metadata: {
-      savedAt: new Date().toISOString(),
-      ...metadata,
-    },
-  };
-
-  window.localStorage.setItem(storageKey, JSON.stringify(envelope));
-}
-
-async function readEncryptedPayload<T>(storageKey: string): Promise<T | null> {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const stored = window.localStorage.getItem(storageKey);
-  if (!stored) {
-    return null;
-  }
-
-  const envelope = JSON.parse(stored) as {
-    cipherText: string;
-    iv: string;
-  } & Record<string, unknown>;
-
-  return decryptPayload<T>(envelope.cipherText, envelope.iv);
-}
-
-export interface SecureVault<T> {
-  load: () => Promise<T | null>;
-  save: (payload: T) => Promise<void>;
-  clear: () => Promise<void>;
-}
-
-export function createSecureVault<T>(options: {
-  storageKey: string;
-  metadata?: Record<string, string>;
-}): SecureVault<T> {
-  const { storageKey, metadata } = options;
-
-  return {
-    load: () => readEncryptedPayload<T>(storageKey),
-    save: async (payload: T) => {
-      await writeEncryptedPayload(storageKey, payload, metadata);
-    },
-    clear: async () => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-      window.localStorage.removeItem(storageKey);
-    },
-  };
-}
-
 export async function persistAIConnections(
   connections: AIConnection[],
   activeConnectionId: string | null
@@ -193,9 +117,7 @@ export async function persistAIConnections(
     ),
   };
 
-  await writeEncryptedPayload(STORAGE_KEY, payload, {
-    schema: 'harmonia.ai.connections',
-  });
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
 export async function retrieveAIConnections(): Promise<{
@@ -206,13 +128,14 @@ export async function retrieveAIConnections(): Promise<{
     return { connections: [], activeConnectionId: null };
   }
 
-  const stored = await readEncryptedPayload<PersistedState>(STORAGE_KEY);
+  const stored = window.localStorage.getItem(STORAGE_KEY);
   if (!stored) {
     return { connections: [], activeConnectionId: null };
   }
 
+  const parsed = JSON.parse(stored) as PersistedState;
   const connections: AIConnection[] = await Promise.all(
-    stored.connections.map(async (connection) => ({
+    parsed.connections.map(async (connection) => ({
       ...connection,
       apiKey:
         connection.credentials?.cipherText && connection.credentials.iv
@@ -225,37 +148,6 @@ export async function retrieveAIConnections(): Promise<{
 
   return {
     connections,
-    activeConnectionId: stored.activeConnectionId,
+    activeConnectionId: parsed.activeConnectionId,
   };
-}
-
-interface MemoryEnvelope {
-  schemaVersion: string;
-  threads: unknown;
-}
-
-export async function loadMemoryVault<T>(): Promise<T | null> {
-  const payload = await readEncryptedPayload<MemoryEnvelope>(MEMORY_STORAGE_VERSION);
-  if (!payload) {
-    return null;
-  }
-
-  if (payload.schemaVersion !== '1') {
-    return null;
-  }
-
-  return payload.threads as T;
-}
-
-export async function persistMemoryVault<T>(threads: T): Promise<void> {
-  await writeEncryptedPayload(
-    MEMORY_STORAGE_VERSION,
-    {
-      schemaVersion: '1',
-      threads,
-    },
-    {
-      schema: 'harmonia.memory.resonance',
-    }
-  );
 }

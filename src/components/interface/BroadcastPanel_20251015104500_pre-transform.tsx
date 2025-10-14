@@ -3,7 +3,6 @@ import { Satellite, Waves, MessageSquare, Shield, PlugZap } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
-import { ResonanceMemoryPanel } from '../memory/ResonanceMemoryPanel';
 
 export function BroadcastPanel() {
   const { activeChat, setActiveChat, getMessagesForChat } = useChatStore();
@@ -27,11 +26,10 @@ export function BroadcastPanel() {
       : [];
 
   return (
-    <div className="flex h-full flex-col gap-6">
-      <section className="flex h-full flex-col gap-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.9)]">
-        <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/50">
-          <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-emerald-300">
-            Quantum Axis // Aligned
+    <section className="flex h-full flex-col gap-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.9)]">
+      <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/50">
+        <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-emerald-300">
+          Quantum Axis // Aligned
         </span>
         <span className="rounded-full border border-sky-400/40 bg-sky-500/10 px-3 py-1 text-sky-300">
           Broadcast Mode
@@ -161,8 +159,6 @@ export function BroadcastPanel() {
           </p>
         </div>
       </div>
-      </section>
-      <ResonanceMemoryPanel />
-    </div>
+    </section>
   );
 }

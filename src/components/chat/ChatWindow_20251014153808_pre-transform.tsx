@@ -13,28 +13,15 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((state) => state.user);
-  const otherUser = useUserStore((state) => state.users.find((u) => u.id === userId));
+  const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
   const sendMessage = useChatStore((state) => state.sendMessage);
+  const getMessagesForChat = useChatStore((state) => state.getMessagesForChat);
   const loadMessagesForChat = useChatStore((state) => state.loadMessagesForChat);
-  const currentUserId = currentUser?.id ?? null;
-  const messageSelector = useMemo(
-    () =>
-      (state: ReturnType<typeof useChatStore.getState>) => {
-        if (!currentUserId) {
-          return [];
-        }
 
-        return state.messages
-          .filter(
-            (msg) =>
-              (msg.fromUserId === currentUserId && msg.toUserId === userId) ||
-              (msg.fromUserId === userId && msg.toUserId === currentUserId)
-          )
-          .sort((a, b) => a.timestamp - b.timestamp);
-      },
-    [currentUserId, userId]
-  );
-  const messages = useChatStore(messageSelector);
+  const messages = useMemo(() => {
+    if (!currentUser) return [];
+    return getMessagesForChat(currentUser.id, userId);
+  }, [currentUser, getMessagesForChat, userId]);
 
   const formatResonanceTag = (tag: string) =>
     tag

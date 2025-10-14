@@ -1,13 +1,5 @@
 import { create } from 'zustand';
-import {
-  useMemoryStore,
-  getConversationId,
-  classifyResonanceTag,
-  composeResonanceMetadata,
-  type MemoryRole,
-  type ResonanceMetadata,
-  type ResonanceTag,
-} from './memoryStore';
+import { useMemoryStore, getConversationId } from './memoryStore';
 import { generateId } from '../utils/id';
 import { dispatchConsciousEvent } from '../core/consciousCore';
 
@@ -17,24 +9,13 @@ interface Message {
   toUserId: string;
   content: string;
   timestamp: number;
-  resonanceTag: ResonanceTag;
-  annotations: ResonanceMetadata;
 }
 
 interface ChatState {
   activeChat: string | null;
   messages: Message[];
   setActiveChat: (userId: string | null) => void;
-  sendMessage: (
-    fromUserId: string,
-    toUserId: string,
-    content: string,
-    options?: {
-      role?: MemoryRole;
-      resonanceTag?: ResonanceTag;
-      annotations?: Partial<ResonanceMetadata>;
-    }
-  ) => void;
+  sendMessage: (fromUserId: string, toUserId: string, content: string, options?: { role?: 'user' | 'ai' | 'observer' | 'ally' }) => void;
   getMessagesForChat: (userId1: string, userId2: string) => Message[];
   loadMessagesForChat: (userId1: string, userId2: string) => Promise<void>;
 }
@@ -47,18 +28,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   sendMessage: (fromUserId, toUserId, content, options) => {
     const timestamp = Date.now();
-    const role: MemoryRole = options?.role ?? 'user';
-    const resonanceTag = options?.resonanceTag ?? classifyResonanceTag(content);
-    const annotations = options?.annotations;
-    const metadata = composeResonanceMetadata(resonanceTag, annotations);
     const newMessage: Message = {
       id: generateId('chat'),
       fromUserId,
       toUserId,
       content,
       timestamp,
-      resonanceTag,
-      annotations: metadata,
     };
 
     set((state) => ({
@@ -66,14 +41,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
 
     const conversationId = getConversationId(fromUserId, toUserId);
+    const role = options?.role ?? 'user';
     void useMemoryStore.getState().appendMessage({
       conversationId,
       fromUserId,
       toUserId,
       role,
       content,
-      resonanceTag,
-      annotations,
     });
     void dispatchConsciousEvent({
       type: 'memory:updated',
@@ -103,8 +77,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       toUserId: item.toUserId,
       content: item.content,
       timestamp: Date.parse(item.timestamp),
-      resonanceTag: item.resonanceTag,
-      annotations: item.annotations,
     }));
     set((state) => ({
       messages: [
