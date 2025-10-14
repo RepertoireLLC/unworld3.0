@@ -5,7 +5,7 @@ import { UserNodes } from './UserNodes';
 import { AINodes } from './ai/AINodes';
 import { Component, ReactNode, Suspense, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
-import { useThemeStore } from '../store/themeStore';
+import { useThemeStore, type BuiltInThemeId } from '../store/themeStore';
 import { useSphereStore } from '../store/sphereStore';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -62,11 +62,17 @@ class SceneErrorBoundary extends Component<
 }
 
 export function Scene({ variant = 'fullscreen', className }: SceneProps) {
-  const currentTheme = useThemeStore((state) => state.currentTheme);
+  const themeVisual = useThemeStore((state) => state.getResolvedTheme());
+  const derivedThemeId =
+    themeVisual.origin === 'builtin' ? (themeVisual.id as BuiltInThemeId) : undefined;
   const isEmbedded = variant === 'embedded';
 
   const fogColor = useMemo(() => {
-    switch (currentTheme) {
+    if (!derivedThemeId) {
+      return themeVisual.tokens.backgroundColor ?? '#0F172A';
+    }
+
+    switch (derivedThemeId) {
       case 'neon':
         return '#000B14';
       case 'galaxy':
@@ -80,10 +86,11 @@ export function Scene({ variant = 'fullscreen', className }: SceneProps) {
       default:
         return '#0F172A';
     }
-  }, [currentTheme]);
+  }, [derivedThemeId, themeVisual.tokens.backgroundColor]);
 
   const containerClass = ['w-full h-full', className].filter(Boolean).join(' ');
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const themeKey: BuiltInThemeId | 'custom' = derivedThemeId ?? 'custom';
 
   return (
     <SceneErrorBoundary>
@@ -107,10 +114,10 @@ export function Scene({ variant = 'fullscreen', className }: SceneProps) {
             <Sphere />
             <UserNodes />
             <AINodes />
-            {currentTheme === 'galaxy' && !isEmbedded && (
+            {themeKey === 'galaxy' && !isEmbedded && (
               <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
             )}
-            {currentTheme === 'technoPunk' && !isEmbedded && <TechnoPunkEffects />}
+            {themeKey === 'technoPunk' && !isEmbedded && <TechnoPunkEffects />}
           </Suspense>
 
           <OrbitControls
