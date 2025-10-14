@@ -14,9 +14,7 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = useAuthStore((state) => state.user);
   const otherUser = useUserStore((state) => state.users.find(u => u.id === userId));
-  const sendMessage = useChatStore((state) => state.sendMessage);
-  const getMessagesForChat = useChatStore((state) => state.getMessagesForChat);
-  const loadMessagesForChat = useChatStore((state) => state.loadMessagesForChat);
+  const { sendMessage, getMessagesForChat } = useChatStore();
 
   const messages = useMemo(() => {
     if (!currentUser) return [];
@@ -26,13 +24,6 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-    void loadMessagesForChat(currentUser.id, userId);
-  }, [currentUser, loadMessagesForChat, userId]);
 
   useEffect(() => {
     scrollToBottom();
