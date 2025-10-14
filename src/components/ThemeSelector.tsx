@@ -10,6 +10,7 @@ const themes: { id: ThemeType; name: string }[] = [
   { id: 'galaxy', name: 'Galaxy' },
   { id: 'matrix', name: 'Matrix' },
   { id: 'minimal', name: 'Minimal' },
+  { id: 'technoPunk', name: 'Techno Punk' },
 ];
 
 interface ThemeSelectorProps {
