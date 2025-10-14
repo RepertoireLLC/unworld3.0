@@ -96,7 +96,7 @@ let broadcastChannel: BroadcastChannel | null = null;
 let hasInitializedChannel = false;
 
 function getBroadcastChannel() {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof window.BroadcastChannel === 'undefined') {
     return null;
   }
   if (!broadcastChannel) {
@@ -146,6 +146,9 @@ export const useForumStore = create<ForumState>((set, get) => ({
     interestVector,
     metadata,
   }) => {
+    if (!authorId) {
+      throw new Error('authorId is required to create a forum post');
+    }
     const postId = generateId('forum_post');
     const timestamp = Date.now();
     const vector = normalizeVector(
@@ -194,6 +197,10 @@ export const useForumStore = create<ForumState>((set, get) => ({
   },
 
   addComment: ({ postId, authorId, body, interestVector, parentCommentId }) => {
+    if (!authorId) {
+      console.warn('Attempted to create forum comment without an author id.');
+      return undefined;
+    }
     const post = get().posts[postId];
     if (!post) {
       return undefined;
@@ -305,14 +312,18 @@ export const useForumStore = create<ForumState>((set, get) => ({
       };
     });
 
+    useTagStore.getState().registerEngagement(post.tags, type);
+
+    if (!userId) {
+      return;
+    }
+
     useInterestStore
       .getState()
       .recordInteraction(userId, post.interest_vector, {
         weight: weightMap[type],
         timestamp,
       });
-
-    useTagStore.getState().registerEngagement(post.tags, type);
 
     broadcastSync({
       type: 'engagement',

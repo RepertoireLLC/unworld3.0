@@ -89,3 +89,11 @@ Tag System Integration
 - Added a dedicated tagStore to capture usage, resonance, and follow data for public_forum tags without touching the legacy stores.
 - Wired forum post creation and engagement events to update tag metrics so recommendations and transparency remain aligned with public activity.
 - Extended the Harmonia Agora interface with tag filters, follow controls, and trending surfacing while preserving the existing composer and feed behavior.
+
+Date: 2025-10-14T21:30:00Z
+
+Integrity Hardening
+-------------------
+- Added guards to prevent anonymous comment or engagement events from polluting interest telemetry.
+- Hardened BroadcastChannel initialization for environments lacking the API.
+- Optimized agora panels to subscribe selectively to store slices for predictable refresh and performance.

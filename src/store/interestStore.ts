@@ -132,7 +132,7 @@ export const useInterestStore = create<InterestState>((set, get) => ({
   },
 
   recordInteraction: (userId, vector, options) => {
-    if (!vector || Object.keys(vector).length === 0) {
+    if (!userId || !vector || Object.keys(vector).length === 0) {
       return;
     }
     const timestamp = options?.timestamp ?? Date.now();
@@ -178,7 +178,7 @@ export const useInterestStore = create<InterestState>((set, get) => ({
   },
 
   integratePublicContent: (userId, vector, timestamp) => {
-    if (!vector || Object.keys(vector).length === 0) {
+    if (!userId || !vector || Object.keys(vector).length === 0) {
       return;
     }
     get().recordInteraction(userId, vector, { weight: 0.35, timestamp });

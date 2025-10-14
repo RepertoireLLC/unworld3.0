@@ -115,7 +115,7 @@ export function AgoraPostCard({
   const hasRegisteredView = useRef(false);
 
   useEffect(() => {
-    if (!cardRef.current) {
+    if (!cardRef.current || !currentUserId) {
       return;
     }
     const observer = new IntersectionObserver(
@@ -140,11 +140,14 @@ export function AgoraPostCard({
   const labelStyle = LABEL_STYLES[entry.label];
 
   const handleLike = () => {
+    if (!currentUserId) {
+      return;
+    }
     recordEngagement(entry.post.post_id, currentUserId, 'like');
   };
 
   const handleSubmitComment = () => {
-    if (!commentDraft.trim()) {
+    if (!currentUserId || !commentDraft.trim()) {
       return;
     }
     addComment({

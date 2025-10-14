@@ -6,23 +6,25 @@ import { useAgoraStore } from '../../store/agoraStore';
 import { InterestVector } from '../../utils/vector';
 import { AgoraPostCard } from './AgoraPostCard';
 import { PlayCircle, Radio, Shuffle, Eye, Waves } from 'lucide-react';
+import { shallow } from 'zustand/shallow';
 
 export function AgoraReelsPanel() {
   const currentUser = useAuthStore((state) => state.user);
-  const [posts, postOrder] = useForumStore((state) => [state.posts, state.postOrder]);
+  const [posts, postOrder] = useForumStore(
+    (state) => [state.posts, state.postOrder],
+    shallow
+  );
   const getFeedForUser = useForumStore((state) => state.getFeedForUser);
   const profiles = useInterestStore((state) => state.profiles);
   const getInterestVector = useInterestStore((state) => state.getInterestVector);
   const ensureInterestProfile = useInterestStore((state) => state.ensureProfile);
 
-  const {
-    feedMode,
-    setFeedMode,
-    transparencyEnabled,
-    setTransparencyEnabled,
-    curiosityRatio,
-    setCuriosityRatio,
-  } = useAgoraStore();
+  const feedMode = useAgoraStore((state) => state.feedMode);
+  const setFeedMode = useAgoraStore((state) => state.setFeedMode);
+  const transparencyEnabled = useAgoraStore((state) => state.transparencyEnabled);
+  const setTransparencyEnabled = useAgoraStore((state) => state.setTransparencyEnabled);
+  const curiosityRatio = useAgoraStore((state) => state.curiosityRatio);
+  const setCuriosityRatio = useAgoraStore((state) => state.setCuriosityRatio);
 
   const [visibleCount, setVisibleCount] = useState(4);
   const sentinelRef = useRef<HTMLDivElement | null>(null);

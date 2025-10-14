@@ -28,6 +28,7 @@ import {
   XCircle,
   SlidersHorizontal,
 } from 'lucide-react';
+import { shallow } from 'zustand/shallow';
 
 const VISIBILITY_OPTIONS = [
   { id: 'public', label: 'Public', description: 'Shared with the collective agora.' },
@@ -86,21 +87,22 @@ const VARIANT_COPY: Record<HarmoniaAgoraVariant, VariantCopy> = {
 
 export function HarmoniaAgoraPanel({ variant = 'agora' }: HarmoniaAgoraPanelProps) {
   const currentUser = useAuthStore((state) => state.user);
-  const [posts, postOrder] = useForumStore((state) => [state.posts, state.postOrder]);
+  const [posts, postOrder] = useForumStore(
+    (state) => [state.posts, state.postOrder],
+    shallow
+  );
   const getFeedForUser = useForumStore((state) => state.getFeedForUser);
   const addPost = useForumStore((state) => state.addPost);
   const profiles = useInterestStore((state) => state.profiles);
   const getInterestVector = useInterestStore((state) => state.getInterestVector);
   const ensureInterestProfile = useInterestStore((state) => state.ensureProfile);
 
-  const {
-    feedMode,
-    setFeedMode,
-    transparencyEnabled,
-    setTransparencyEnabled,
-    curiosityRatio,
-    setCuriosityRatio,
-  } = useAgoraStore();
+  const feedMode = useAgoraStore((state) => state.feedMode);
+  const setFeedMode = useAgoraStore((state) => state.setFeedMode);
+  const transparencyEnabled = useAgoraStore((state) => state.transparencyEnabled);
+  const setTransparencyEnabled = useAgoraStore((state) => state.setTransparencyEnabled);
+  const curiosityRatio = useAgoraStore((state) => state.curiosityRatio);
+  const setCuriosityRatio = useAgoraStore((state) => state.setCuriosityRatio);
 
   const followTag = useTagStore((state) => state.followTag);
   const unfollowTag = useTagStore((state) => state.unfollowTag);
