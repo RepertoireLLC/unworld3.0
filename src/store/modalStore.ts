@@ -5,6 +5,8 @@ interface ModalState {
   setProfileUserId: (userId: string | null) => void;
   isAIIntegrationOpen: boolean;
   setAIIntegrationOpen: (isOpen: boolean) => void;
+  isSettingsOpen: boolean;
+  setSettingsOpen: (isOpen: boolean) => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -12,4 +14,6 @@ export const useModalStore = create<ModalState>((set) => ({
   setProfileUserId: (userId) => set({ profileUserId: userId }),
   isAIIntegrationOpen: false,
   setAIIntegrationOpen: (isOpen) => set({ isAIIntegrationOpen: isOpen }),
+  isSettingsOpen: false,
+  setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
 }));

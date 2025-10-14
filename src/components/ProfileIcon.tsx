@@ -10,7 +10,8 @@ interface ProfileIconProps {
 export function ProfileIcon({ className }: ProfileIconProps) {
   const [isOpen, setIsOpen] = useState(false);
   const currentUser = useAuthStore((state) => state.user);
-  const { setProfileUserId } = useModalStore();
+  const setProfileUserId = useModalStore((state) => state.setProfileUserId);
+  const setSettingsOpen = useModalStore((state) => state.setSettingsOpen);
 
   if (!currentUser) return null;
 
@@ -50,6 +51,15 @@ export function ProfileIcon({ className }: ProfileIconProps) {
             className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
           >
             Edit Profile
+          </button>
+          <button
+            onClick={() => {
+              setSettingsOpen(true);
+              setIsOpen(false);
+            }}
+            className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
+          >
+            Settings
           </button>
         </div>
       )}
