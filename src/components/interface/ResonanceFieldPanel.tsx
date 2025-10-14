@@ -26,10 +26,10 @@ export function ResonanceFieldPanel() {
   const users = useUserStore((state) => state.users);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
+    const id = setInterval(() => {
       decayField();
     }, 15000);
-    return () => window.clearInterval(id);
+    return () => clearInterval(id);
   }, [decayField]);
 
   const userLookup = useMemo(() => {

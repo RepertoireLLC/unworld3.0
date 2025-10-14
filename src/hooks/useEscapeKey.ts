@@ -6,6 +6,10 @@ export function useEscapeKey(callback: () => void, isActive = true) {
       return undefined;
     }
 
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
