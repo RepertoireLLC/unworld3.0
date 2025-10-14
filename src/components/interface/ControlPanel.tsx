@@ -39,17 +39,11 @@ export function ControlPanel() {
             </div>
           </div>
 
-          <div
-            role="button"
-            tabIndex={0}
+          <button
+            type="button"
             onClick={() => setSphereFullscreen(true)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                setSphereFullscreen(true);
-              }
-            }}
-            className="theme-surface-muted group relative h-64 cursor-pointer overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="theme-surface-muted group relative h-64 w-full cursor-pointer overflow-hidden rounded-2xl transition-transform duration-300 hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+            aria-label="Open immersive sphere view"
           >
             <Scene variant="embedded" />
             <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/5" />
@@ -60,7 +54,7 @@ export function ControlPanel() {
               </span>
               <span className="text-white/40">Immersive view</span>
             </div>
-          </div>
+          </button>
 
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className="theme-surface-muted rounded-2xl p-3">

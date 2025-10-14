@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildCustomThemeVisual,
   getDefaultCustomThemeConfig,
@@ -60,6 +60,8 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
 
   const [draft, setDraft] = useState<CustomThemeDefinition>(() => getDefaultCustomThemeConfig());
   const [editingThemeId, setEditingThemeId] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const hydratedThemeIdRef = useRef<string>('template');
 
   const previewVisual = useMemo(
     () =>
@@ -77,6 +79,35 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
     setPreviewTheme(previewVisual);
   }, [previewVisual, setPreviewTheme]);
 
+  useEffect(() => {
+    const activeCustom = customThemes.find((theme) => theme.id === currentThemeId);
+    const targetKey = activeCustom ? activeCustom.id : 'template';
+
+    if (hydratedThemeIdRef.current === targetKey) {
+      return;
+    }
+
+    if (activeCustom) {
+      if (isDirty) {
+        return;
+      }
+
+      hydratedThemeIdRef.current = activeCustom.id;
+      setDraft(deepCloneTheme(activeCustom));
+      setEditingThemeId(activeCustom.id);
+      setIsDirty(false);
+      return;
+    }
+
+    if (!activeCustom && !isDirty && editingThemeId === null) {
+      const template = getDefaultCustomThemeConfig();
+      hydratedThemeIdRef.current = 'template';
+      setDraft(template);
+      setEditingThemeId(null);
+      setIsDirty(false);
+    }
+  }, [customThemes, currentThemeId, editingThemeId, isDirty, setIsDirty]);
+
   useEffect(() => () => {
     setPreviewTheme(null);
     onPreviewDismiss?.();
@@ -84,17 +115,19 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
 
   const handleDraftChange = useCallback(
     <T extends keyof CustomThemeDefinition>(key: T, value: CustomThemeDefinition[T]) => {
+      setIsDirty(true);
       setDraft((prev) => ({
         ...prev,
         [key]: value,
       }));
     },
-    []
+    [setIsDirty]
   );
 
   const handlePaletteChange = useCallback((key: keyof CustomThemeDefinition['palette']) => {
     return (event: ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
+      setIsDirty(true);
       setDraft((prev) => ({
         ...prev,
         palette: {
@@ -103,20 +136,22 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
         },
       }));
     };
-  }, []);
+  }, [setIsDirty]);
 
   const handleBackgroundChange = useCallback((key: keyof CustomThemeDefinition['background']) => {
     return (event: ChangeEvent<HTMLInputElement>) => {
       const rawValue = event.target.type === 'range' ? Number(event.target.value) : event.target.value;
+      const clampMax = key === 'overlayOpacity' ? 1 : 360;
+      setIsDirty(true);
       setDraft((prev) => ({
         ...prev,
         background: {
           ...prev.background,
-          [key]: event.target.type === 'range' ? clamp(Number(rawValue), 0, 360) : rawValue,
+          [key]: event.target.type === 'range' ? clamp(Number(rawValue), 0, clampMax) : rawValue,
         },
       }));
     };
-  }, []);
+  }, [setIsDirty]);
 
   const handleLayoutChange = useCallback((key: keyof CustomThemeDefinition['layout']) => {
     return (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -125,6 +160,7 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
       if (type === 'range' || type === 'number') {
         value = Number(value);
       }
+      setIsDirty(true);
       setDraft((prev) => ({
         ...prev,
         layout: {
@@ -133,11 +169,12 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
         },
       }));
     };
-  }, []);
+  }, [setIsDirty]);
 
   const handleTypographyChange = useCallback((key: keyof CustomThemeDefinition['typography']) => {
     return (event: ChangeEvent<HTMLSelectElement>) => {
       const value = event.target.value;
+      setIsDirty(true);
       setDraft((prev) => ({
         ...prev,
         typography: {
@@ -146,17 +183,20 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
         },
       }));
     };
-  }, []);
+  }, [setIsDirty]);
 
   const resetDraft = useCallback(() => {
-    setDraft(getDefaultCustomThemeConfig());
+    const template = getDefaultCustomThemeConfig();
+    setDraft(template);
     setEditingThemeId(null);
+    hydratedThemeIdRef.current = 'template';
+    setIsDirty(false);
     addToast({
       title: 'Theme draft reset',
       description: 'Loaded a fresh template. Start customizing!',
       variant: 'info',
     });
-  }, [addToast]);
+  }, [addToast, setIsDirty]);
 
   const exportAndPersistPreferences = useCallback(() => {
     const snapshot = useThemeStore.getState().exportPreferences();
@@ -189,8 +229,10 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
         layout: { ...draft.layout },
       };
 
-      setDraft(persistedTheme);
+      setDraft(deepCloneTheme(persistedTheme));
       setEditingThemeId(persistedTheme.id);
+      hydratedThemeIdRef.current = persistedTheme.id;
+      setIsDirty(false);
 
       upsertCustomTheme(persistedTheme);
 
@@ -208,7 +250,7 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
         variant: 'success',
       });
     },
-    [addToast, draft, editingThemeId, exportAndPersistPreferences, setTheme, upsertCustomTheme]
+    [addToast, draft, editingThemeId, exportAndPersistPreferences, setIsDirty, setTheme, upsertCustomTheme]
   );
 
   const handleDelete = useCallback(() => {
@@ -239,7 +281,9 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
     const template = getDefaultCustomThemeConfig();
     setDraft(template);
     setEditingThemeId(null);
-  }, [addToast, currentUser, editingThemeId, removeCustomTheme, setTheme, updateProfile]);
+    hydratedThemeIdRef.current = 'template';
+    setIsDirty(false);
+  }, [addToast, currentUser, editingThemeId, removeCustomTheme, setIsDirty, setTheme, updateProfile]);
 
   const handleLoadTheme = useCallback(
     (themeId: string) => {
@@ -250,6 +294,8 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
 
       setDraft(deepCloneTheme(selected));
       setEditingThemeId(selected.id);
+      hydratedThemeIdRef.current = selected.id;
+      setIsDirty(false);
 
       addToast({
         title: 'Theme loaded',
@@ -257,7 +303,7 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
         variant: 'info',
       });
     },
-    [addToast, customThemes]
+    [addToast, customThemes, setIsDirty]
   );
 
   const previewStyle: CSSProperties = {
@@ -329,6 +375,8 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
                     const fresh = getDefaultCustomThemeConfig();
                     setDraft(fresh);
                     setEditingThemeId(null);
+                    hydratedThemeIdRef.current = 'manual';
+                    setIsDirty(true);
                   }}
                   className={`rounded-xl border px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition ${
                     editingThemeId ? 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10' : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20'
@@ -422,6 +470,7 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
                     value={draft.background.overlayOpacity}
                     onChange={(event) => {
                       const value = Number(event.target.value);
+                      setIsDirty(true);
                       setDraft((prev) => ({
                         ...prev,
                         background: {
@@ -475,15 +524,17 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
                 <span>Panel Style</span>
                 <select
                   value={draft.layout.panelStyle}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const value = event.target.value as CustomThemeDefinition['layout']['panelStyle'];
+                    setIsDirty(true);
                     setDraft((prev) => ({
                       ...prev,
                       layout: {
                         ...prev.layout,
-                        panelStyle: event.target.value as CustomThemeDefinition['layout']['panelStyle'],
+                        panelStyle: value,
                       },
-                    }))
-                  }
+                    }));
+                  }}
                   className="w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
                 >
                   <option value="glass">Glassmorphic</option>
@@ -520,6 +571,7 @@ export function ThemeCustomizationPanel({ onPreviewDismiss }: ThemeCustomization
                   value={draft.layout.glowStrength}
                   onChange={(event) => {
                     const value = Number(event.target.value);
+                    setIsDirty(true);
                     setDraft((prev) => ({
                       ...prev,
                       layout: {
