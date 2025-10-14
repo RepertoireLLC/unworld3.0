@@ -16,11 +16,11 @@ export function TimeDisplay() {
   const tokens = themeVisual.tokens;
 
   useEffect(() => {
-    const id = window.setInterval(() => {
+    const id = setInterval(() => {
       setNow(new Date());
     }, 1000);
 
-    return () => window.clearInterval(id);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {

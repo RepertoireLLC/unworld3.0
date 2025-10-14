@@ -72,15 +72,21 @@ export function AIIntegrationPanel() {
   }, [hydrate, isHydrated]);
 
   useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-      requestAnimationFrame(() => setIsAnimating(true));
-    } else {
+    if (!isOpen) {
       setIsAnimating(false);
       const timer = setTimeout(() => setShouldRender(false), 250);
       return () => clearTimeout(timer);
     }
-    return undefined;
+
+    setShouldRender(true);
+
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      const rafId = window.requestAnimationFrame(() => setIsAnimating(true));
+      return () => window.cancelAnimationFrame(rafId);
+    }
+
+    const fallbackTimer = setTimeout(() => setIsAnimating(true), 0);
+    return () => clearTimeout(fallbackTimer);
   }, [isOpen]);
 
   useEffect(() => {
@@ -251,7 +257,10 @@ export function AIIntegrationPanel() {
   };
 
   const handleDelete = async (connection: AIConnection) => {
-    const confirmed = window.confirm(`Remove ${connection.name} from Harmonia?`);
+    const confirmed =
+      typeof window !== 'undefined' && typeof window.confirm === 'function'
+        ? window.confirm(`Remove ${connection.name} from Harmonia?`)
+        : true;
     if (!confirmed) {
       return;
     }
