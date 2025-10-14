@@ -99,8 +99,8 @@ export function App() {
       {resolvedAccentBlurs.map((accent, index) => (
         <div
           key={`accent-${index}`}
-          className={`pointer-events-none absolute ${accent.className}`}
-          style={accent.style}
+          className={`pointer-events-none absolute ${accent.className ?? ''}`}
+          style={accent.style ?? {}}
           aria-hidden="true"
         />
       ))}
@@ -108,7 +108,7 @@ export function App() {
         <div
           key={`overlay-${index}`}
           className={`pointer-events-none absolute inset-0 ${overlay.className ?? ''}`}
-          style={overlay.style}
+          style={overlay.style ?? {}}
           aria-hidden="true"
         />
       ))}
