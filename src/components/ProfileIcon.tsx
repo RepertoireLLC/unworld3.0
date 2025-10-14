@@ -1,7 +1,8 @@
 import { User } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useModalStore } from '../store/modalStore';
+import { useInterfaceActions } from '../hooks/useInterfaceActions';
+import { cn } from '../utils/cn';
 
 interface ProfileIconProps {
   className?: string;
@@ -10,15 +11,15 @@ interface ProfileIconProps {
 export function ProfileIcon({ className }: ProfileIconProps) {
   const [isOpen, setIsOpen] = useState(false);
   const currentUser = useAuthStore((state) => state.user);
-  const { setProfileUserId } = useModalStore();
+  const { openProfile } = useInterfaceActions();
 
   if (!currentUser) return null;
 
   return (
-    <div className={`relative ${className ?? ''}`}>
+    <div className={cn('relative', className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors flex items-center space-x-2"
+        className="ds-button ds-button-ghost flex h-12 items-center justify-center gap-2 rounded-full px-4"
       >
         {currentUser.profilePicture ? (
           <img
@@ -27,29 +28,20 @@ export function ProfileIcon({ className }: ProfileIconProps) {
             className="w-5 h-5 rounded-full object-cover"
           />
         ) : (
-          <User className="w-5 h-5" />
+          <User className="h-5 w-5" />
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
+        <div className="ds-panel ds-panel-overlay absolute right-0 z-30 mt-2 w-48 overflow-hidden">
           <button
             onClick={() => {
-              setProfileUserId(currentUser.id);
+              openProfile(currentUser.id);
               setIsOpen(false);
             }}
-            className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
+            className="w-full px-4 py-3 text-left text-sm ds-text-secondary transition hover:bg-[color:var(--ds-surface-muted)]/70"
           >
-            View Profile
-          </button>
-          <button
-            onClick={() => {
-              setProfileUserId(currentUser.id);
-              setIsOpen(false);
-            }}
-            className="w-full px-4 py-2 text-left text-white hover:bg-white/10 transition-colors"
-          >
-            Edit Profile
+            Manage Profile & Identity
           </button>
         </div>
       )}

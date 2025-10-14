@@ -20,15 +20,15 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
   };
 
   return (
-    <div className="w-full max-w-md p-8 bg-white/10 backdrop-blur-md rounded-xl shadow-xl">
-      <div className="flex items-center justify-center mb-8">
-        <div className="p-3 rounded-full bg-white/20">
-          <LogIn className="w-6 h-6 text-white" />
+    <div className="w-full max-w-md rounded-xl border px-8 py-10 shadow-xl" style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-base)', backdropFilter: 'blur(var(--ds-blur-base))' }}>
+      <div className="mb-8 flex items-center justify-center">
+        <div className="rounded-full p-3" style={{ background: 'var(--ds-accent-soft)', color: 'var(--ds-accent)' }}>
+          <LogIn className="h-6 w-6" />
         </div>
       </div>
-      <h2 className="text-2xl font-bold text-white text-center mb-8">Welcome Back</h2>
+      <h2 className="mb-8 text-center text-2xl font-bold ds-text-primary">Welcome Back</h2>
       {error && (
-        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
+        <div className="mb-4 rounded-lg border px-4 py-3 text-sm" style={{ borderColor: 'rgba(251, 113, 133, 0.4)', background: 'rgba(251, 113, 133, 0.12)', color: 'var(--ds-critical)' }}>
           {error}
         </div>
       )}
@@ -39,7 +39,7 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
+            className="ds-input"
             required
           />
         </div>
@@ -49,22 +49,22 @@ export function LoginForm({ onToggle }: { onToggle: () => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/30"
+            className="ds-input"
             required
           />
         </div>
         <button
           type="submit"
-          className="w-full py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+          className="ds-button ds-button-primary w-full justify-center"
         >
           Sign In
         </button>
       </form>
-      <p className="mt-6 text-center text-white/60">
+      <p className="mt-6 text-center ds-text-secondary">
         Don't have an account?{' '}
         <button
           onClick={onToggle}
-          className="text-white hover:underline focus:outline-none"
+          className="ds-text-accent hover:underline focus:outline-none"
         >
           Sign up
         </button>

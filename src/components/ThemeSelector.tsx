@@ -1,16 +1,17 @@
 import { Palette } from 'lucide-react';
 import { useState } from 'react';
-import { useThemeStore, ThemeType } from '../store/themeStore';
+import { useThemeStore, THEME_OPTIONS } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { useUserStore } from '../store/userStore';
+import { cn } from '../utils/cn';
 
-const themes: { id: ThemeType; name: string }[] = [
-  { id: 'classic', name: 'Classic' },
-  { id: 'neon', name: 'Neon' },
-  { id: 'galaxy', name: 'Galaxy' },
-  { id: 'matrix', name: 'Matrix' },
-  { id: 'minimal', name: 'Minimal' },
-];
+const themeLabels: Record<(typeof THEME_OPTIONS)[number], string> = {
+  classic: 'Classic',
+  neon: 'Neon',
+  galaxy: 'Galaxy',
+  matrix: 'Matrix',
+  minimal: 'Minimal',
+};
 
 interface ThemeSelectorProps {
   className?: string;
@@ -34,47 +35,51 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   };
 
   return (
-    <div className={`relative ${className ?? ''}`}>
+    <div className={cn('relative', className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+        className="ds-button ds-button-ghost h-12 w-12 rounded-full p-0"
       >
-        <Palette className="w-5 h-5" />
+        <Palette className="h-5 w-5" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
-          {themes.map((theme) => (
+        <div className="ds-panel ds-panel-overlay absolute right-0 z-30 mt-2 w-56 overflow-hidden">
+          <div className="border-b ds-border-base px-4 py-3 text-xs uppercase tracking-[0.3em] ds-text-subtle">
+            Theme Matrix
+          </div>
+          {THEME_OPTIONS.map((themeId) => (
             <button
-              key={theme.id}
+              key={themeId}
               onClick={() => {
-                setTheme(theme.id);
+                setTheme(themeId);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2 text-left hover:bg-white/10 transition-colors ${
-                currentTheme === theme.id
-                  ? 'text-white bg-white/20'
-                  : 'text-white/80'
-              }`}
+              className={cn(
+                'w-full px-4 py-3 text-left text-sm transition',
+                currentTheme === themeId
+                  ? 'ds-text-primary bg-[color:var(--ds-surface-muted)]'
+                  : 'ds-text-secondary hover:bg-[color:var(--ds-surface-muted)]/70'
+              )}
             >
-              {theme.name}
+              {themeLabels[themeId]}
             </button>
           ))}
 
-          <div className="border-t border-white/10">
+          <div className="border-t ds-border-base">
             <button
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="w-full px-4 py-2 text-left text-white/80 hover:bg-white/10 transition-colors"
+              className="w-full px-4 py-2 text-left text-sm ds-text-secondary transition hover:bg-[color:var(--ds-surface-muted)]/60"
             >
               Change Node Color
             </button>
             {showColorPicker && (
-              <div className="px-4 py-2 bg-white/5">
+              <div className="px-4 py-3">
                 <input
                   type="color"
                   value={currentUser?.color || '#ffffff'}
                   onChange={handleColorChange}
-                  className="w-full h-8 rounded cursor-pointer"
+                  className="h-10 w-full cursor-pointer rounded border border-transparent"
                 />
               </div>
             )}

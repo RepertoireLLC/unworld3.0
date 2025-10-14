@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 import { useToastStore, type ToastVariant } from '../../store/toastStore';
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
-  info: 'border-sky-400/50 bg-sky-500/10 text-sky-100',
-  success: 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100',
-  warning: 'border-amber-400/40 bg-amber-500/10 text-amber-100',
-  error: 'border-rose-400/40 bg-rose-500/10 text-rose-100',
+  info: 'border-[color:var(--ds-info)] bg-[color:var(--ds-info-soft)] text-[color:var(--ds-info)]',
+  success: 'border-[color:var(--ds-positive)] bg-[color:var(--ds-positive-soft)] text-[color:var(--ds-positive)]',
+  warning: 'border-[color:var(--ds-warning)] bg-[color:var(--ds-warning-soft)] text-[color:var(--ds-warning)]',
+  error: 'border-[color:var(--ds-critical)] bg-[color:var(--ds-critical-soft)] text-[color:var(--ds-critical)]',
 };
 
 export function ToastStack() {
@@ -35,15 +35,15 @@ export function ToastStack() {
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold">{toast.title}</p>
+              <p className="text-sm font-semibold ds-text-primary">{toast.title}</p>
               {toast.description && (
-                <p className="mt-1 text-xs text-white/70">{toast.description}</p>
+                <p className="mt-1 text-xs ds-text-secondary">{toast.description}</p>
               )}
             </div>
             <button
               type="button"
               onClick={() => removeToast(toast.id)}
-              className="text-xs uppercase tracking-[0.2em] text-white/60 transition hover:text-white"
+              className="text-xs uppercase tracking-[0.2em] ds-text-secondary transition hover:opacity-100 opacity-80"
             >
               Close
             </button>

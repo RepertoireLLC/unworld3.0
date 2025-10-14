@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NotebookPen, Lock, Save, RefreshCcw, Tag } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 interface SavedLog {
   id: string;
@@ -55,43 +56,40 @@ export function FieldNotesPanel() {
 
   return (
     <aside className="space-y-6">
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+      <section className="ds-panel p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">
+            <p className="text-xs uppercase tracking-[0.3em] ds-text-subtle">
               Field Notes
             </p>
-            <h3 className="mt-1 text-lg font-semibold text-white">
+            <h3 className="mt-1 text-lg font-semibold ds-text-primary">
               Tactical Annotations
             </h3>
           </div>
-          <Lock className="h-5 w-5 text-emerald-300" />
+          <Lock className="h-5 w-5 ds-text-positive" />
         </div>
 
-        <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-          <div className="mb-3 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+        <div className="mt-5 rounded-2xl border px-4 py-4" style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-base)' }}>
+          <div className="mb-3 flex items-center justify-between text-xs uppercase tracking-[0.3em] ds-text-subtle">
             <span>Secure Notepad</span>
-            <NotebookPen className="h-4 w-4 text-sky-300" />
+            <NotebookPen className="h-4 w-4 ds-text-info" />
           </div>
           <textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Compose encrypted field note..."
-            className="h-32 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/30 focus:outline-none"
+            className="ds-textarea h-32"
           />
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-white/40" />
+              <Tag className="h-4 w-4 ds-text-subtle" />
               <div className="flex gap-2">
                 {tags.map((tag) => (
                   <button
                     key={tag}
                     onClick={() => setSelectedTag(tag)}
-                    className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.3em] transition ${
-                      selectedTag === tag
-                        ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-300'
-                        : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10'
-                    }`}
+                    className={cn('ds-tag', selectedTag === tag ? '' : 'opacity-70 hover:opacity-100')}
+                    data-variant={tag.toLowerCase()}
                   >
                     {tag}
                   </button>
@@ -101,13 +99,13 @@ export function FieldNotesPanel() {
             <div className="ml-auto flex items-center gap-2">
               <button
                 onClick={() => setDraft('')}
-                className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:bg-white/20"
+                className="ds-button ds-button-ghost px-4 py-2"
               >
                 Clear
               </button>
               <button
                 onClick={handleSave}
-                className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-emerald-300 transition hover:bg-emerald-500/20"
+                className="ds-button ds-button-success px-4 py-2"
               >
                 <span className="flex items-center gap-2"><Save className="h-4 w-4" /> Save Log</span>
               </button>
@@ -116,37 +114,28 @@ export function FieldNotesPanel() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
-        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+      <section className="ds-panel p-6">
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] ds-text-subtle">
           <span>Saved Logs</span>
-          <RefreshCcw className="h-4 w-4 text-white/40" />
+          <RefreshCcw className="h-4 w-4 ds-text-subtle" />
         </div>
         <div className="mt-4 space-y-3">
           {savedLogs.length > 0 ? (
             savedLogs.map((log) => (
               <div
                 key={log.id}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                className="rounded-2xl border px-4 py-4"
+                style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-base)' }}
               >
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] ds-text-subtle">
                   <span>{formatTime(log.timestamp)}</span>
-                  <span
-                    className={`rounded-full border px-3 py-1 ${
-                      log.tag === 'Priority'
-                        ? 'border-rose-400/40 bg-rose-500/10 text-rose-200'
-                        : log.tag === 'Beacon'
-                        ? 'border-sky-400/40 bg-sky-500/10 text-sky-200'
-                        : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
-                    }`}
-                  >
-                    {log.tag}
-                  </span>
+                  <span className="ds-tag" data-variant={log.tag.toLowerCase()}>{log.tag}</span>
                 </div>
-                <p className="mt-3 text-sm text-white/70">{log.content}</p>
+                <p className="mt-3 text-sm ds-text-secondary">{log.content}</p>
               </div>
             ))
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/50">
+            <div className="rounded-2xl border px-6 py-6 text-center text-sm ds-text-subtle" style={{ borderColor: 'var(--ds-border-subtle)', background: 'var(--ds-surface-base)' }}>
               No saved logs yet.
             </div>
           )}

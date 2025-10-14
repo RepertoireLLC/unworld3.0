@@ -41,15 +41,15 @@ class SceneErrorBoundary extends Component<
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-6 text-center text-sm text-white/70">
-          <p className="font-semibold text-white">Rendering glitch detected</p>
-          <p className="max-w-sm text-xs text-white/60">
+        <div className="ds-panel flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center text-sm ds-text-secondary">
+          <p className="font-semibold ds-text-primary">Rendering glitch detected</p>
+          <p className="max-w-sm text-xs ds-text-subtle">
             The sphere interface encountered a rendering issue. The rest of the system remains stable. Try reinitializing the view.
           </p>
           <button
             type="button"
             onClick={this.handleReset}
-            className="rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.2em] text-white transition hover:bg-white/20"
+            className="ds-button ds-button-ghost px-4 py-2"
           >
             Retry sphere render
           </button>
