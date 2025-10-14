@@ -72,6 +72,8 @@ export function App() {
   }, [profileUserId]);
 
   const { backgroundClass, backgroundStyle, accentBlurs, overlays, tokens } = themeVisual;
+  const resolvedAccentBlurs = accentBlurs ?? [];
+  const resolvedOverlays = overlays ?? [];
 
   return (
     <div
@@ -94,19 +96,19 @@ export function App() {
         '--theme-heading-font': tokens.headingFontFamily,
       } as CSSProperties}
     >
-      {accentBlurs.map((accent, index) => (
+      {resolvedAccentBlurs.map((accent, index) => (
         <div
           key={`accent-${index}`}
-          className={`pointer-events-none absolute ${accent.className}`}
-          style={accent.style}
+          className={`pointer-events-none absolute ${accent.className ?? ''}`}
+          style={accent.style ?? {}}
           aria-hidden="true"
         />
       ))}
-      {overlays?.map((overlay, index) => (
+      {resolvedOverlays.map((overlay, index) => (
         <div
           key={`overlay-${index}`}
           className={`pointer-events-none absolute inset-0 ${overlay.className ?? ''}`}
-          style={overlay.style}
+          style={overlay.style ?? {}}
           aria-hidden="true"
         />
       ))}
