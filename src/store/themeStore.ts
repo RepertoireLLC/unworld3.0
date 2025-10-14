@@ -584,15 +584,6 @@ export const buildCustomThemeVisual = (
     ],
   };
 };
-        style: {
-          backgroundImage:
-            `linear-gradient(rgba(255,255,255,${0.04 + theme.layout.glowStrength * 0.02}) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,${0.04 + theme.layout.glowStrength * 0.02}) 1px, transparent 1px)`,
-          backgroundSize: '120px 120px',
-        },
-      },
-    ],
-  };
-};
 
 const resolveTheme = (
   themeId: ThemeId,
