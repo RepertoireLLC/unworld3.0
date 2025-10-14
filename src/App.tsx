@@ -70,7 +70,9 @@ export function App() {
   };
 
   return (
-    <div className={`relative min-h-screen w-full overflow-hidden text-white ${getBackgroundClass()} transition-colors duration-1000`}>
+    <div
+      className={`relative min-h-screen w-full overflow-x-hidden overflow-y-auto text-white ${getBackgroundClass()} transition-colors duration-1000`}
+    >
       <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
       <div className="pointer-events-none absolute bottom-[-20%] right-[-10%] h-[32rem] w-[32rem] rounded-full bg-purple-500/20 blur-3xl" />
       <div className="pointer-events-none absolute top-1/2 left-[-15%] h-[24rem] w-[24rem] -translate-y-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
