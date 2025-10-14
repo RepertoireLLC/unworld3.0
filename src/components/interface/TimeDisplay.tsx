@@ -50,6 +50,8 @@ const themeStyles: Record<ThemeType, ThemeStyle> = {
 
 const formatTimezoneName = (timezone: string) => timezone.replace(/_/g, ' ');
 
+const FALLBACK_TIMEZONE = 'UTC';
+
 export function TimeDisplay() {
   const [now, setNow] = useState(() => new Date());
   const autoDetect = useTimeStore((state) => state.autoDetect);
@@ -78,14 +80,28 @@ export function TimeDisplay() {
 
   const timezone = getEffectiveTimezone(autoDetect, detectedTimezone, manualTimezone);
 
+  const safeTimezone = useMemo(() => {
+    try {
+      // Attempt to instantiate once to validate the provided timezone.
+      new Intl.DateTimeFormat(undefined, { timeZone: timezone }).format(new Date());
+      return timezone;
+    } catch (error) {
+      console.warn(
+        `Invalid timezone "${timezone}" detected. Falling back to UTC for time display.`,
+        error
+      );
+      return FALLBACK_TIMEZONE;
+    }
+  }, [timezone]);
+
   const timeFormatter = useMemo(() =>
     new Intl.DateTimeFormat(undefined, {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      timeZone: timezone,
+      timeZone: safeTimezone,
       hour12: false,
-    }), [timezone]);
+    }), [safeTimezone]);
 
   const dateFormatter = useMemo(() =>
     new Intl.DateTimeFormat(undefined, {
@@ -93,16 +109,16 @@ export function TimeDisplay() {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      timeZone: timezone,
-    }), [timezone]);
+      timeZone: safeTimezone,
+    }), [safeTimezone]);
 
   const timeZoneNameFormatter = useMemo(() =>
     new Intl.DateTimeFormat(undefined, {
       hour: '2-digit',
       minute: '2-digit',
-      timeZone,
+      timeZone: safeTimezone,
       timeZoneName: 'short',
-    }), [timezone]);
+    }), [safeTimezone]);
 
   const timeString = timeFormatter.format(now);
 
@@ -110,7 +126,12 @@ export function TimeDisplay() {
     .formatToParts(now)
     .find((part) => part.type === 'timeZoneName')?.value;
 
-  const tooltip = `${dateFormatter.format(now)} — ${timezoneNamePart ?? formatTimezoneName(timezone)}`;
+  const timezoneLabel =
+    safeTimezone === timezone
+      ? formatTimezoneName(safeTimezone)
+      : `${formatTimezoneName(safeTimezone)} · Fallback (${FALLBACK_TIMEZONE})`;
+
+  const tooltip = `${dateFormatter.format(now)} — ${timezoneNamePart ?? timezoneLabel}`;
 
   const styles = themeStyles[currentTheme] ?? themeStyles.classic;
 
@@ -125,7 +146,7 @@ export function TimeDisplay() {
             Temporal Sync
           </span>
           <span className={`text-xs font-medium ${styles.accent}`}>
-            {formatTimezoneName(timezone)}
+            {timezoneLabel}
           </span>
         </div>
         <span className={`font-mono text-lg sm:text-2xl ${styles.time}`}>{timeString}</span>
