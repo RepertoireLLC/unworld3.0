@@ -22,6 +22,9 @@ import { SettingsModal } from './components/interface/SettingsModal';
 import { useInterestStore } from './store/interestStore';
 import { useForumStore } from './store/forumStore';
 import { useMeshStore } from './store/meshStore';
+import { useChessStore } from './store/chessStore';
+import { ChessOverlay } from './components/chess/ChessOverlay';
+import { ChessInviteToast } from './components/chess/ChessInviteToast';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -36,6 +39,7 @@ export function App() {
   const ensureInterestProfile = useInterestStore((state) => state.ensureProfile);
   const initializeForumSync = useForumStore((state) => state.initializeSyncChannel);
   const initializeMesh = useMeshStore((state) => state.initialize);
+  const hydrateChess = useChessStore((state) => state.hydrate);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -53,6 +57,10 @@ export function App() {
       initializeMesh(currentUser.name);
     }
   }, [currentUser, ensureInterestProfile, initializeMesh]);
+
+  useEffect(() => {
+    void hydrateChess();
+  }, [hydrateChess]);
 
   useEffect(() => {
     void hydrateAI();
@@ -155,6 +163,8 @@ export function App() {
       <AIIntegrationPanel />
       <ToastStack />
       <SettingsModal />
+      <ChessOverlay />
+      <ChessInviteToast />
     </div>
   );
 }

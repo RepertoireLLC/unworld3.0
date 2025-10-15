@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
 import { useThemeStore, type ThemePreferencesSnapshot } from './themeStore';
+import type { ChessGameSummary } from '../types/chess';
 
 interface User {
   id: string;
@@ -16,6 +17,9 @@ interface User {
   contentPreferences: {
     nsfw: boolean;
   };
+  chessProfile: {
+    history: ChessGameSummary[];
+  };
 }
 
 interface AuthState {
@@ -29,6 +33,7 @@ interface AuthState {
   updateContentPreferences: (preferences: Partial<User['contentPreferences']>) => void;
   deactivateAccount: () => void;
   deleteAccount: () => boolean;
+  recordChessGame: (userId: string, summary: ChessGameSummary) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -61,6 +66,9 @@ export const useAuthStore = create<AuthState>()(
           status: 'active',
           contentPreferences: {
             nsfw: false,
+          },
+          chessProfile: {
+            history: [],
           },
         };
 
@@ -96,6 +104,7 @@ export const useAuthStore = create<AuthState>()(
             ...user,
             status: 'active',
             contentPreferences: user.contentPreferences ?? { nsfw: false },
+            chessProfile: user.chessProfile ?? { history: [] },
           };
 
           set((state) => ({
@@ -107,6 +116,7 @@ export const useAuthStore = create<AuthState>()(
                     ...registered,
                     status: 'active',
                     contentPreferences: restoredUser.contentPreferences,
+                    chessProfile: restoredUser.chessProfile,
                   }
                 : registered
             ),
@@ -168,6 +178,7 @@ export const useAuthStore = create<AuthState>()(
               ...(updates.contentPreferences ?? {}),
             },
             status: updates.status ?? state.user.status,
+            chessProfile: updates.chessProfile ?? state.user.chessProfile,
           };
 
           // Update in registered users list
@@ -253,6 +264,31 @@ export const useAuthStore = create<AuthState>()(
 
         return true;
       },
+      recordChessGame: (userId, summary) =>
+        set((state) => {
+          const applyHistory = (user: User): User => {
+            const existingHistory = user.chessProfile?.history ?? [];
+            const filtered = existingHistory.filter((entry) => entry.id !== summary.id);
+            return {
+              ...user,
+              chessProfile: {
+                history: [summary, ...filtered],
+              },
+            };
+          };
+
+          const registeredUsers = state.registeredUsers.map((registered) =>
+            registered.id === userId ? applyHistory(registered) : registered
+          );
+
+          const currentUser =
+            state.user && state.user.id === userId ? applyHistory(state.user) : state.user;
+
+          return {
+            registeredUsers,
+            user: currentUser ?? state.user,
+          };
+        }),
     }),
     {
       name: 'auth-storage',

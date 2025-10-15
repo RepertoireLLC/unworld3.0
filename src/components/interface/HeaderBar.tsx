@@ -5,6 +5,7 @@ import { ProfileIcon } from '../ProfileIcon';
 import { AIIntegrationButton } from '../ai/AIIntegrationButton';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore, getThemeDisplayName } from '../../store/themeStore';
+import { ChessLauncherButton } from '../chess/ChessLauncherButton';
 
 export function HeaderBar() {
   const currentUser = useAuthStore((state) => state.user);
@@ -31,6 +32,7 @@ export function HeaderBar() {
         <SearchBar className="w-full lg:w-80" />
         <div className="flex items-center justify-end gap-3">
           <AIIntegrationButton />
+          <ChessLauncherButton />
           <FriendRequests />
           <ThemeSelector />
           <ProfileIcon />

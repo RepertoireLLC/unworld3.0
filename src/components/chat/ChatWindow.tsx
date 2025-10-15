@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Sword } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useChessStore } from '../../store/chessStore';
+import { useToastStore } from '../../store/toastStore';
 
 interface ChatWindowProps {
   userId: string;
@@ -18,6 +20,8 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
   const sendMessage = useChatStore((state) => state.sendMessage);
   const getMessagesForChat = useChatStore((state) => state.getMessagesForChat);
   const loadMessagesForChat = useChatStore((state) => state.loadMessagesForChat);
+  const sendInvite = useChessStore((state) => state.sendInvite);
+  const addToast = useToastStore((state) => state.addToast);
 
   const messages = useMemo(() => {
     if (!currentUser) return [];
@@ -47,6 +51,26 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
     setMessage('');
   };
 
+  const handleInvite = () => {
+    if (!currentUser) {
+      return;
+    }
+    const result = sendInvite(currentUser.id, userId);
+    if (!result.success) {
+      addToast({
+        title: 'Invite not sent',
+        description: result.message ?? 'Unable to send the chess challenge.',
+        variant: 'error',
+      });
+      return;
+    }
+    addToast({
+      title: 'Challenge sent',
+      description: `Awaiting response from ${otherUser?.name ?? 'opponent'}.`,
+      variant: 'info',
+    });
+  };
+
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);
@@ -65,14 +89,23 @@ export function ChatWindow({ userId, onClose }: ChatWindowProps) {
           />
           <span className="text-white font-medium">{otherUser.name}</span>
         </div>
-        <button
-          onClick={handleClose}
-          className="rounded-full p-1 text-white/60 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
-          type="button"
-          aria-label="Close chat"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleInvite}
+            className="ui-button ui-button--ghost text-xs uppercase tracking-[0.3em]"
+            type="button"
+          >
+            <Sword className="h-4 w-4" /> Challenge
+          </button>
+          <button
+            onClick={handleClose}
+            className="rounded-full p-1 text-white/60 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+            type="button"
+            aria-label="Close chat"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">

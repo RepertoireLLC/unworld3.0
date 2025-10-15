@@ -1,4 +1,4 @@
-import { X, UserPlus, MessageCircle, UserCheck, UserX, Camera, Edit2 } from 'lucide-react';
+import { X, UserPlus, MessageCircle, UserCheck, UserX, Camera, Edit2, Sword } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
 import { useFriendStore } from '../../store/friendStore';
@@ -9,6 +9,8 @@ import { StoryViewer } from './StoryViewer';
 import { StoryCreator } from './StoryCreator';
 import { InterestVectorEditor } from './InterestVectorEditor';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useChessStore } from '../../store/chessStore';
+import { useToastStore } from '../../store/toastStore';
 
 interface ProfileModalProps {
   userId: string;
@@ -22,6 +24,8 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   const { sendFriendRequest, isFriend, hasPendingRequest } = useFriendStore();
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const stories = useStoryStore((state) => state.getActiveStoriesForUser(userId));
+  const sendChessInvite = useChessStore((state) => state.sendInvite);
+  const addToast = useToastStore((state) => state.addToast);
   
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
@@ -49,6 +53,26 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   const handleMessage = () => {
     setActiveChat(userId);
     onClose();
+  };
+
+  const handleChallenge = () => {
+    if (!currentUser) {
+      return;
+    }
+    const result = sendChessInvite(currentUser.id, userId);
+    if (!result.success) {
+      addToast({
+        title: 'Challenge not sent',
+        description: result.message ?? 'Unable to send the chess challenge.',
+        variant: 'error',
+      });
+      return;
+    }
+    addToast({
+      title: 'Chess challenge sent',
+      description: `Awaiting response from ${user.name}.`,
+      variant: 'info',
+    });
   };
 
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,6 +253,13 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
               >
                 <MessageCircle className="w-5 h-5" />
                 <span>Message</span>
+              </button>
+              <button
+                onClick={handleChallenge}
+                className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+              >
+                <Sword className="w-5 h-5" />
+                <span>Challenge</span>
               </button>
             </div>
           )}
