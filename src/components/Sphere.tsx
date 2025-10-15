@@ -1,7 +1,8 @@
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
-import { Mesh, Color } from 'three';
+import { Mesh, Color, Vector3 } from 'three';
 import { useThemeStore } from '../store/themeStore';
+import { useVRStore } from '../store/vrStore';
 
 const themeConfigs = {
   classic: {
@@ -66,9 +67,17 @@ const themeConfigs = {
   },
 };
 
+const ORIGIN = new Vector3();
+
 export function Sphere() {
   const sphereRef = useRef<Mesh>(null);
   const themeVisual = useThemeStore((state) => state.getResolvedTheme());
+  const { camera } = useThree();
+  const isImmersiveActive = useVRStore(
+    (state) => state.mode === 'immersive' || state.mobileSplitActive
+  );
+  const driftOffsetRef = useRef(new Vector3());
+  const parallaxTargetRef = useRef(new Vector3());
   const builtInConfig = themeConfigs[themeVisual.id as keyof typeof themeConfigs];
   const tokens = themeVisual.tokens;
   const config =
@@ -87,7 +96,7 @@ export function Sphere() {
   useFrame(({ clock }) => {
     if (sphereRef.current) {
       const time = clock.getElapsedTime();
-      
+
       // Base rotation
       sphereRef.current.rotation.y += config.rotationSpeed;
       
@@ -141,6 +150,23 @@ export function Sphere() {
       const targetEmissive = new Color(config.emissive);
       const currentEmissive = sphereRef.current.material.emissive;
       currentEmissive.lerp(targetEmissive, 0.1);
+
+      if (isImmersiveActive) {
+        const driftTarget = driftOffsetRef.current;
+        driftTarget.set(
+          Math.sin(time * 0.18) * 0.4,
+          Math.cos(time * 0.16) * 0.28,
+          Math.sin(time * 0.14) * 0.35
+        );
+
+        const parallaxTarget = parallaxTargetRef.current;
+        parallaxTarget.copy(camera.position).multiplyScalar(0.04);
+        driftTarget.add(parallaxTarget);
+
+        sphereRef.current.position.lerp(driftTarget, 0.06);
+      } else {
+        sphereRef.current.position.lerp(ORIGIN, 0.08);
+      }
     }
   });
 

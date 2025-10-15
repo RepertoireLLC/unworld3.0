@@ -22,6 +22,8 @@ import { useInterestStore } from './store/interestStore';
 import { useForumStore } from './store/forumStore';
 import { useMeshStore } from './store/meshStore';
 import { useInitializePluginRegistry, usePluginVisibility } from './core/pluginRegistry';
+import { useVRStore } from './store/vrStore';
+import { VRImmersiveViewport } from './components/vr/VRImmersiveViewport';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -48,6 +50,30 @@ export function App() {
   const showChatWindow = usePluginVisibility('chat-window');
   const showAIIntegrationPanel = usePluginVisibility('ai-integration-panel');
   const showToastStack = usePluginVisibility('toast-stack');
+  const {
+    mode,
+    sessionStatus,
+    mobileSplitActive,
+    immersiveEnabled,
+    isSessionInitializing,
+    hydrateFromPreferences: hydrateVRPreferences,
+    resetRuntimeState: resetVRState,
+  } = useVRStore((state) => ({
+    mode: state.mode,
+    sessionStatus: state.sessionStatus,
+    mobileSplitActive: state.mobileSplitActive,
+    immersiveEnabled: state.immersiveEnabled,
+    isSessionInitializing: state.isSessionInitializing,
+    hydrateFromPreferences: state.hydrateFromPreferences,
+    resetRuntimeState: state.resetRuntimeState,
+  }));
+  const immersiveViewportActive =
+    (mode === 'immersive' &&
+      (sessionStatus === 'active' ||
+        sessionStatus === 'initializing' ||
+        isSessionInitializing ||
+        immersiveEnabled)) ||
+    (mode === 'mobile-split' && mobileSplitActive);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -78,6 +104,28 @@ export function App() {
   }, [isAIHydrated]);
 
   useEffect(() => {
+    if (currentUser?.preferences) {
+      hydrateVRPreferences(currentUser.preferences);
+    } else {
+      resetVRState();
+    }
+  }, [currentUser, hydrateVRPreferences, resetVRState]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    if (immersiveViewportActive) {
+      document.body.classList.add('harmonia-immersive');
+    } else {
+      document.body.classList.remove('harmonia-immersive');
+    }
+    return () => {
+      document.body.classList.remove('harmonia-immersive');
+    };
+  }, [immersiveViewportActive]);
+
+  useEffect(() => {
     if (profileUserId) {
       void dispatchConsciousEvent({
         type: 'profile:opened',
@@ -89,47 +137,58 @@ export function App() {
   const { backgroundClass, backgroundStyle, accentBlurs, overlays, tokens } = themeVisual;
   const resolvedAccentBlurs = accentBlurs ?? [];
   const resolvedOverlays = overlays ?? [];
+  const baseStyle: CSSProperties = {
+    fontFamily: tokens.fontFamily,
+    color: tokens.textColor,
+    '--theme-surface': tokens.surfaceColor,
+    '--theme-surface-muted': tokens.surfaceMutedColor,
+    '--theme-surface-transparent': tokens.surfaceTransparentColor,
+    '--theme-border': tokens.borderColor,
+    '--theme-primary': tokens.primaryColor,
+    '--theme-secondary': tokens.secondaryColor,
+    '--theme-accent': tokens.accentColor,
+    '--theme-text': tokens.textColor,
+    '--theme-text-muted': tokens.textMutedColor,
+    '--theme-radius': `${tokens.borderRadius}px`,
+    '--theme-spacing': `${tokens.spacing}px`,
+    '--theme-heading-font': tokens.headingFontFamily,
+  } as CSSProperties;
+  const rootClassName = [
+    'relative flex min-h-screen w-full flex-col overflow-x-hidden overflow-y-auto text-white',
+    immersiveViewportActive ? 'bg-black' : backgroundClass ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const rootStyle = (immersiveViewportActive
+    ? baseStyle
+    : {
+        ...(backgroundStyle ?? {}),
+        ...baseStyle,
+      }) as CSSProperties;
 
   return (
-    <div
-      className={`relative flex min-h-screen w-full flex-col overflow-x-hidden overflow-y-auto text-white ${backgroundClass ?? ''} transition-colors duration-1000`}
-      style={{
-        ...(backgroundStyle ?? {}),
-        fontFamily: tokens.fontFamily,
-        color: tokens.textColor,
-        '--theme-surface': tokens.surfaceColor,
-        '--theme-surface-muted': tokens.surfaceMutedColor,
-        '--theme-surface-transparent': tokens.surfaceTransparentColor,
-        '--theme-border': tokens.borderColor,
-        '--theme-primary': tokens.primaryColor,
-        '--theme-secondary': tokens.secondaryColor,
-        '--theme-accent': tokens.accentColor,
-        '--theme-text': tokens.textColor,
-        '--theme-text-muted': tokens.textMutedColor,
-        '--theme-radius': `${tokens.borderRadius}px`,
-        '--theme-spacing': `${tokens.spacing}px`,
-        '--theme-heading-font': tokens.headingFontFamily,
-      } as CSSProperties}
-    >
-      {resolvedAccentBlurs.map((accent, index) => (
-        <div
-          key={`accent-${index}`}
-          className={`pointer-events-none absolute ${accent.className ?? ''}`}
-          style={accent.style ?? {}}
-          aria-hidden="true"
-        />
-      ))}
-      {resolvedOverlays.map((overlay, index) => (
-        <div
-          key={`overlay-${index}`}
-          className={`pointer-events-none absolute inset-0 ${overlay.className ?? ''}`}
-          style={overlay.style ?? {}}
-          aria-hidden="true"
-        />
-      ))}
+    <div className={`${rootClassName} transition-colors duration-1000`} style={rootStyle}>
+      {!immersiveViewportActive &&
+        resolvedAccentBlurs.map((accent, index) => (
+          <div
+            key={`accent-${index}`}
+            className={`pointer-events-none absolute ${accent.className ?? ''}`}
+            style={accent.style ?? {}}
+            aria-hidden="true"
+          />
+        ))}
+      {!immersiveViewportActive &&
+        resolvedOverlays.map((overlay, index) => (
+          <div
+            key={`overlay-${index}`}
+            className={`pointer-events-none absolute inset-0 ${overlay.className ?? ''}`}
+            style={overlay.style ?? {}}
+            aria-hidden="true"
+          />
+        ))}
 
-      {isAuthenticated ? (
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
+      {!immersiveViewportActive && isAuthenticated ? (
+        <div className="harmonia-flat-ui relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
           {showHeaderBar && <HeaderBar showTimeDisplay={showTimeDisplay} />}
 
           <main
@@ -162,12 +221,13 @@ export function App() {
             />
           )}
         </div>
-      ) : (
+      ) : !immersiveViewportActive ? (
         <AuthModal />
-      )}
-      {showAIIntegrationPanel && <AIIntegrationPanel />}
-      {showToastStack && <ToastStack />}
-      <SettingsModal />
+      ) : null}
+      {immersiveViewportActive && <VRImmersiveViewport />}
+      {!immersiveViewportActive && showAIIntegrationPanel && <AIIntegrationPanel />}
+      {!immersiveViewportActive && showToastStack && <ToastStack />}
+      {!immersiveViewportActive && <SettingsModal />}
     </div>
   );
 }

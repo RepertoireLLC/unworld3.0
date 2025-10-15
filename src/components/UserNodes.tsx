@@ -1,11 +1,13 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import { useUserStore } from '../store/userStore';
 import { useAuthStore } from '../store/authStore';
 import { useModalStore } from '../store/modalStore';
 import { useSphereStore } from '../store/sphereStore';
+import { useVRStore } from '../store/vrStore';
 import * as THREE from 'three';
+import { playSpatialCue } from '../core/spatialAudio';
 import { FocusHighlight } from './effects/FocusHighlight';
 
 const NODE_RADIUS = 0.2;
@@ -21,15 +23,33 @@ const HIGHLIGHT_SETTINGS = {
 export function UserNodes() {
   const users = useUserStore((state) => state.users);
   const currentUser = useAuthStore((state) => state.user);
+  const isImmersiveActive = useVRStore(
+    (state) => state.mode === 'immersive' || state.mobileSplitActive
+  );
   const onlineUsers = useMemo(
     () => users.filter((user) => user.online),
     [users]
   );
   const groupRef = useRef<THREE.Group>(null);
+  const driftTargetRef = useRef(new THREE.Vector3());
+  const neutralRef = useRef(new THREE.Vector3());
 
-  useFrame(() => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += 0.001;
+  useFrame(({ clock }) => {
+    if (!groupRef.current) {
+      return;
+    }
+    groupRef.current.rotation.y += 0.001;
+    if (isImmersiveActive) {
+      const time = clock.getElapsedTime();
+      const driftTarget = driftTargetRef.current;
+      driftTarget.set(
+        Math.sin(time * 0.12) * 0.45,
+        Math.sin(time * 0.17) * 0.3,
+        Math.cos(time * 0.11) * 0.45
+      );
+      groupRef.current.position.lerp(driftTarget, 0.04);
+    } else {
+      groupRef.current.position.lerp(neutralRef.current, 0.08);
     }
   });
 
@@ -106,8 +126,25 @@ function UserNode({
   const highlightedUserId = useSphereStore((state) => state.highlightedUserId);
   const focusLockUserId = useSphereStore((state) => state.focusLockUserId);
   const meshRef = useRef<THREE.Mesh>(null);
+  const spatialAudioEnabled = useVRStore((state) => state.spatialAudioEnabled);
+  const worldPositionRef = useRef(new THREE.Vector3());
   const isTargeted = highlightedUserId === userId;
   const isFocusLocked = focusLockUserId === userId;
+
+  const emitSpatialCue = useCallback(
+    (intensity = 0.18) => {
+      if (!spatialAudioEnabled || !meshRef.current) {
+        return;
+      }
+      const target = worldPositionRef.current;
+      meshRef.current.getWorldPosition(target);
+      playSpatialCue(target, {
+        type: isCurrentUser ? 'system' : 'user',
+        intensity,
+      });
+    },
+    [isCurrentUser, spatialAudioEnabled]
+  );
 
   useEffect(() => {
     registerNodePosition(userId, position);
@@ -125,14 +162,24 @@ function UserNode({
     }
   });
 
+  useEffect(() => {
+    if (isFocusLocked) {
+      emitSpatialCue(0.32);
+    }
+  }, [emitSpatialCue, isFocusLocked]);
+
   return (
     <group position={position}>
       <mesh
         ref={meshRef}
-        onClick={() => setProfileUserId(userId)}
+        onClick={() => {
+          emitSpatialCue(0.26);
+          setProfileUserId(userId);
+        }}
         onPointerOver={(event) => {
           event.stopPropagation();
           document.body.style.cursor = 'pointer';
+          emitSpatialCue();
         }}
         onPointerOut={() => {
           document.body.style.cursor = 'default';

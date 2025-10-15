@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { X, UserCog, Sparkles, ShieldCheck, LifeBuoy, Puzzle } from 'lucide-react';
+import { X, UserCog, Sparkles, ShieldCheck, LifeBuoy, Puzzle, Cpu } from 'lucide-react';
 import { useModalStore } from '../../store/modalStore';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { AccountSettings } from './settings/AccountSettings';
@@ -7,6 +7,7 @@ import { ContentSettings } from './settings/ContentSettings';
 import { PrivacySettings } from './settings/PrivacySettings';
 import { SupportSettings } from './settings/SupportSettings';
 import { PluginManager } from '../PluginManager';
+import { DeveloperSettings } from './settings/DeveloperSettings';
 
 const categories = [
   {
@@ -38,6 +39,12 @@ const categories = [
     label: 'Support',
     description: 'Help Center, searchable knowledge, and direct contact.',
     icon: LifeBuoy,
+  },
+  {
+    id: 'developer' as const,
+    label: 'Developer Options',
+    description: 'VR immersion, diagnostics, and spatial tooling.',
+    icon: Cpu,
   },
 ];
 
@@ -81,6 +88,8 @@ export function SettingsModal() {
         return <SupportSettings isActive={activeCategory === 'support'} />;
       case 'plugins':
         return <PluginManager isActive={activeCategory === 'plugins'} />;
+      case 'developer':
+        return <DeveloperSettings isActive={activeCategory === 'developer'} />;
       default:
         return null;
     }

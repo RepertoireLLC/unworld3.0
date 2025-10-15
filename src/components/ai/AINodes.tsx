@@ -1,9 +1,11 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useCallback, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAIStore, type AIConnection } from '../../store/aiStore';
 import { AI_MODEL_COLORS } from '../../core/aiRegistry';
+import { useVRStore } from '../../store/vrStore';
+import { playSpatialCue } from '../../core/spatialAudio';
 
 const ORBIT_RADIUS = 4.2;
 const NODE_RADIUS = 0.22;
@@ -13,6 +15,11 @@ export function AINodes() {
   const activeConnectionId = useAIStore((state) => state.activeConnectionId);
   const setActiveConnection = useAIStore((state) => state.setActiveConnection);
   const groupRef = useRef<THREE.Group>(null);
+  const isImmersiveActive = useVRStore(
+    (state) => state.mode === 'immersive' || state.mobileSplitActive
+  );
+  const driftTargetRef = useRef(new THREE.Vector3());
+  const neutralRef = useRef(new THREE.Vector3());
 
   const enabledConnections = useMemo(
     () => connections.filter((connection) => connection.isEnabled),
@@ -20,9 +27,22 @@ export function AINodes() {
   );
 
   useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += 0.0025;
-      groupRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.1) * 0.1;
+    if (!groupRef.current) {
+      return;
+    }
+    const time = state.clock.getElapsedTime();
+    groupRef.current.rotation.y += 0.0025;
+    groupRef.current.rotation.x = Math.sin(time * 0.1) * 0.1;
+    if (isImmersiveActive) {
+      const driftTarget = driftTargetRef.current;
+      driftTarget.set(
+        Math.sin(time * 0.2) * 0.35,
+        Math.cos(time * 0.14) * 0.22,
+        Math.sin(time * 0.18) * 0.35
+      );
+      groupRef.current.position.lerp(driftTarget, 0.05);
+    } else {
+      groupRef.current.position.lerp(neutralRef.current, 0.08);
     }
   });
 
@@ -77,6 +97,20 @@ function AINode({
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const baseColor = AI_MODEL_COLORS[connection.modelType];
+  const spatialAudioEnabled = useVRStore((state) => state.spatialAudioEnabled);
+  const worldPositionRef = useRef(new THREE.Vector3());
+
+  const emitSpatialCue = useCallback(
+    (intensity = isActive ? 0.3 : 0.2) => {
+      if (!spatialAudioEnabled || !meshRef.current) {
+        return;
+      }
+      const target = worldPositionRef.current;
+      meshRef.current.getWorldPosition(target);
+      playSpatialCue(target, { type: 'ai', intensity });
+    },
+    [isActive, spatialAudioEnabled]
+  );
 
   useFrame(({ clock }) => {
     if (!meshRef.current) {
@@ -92,6 +126,12 @@ function AINode({
     }
   });
 
+  useEffect(() => {
+    if (isActive) {
+      emitSpatialCue(0.34);
+    }
+  }, [emitSpatialCue, isActive]);
+
   return (
     <group position={position}>
       <mesh
@@ -99,12 +139,14 @@ function AINode({
         onClick={(event) => {
           event.stopPropagation();
           onActivate();
+          emitSpatialCue(0.3);
         }}
         onPointerOver={(event) => {
           event.stopPropagation();
           if (typeof document !== 'undefined') {
             document.body.style.cursor = 'pointer';
           }
+          emitSpatialCue(0.22);
         }}
         onPointerOut={() => {
           if (typeof document !== 'undefined') {

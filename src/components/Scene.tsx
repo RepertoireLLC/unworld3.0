@@ -9,6 +9,8 @@ import { useThemeStore, type BuiltInThemeId } from '../store/themeStore';
 import { useSphereStore } from '../store/sphereStore';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { useVRStore } from '../store/vrStore';
+import { VRCanvasBridge, SpatialAudioBridge, VRPerformanceMonitor } from './vr/VRSceneBridge';
 
 const FOCUS_DISTANCE = 4.5;
 const FOCUS_TARGET_LERP = 0.18;
@@ -72,6 +74,25 @@ export function Scene({ variant = 'fullscreen', className }: SceneProps) {
   const derivedThemeId =
     themeVisual.origin === 'builtin' ? (themeVisual.id as BuiltInThemeId) : undefined;
   const isEmbedded = variant === 'embedded';
+  const {
+    mode,
+    immersiveEnabled,
+    sessionStatus,
+    mobileSplitActive,
+    isSessionInitializing,
+  } = useVRStore((state) => ({
+    mode: state.mode,
+    immersiveEnabled: state.immersiveEnabled,
+    sessionStatus: state.sessionStatus,
+    mobileSplitActive: state.mobileSplitActive,
+    isSessionInitializing: state.isSessionInitializing,
+  }));
+  const isFullscreen = !isEmbedded;
+  const isImmersiveScene =
+    isFullscreen &&
+    mode === 'immersive' &&
+    (immersiveEnabled || sessionStatus === 'active' || sessionStatus === 'initializing' || isSessionInitializing);
+  const shouldHideAtmosphere = isFullscreen && (isImmersiveScene || mobileSplitActive);
 
   const fogColor = useMemo(() => {
     if (!derivedThemeId) {
@@ -103,40 +124,49 @@ export function Scene({ variant = 'fullscreen', className }: SceneProps) {
       <div className={containerClass}>
         <Canvas
           camera={{ position: [0, 0, isEmbedded ? 9 : 10], fov: isEmbedded ? 45 : 50 }}
-          gl={{ antialias: true, alpha: isEmbedded }}
+          gl={{ antialias: true, alpha: isEmbedded || shouldHideAtmosphere, xrCompatible: true }}
         >
           <CameraSynchronizer isEmbedded={isEmbedded} controlsRef={controlsRef} />
-          {!isEmbedded && (
+          {variant === 'fullscreen' && (
+            <>
+              <VRCanvasBridge />
+              <SpatialAudioBridge />
+              <VRPerformanceMonitor />
+            </>
+          )}
+          {isFullscreen && !shouldHideAtmosphere && (
             <>
               <color attach="background" args={[fogColor]} />
               <fog attach="fog" args={[fogColor, 5, 20]} />
             </>
           )}
 
-          <ambientLight intensity={0.6} />
-          <pointLight position={[10, 10, 10]} intensity={1} />
+          <ambientLight intensity={shouldHideAtmosphere ? 0.45 : 0.6} />
+          <pointLight position={[10, 10, 10]} intensity={shouldHideAtmosphere ? 0.8 : 1} />
 
           <Suspense fallback={null}>
             <Sphere />
             <UserNodes />
             <AINodes />
-            {themeKey === 'galaxy' && !isEmbedded && (
+            {themeKey === 'galaxy' && isFullscreen && !shouldHideAtmosphere && (
               <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
             )}
-            {themeKey === 'technoPunk' && !isEmbedded && <TechnoPunkEffects />}
+            {themeKey === 'technoPunk' && isFullscreen && !shouldHideAtmosphere && <TechnoPunkEffects />}
           </Suspense>
 
-          <OrbitControls
-            ref={controlsRef}
-            enableDamping
-            dampingFactor={0.05}
-            rotateSpeed={0.5}
-            enableZoom={!isEmbedded}
-            autoRotate={isEmbedded}
-            autoRotateSpeed={0.6}
-            minDistance={isEmbedded ? 6 : 5}
-            maxDistance={isEmbedded ? 9 : 15}
-          />
+          {(!isFullscreen || (!isImmersiveScene && !mobileSplitActive)) && (
+            <OrbitControls
+              ref={controlsRef}
+              enableDamping
+              dampingFactor={0.05}
+              rotateSpeed={0.5}
+              enableZoom={!isEmbedded}
+              autoRotate={isEmbedded}
+              autoRotateSpeed={0.6}
+              minDistance={isEmbedded ? 6 : 5}
+              maxDistance={isEmbedded ? 9 : 15}
+            />
+          )}
         </Canvas>
       </div>
     </SceneErrorBoundary>
@@ -154,6 +184,20 @@ function CameraSynchronizer({
   const nodePositions = useSphereStore((state) => state.nodePositions);
   const focusLockUserId = useSphereStore((state) => state.focusLockUserId);
   const setFocusLockUser = useSphereStore((state) => state.setFocusLockUser);
+  const shouldBypassCameraSync = useVRStore((state) => {
+    if (state.mode === 'immersive') {
+      return (
+        state.immersiveEnabled ||
+        state.sessionStatus === 'active' ||
+        state.sessionStatus === 'initializing' ||
+        state.isSessionInitializing
+      );
+    }
+    if (state.mode === 'mobile-split') {
+      return state.mobileSplitActive;
+    }
+    return false;
+  });
   const targetRef = useRef(new THREE.Vector3());
   const desiredTargetRef = useRef(new THREE.Vector3());
   const desiredCameraPositionRef = useRef(new THREE.Vector3());
@@ -172,7 +216,7 @@ function CameraSynchronizer({
   }, [highlightedUserId]);
 
   useFrame((_, delta) => {
-    if (isEmbedded) {
+    if (isEmbedded || shouldBypassCameraSync) {
       return;
     }
 

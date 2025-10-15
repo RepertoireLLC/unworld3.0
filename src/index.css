@@ -32,6 +32,15 @@ body {
   scroll-behavior: smooth;
 }
 
+body.harmonia-immersive {
+  background-color: #000;
+  overflow: hidden;
+}
+
+body.harmonia-immersive .harmonia-flat-ui {
+  display: none;
+}
+
 h1,
 h2,
 h3,

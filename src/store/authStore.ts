@@ -49,9 +49,30 @@ const coerceHexColor = (candidate: unknown): string | null => {
 const normalizeHexColor = (input: unknown, fallback?: unknown) =>
   coerceHexColor(input) ?? coerceHexColor(fallback) ?? generateRandomColor();
 
-interface UserPreferences {
+export type HarmoniaVRMode = 'desktop' | 'immersive' | 'mobile-split';
+
+export interface UserPreferences {
   nsfwAllowed: boolean;
+  vrMode: HarmoniaVRMode;
+  vrHandTracking: boolean;
+  vrSpatialAudio: boolean;
+  vrDebugOverlay: boolean;
+  vrLastCalibrationTimestamp: string | null;
 }
+
+export const DEFAULT_USER_PREFERENCES: UserPreferences = {
+  nsfwAllowed: false,
+  vrMode: 'desktop',
+  vrHandTracking: false,
+  vrSpatialAudio: false,
+  vrDebugOverlay: false,
+  vrLastCalibrationTimestamp: null,
+};
+
+const normalizePreferences = (input?: Partial<UserPreferences> | null): UserPreferences => ({
+  ...DEFAULT_USER_PREFERENCES,
+  ...(input ?? {}),
+});
 
 interface User {
   id: string;
@@ -100,10 +121,6 @@ export const useAuthStore = create<AuthState>()(
           customThemes: [],
         };
 
-        const defaultPreferences: UserPreferences = {
-          nsfwAllowed: false,
-        };
-
         const resolvedColor = normalizeHexColor(userData.color);
 
         const newUser: User = {
@@ -113,7 +130,7 @@ export const useAuthStore = create<AuthState>()(
           password: userData.password,
           color: resolvedColor,
           themePreferences: defaultThemePreferences,
-          preferences: defaultPreferences,
+          preferences: DEFAULT_USER_PREFERENCES,
           accountStatus: 'active',
         };
 
@@ -146,9 +163,7 @@ export const useAuthStore = create<AuthState>()(
 
         if (foundUser) {
           const normalizedColor = normalizeHexColor(foundUser.color, foundUser.color);
-          const normalizedPreferences: UserPreferences = {
-            nsfwAllowed: foundUser.preferences?.nsfwAllowed ?? false,
-          };
+          const normalizedPreferences = normalizePreferences(foundUser.preferences);
 
           const normalizedUser: User = {
             ...foundUser,
@@ -206,12 +221,10 @@ export const useAuthStore = create<AuthState>()(
             sanitizedUpdates.color = normalizeHexColor(updates.color, state.user.color);
           }
 
-          const mergedPreferences: UserPreferences = updates.preferences
-            ? {
-                ...state.user.preferences,
-                ...updates.preferences,
-              }
-            : state.user.preferences ?? { nsfwAllowed: false };
+          const mergedPreferences = normalizePreferences({
+            ...(state.user.preferences ?? {}),
+            ...(updates.preferences ?? {}),
+          });
 
           const mergedThemePreferences: ThemePreferencesSnapshot | undefined =
             updates.themePreferences
