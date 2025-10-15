@@ -3,12 +3,18 @@ import { OrbitControls, Stars } from '@react-three/drei';
 import { Sphere } from './Sphere';
 import { UserNodes } from './UserNodes';
 import { AINodes } from './ai/AINodes';
-import { Component, ReactNode, Suspense, useMemo, useRef } from 'react';
+import { Component, ReactNode, Suspense, useEffect, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
 import { useThemeStore, type BuiltInThemeId } from '../store/themeStore';
 import { useSphereStore } from '../store/sphereStore';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+
+const FOCUS_DISTANCE = 4.5;
+const FOCUS_TARGET_LERP = 0.18;
+const FOCUS_CAMERA_LERP = 0.12;
+const RETURN_LERP = 0.08;
+const FOCUS_THRESHOLD = 0.05;
 
 interface SceneProps {
   variant?: 'fullscreen' | 'embedded';
@@ -146,6 +152,8 @@ function CameraSynchronizer({
 }) {
   const highlightedUserId = useSphereStore((state) => state.highlightedUserId);
   const nodePositions = useSphereStore((state) => state.nodePositions);
+  const focusLockUserId = useSphereStore((state) => state.focusLockUserId);
+  const setFocusLockUser = useSphereStore((state) => state.setFocusLockUser);
   const targetRef = useRef(new THREE.Vector3());
   const desiredTargetRef = useRef(new THREE.Vector3());
   const desiredCameraPositionRef = useRef(new THREE.Vector3());
@@ -154,11 +162,16 @@ function CameraSynchronizer({
   );
   const defaultTargetRef = useRef(new THREE.Vector3(0, 0, 0));
   const isReturningRef = useRef(false);
+  const hasLockedFocusRef = useRef(false);
   const { camera } = useThree();
 
   defaultCameraPositionRef.current.set(0, 0, isEmbedded ? 9 : 10);
 
-  useFrame(() => {
+  useEffect(() => {
+    hasLockedFocusRef.current = false;
+  }, [highlightedUserId]);
+
+  useFrame((_, delta) => {
     if (isEmbedded) {
       return;
     }
@@ -172,7 +185,7 @@ function CameraSynchronizer({
       desiredCameraPositionRef.current
         .set(...activeTargetTuple)
         .normalize()
-        .multiplyScalar(6.5);
+        .multiplyScalar(FOCUS_DISTANCE);
       isReturningRef.current = true;
     } else if (isReturningRef.current) {
       desiredTargetRef.current.copy(defaultTargetRef.current);
@@ -181,18 +194,40 @@ function CameraSynchronizer({
       return;
     }
 
-    targetRef.current.lerp(desiredTargetRef.current, 0.08);
-    camera.position.lerp(desiredCameraPositionRef.current, 0.06);
+    const focusLerp = 1 - Math.pow(1 - FOCUS_TARGET_LERP, delta * 60);
+    const cameraLerp = 1 - Math.pow(1 - FOCUS_CAMERA_LERP, delta * 60);
+    const returnLerp = 1 - Math.pow(1 - RETURN_LERP, delta * 60);
+
+    const targetLerpFactor = activeTargetTuple ? focusLerp : returnLerp;
+    const cameraLerpFactor = activeTargetTuple ? cameraLerp : returnLerp;
+
+    targetRef.current.lerp(desiredTargetRef.current, targetLerpFactor);
+    camera.position.lerp(desiredCameraPositionRef.current, cameraLerpFactor);
 
     controlsRef.current?.target.copy(targetRef.current);
     controlsRef.current?.update();
 
-    if (
-      !activeTargetTuple &&
-      isReturningRef.current &&
-      camera.position.distanceTo(defaultCameraPositionRef.current) < 0.05
-    ) {
-      isReturningRef.current = false;
+    if (activeTargetTuple) {
+      const hasReachedTarget =
+        camera.position.distanceTo(desiredCameraPositionRef.current) < FOCUS_THRESHOLD &&
+        targetRef.current.distanceTo(desiredTargetRef.current) < FOCUS_THRESHOLD;
+
+      if (hasReachedTarget && !hasLockedFocusRef.current) {
+        setFocusLockUser(highlightedUserId);
+        hasLockedFocusRef.current = true;
+      }
+    } else if (isReturningRef.current) {
+      const hasReturned =
+        camera.position.distanceTo(defaultCameraPositionRef.current) < FOCUS_THRESHOLD &&
+        targetRef.current.distanceTo(defaultTargetRef.current) < FOCUS_THRESHOLD;
+
+      if (hasReturned) {
+        isReturningRef.current = false;
+        hasLockedFocusRef.current = false;
+        if (focusLockUserId) {
+          setFocusLockUser(null);
+        }
+      }
     }
   });
 

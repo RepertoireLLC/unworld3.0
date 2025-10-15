@@ -5,11 +5,13 @@ type Vec3Tuple = [number, number, number];
 interface SphereState {
   isFullscreen: boolean;
   highlightedUserId: string | null;
+  focusLockUserId: string | null;
   nodePositions: Record<string, Vec3Tuple>;
   nodeRegistrationCounts: Record<string, number>;
   focusError: string | null;
   setFullscreen: (isFullscreen: boolean) => void;
   focusUser: (userId: string | null) => void;
+  setFocusLockUser: (userId: string | null) => void;
   registerNodePosition: (userId: string, position: Vec3Tuple) => void;
   unregisterNodePosition: (userId: string) => void;
   setFocusError: (message: string | null) => void;
@@ -19,6 +21,7 @@ interface SphereState {
 export const useSphereStore = create<SphereState>((set) => ({
   isFullscreen: false,
   highlightedUserId: null,
+  focusLockUserId: null,
   nodePositions: {},
   nodeRegistrationCounts: {},
   focusError: null,
@@ -29,6 +32,7 @@ export const useSphereStore = create<SphereState>((set) => ({
         ? {}
         : {
             highlightedUserId: null,
+            focusLockUserId: null,
             focusError: null,
             nodePositions: state.nodePositions,
           }),
@@ -36,8 +40,13 @@ export const useSphereStore = create<SphereState>((set) => ({
   focusUser: (userId) =>
     set((state) => ({
       highlightedUserId: userId,
+      focusLockUserId: null,
       focusError: userId ? null : state.focusError,
     })),
+  setFocusLockUser: (userId) =>
+    set({
+      focusLockUserId: userId,
+    }),
   registerNodePosition: (userId, position) =>
     set((state) => ({
       nodePositions: {
@@ -85,6 +94,7 @@ export const useSphereStore = create<SphereState>((set) => ({
   clearFocusState: () =>
     set((state) => ({
       highlightedUserId: null,
+      focusLockUserId: null,
       focusError: null,
       nodePositions: state.nodePositions,
       nodeRegistrationCounts: state.nodeRegistrationCounts,

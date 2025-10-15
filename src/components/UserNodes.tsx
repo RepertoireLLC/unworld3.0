@@ -6,9 +6,17 @@ import { useAuthStore } from '../store/authStore';
 import { useModalStore } from '../store/modalStore';
 import { useSphereStore } from '../store/sphereStore';
 import * as THREE from 'three';
+import { FocusHighlight } from './effects/FocusHighlight';
 
 const NODE_RADIUS = 0.2;
 const SPHERE_RADIUS = 3;
+const HIGHLIGHT_SETTINGS = {
+  ringColor: '#fbbf24',
+  pulseSpeed: 2.4,
+  minScale: 1,
+  maxScale: 1.55,
+  fadeFactor: 0.16,
+};
 
 export function UserNodes() {
   const users = useUserStore((state) => state.users);
@@ -96,8 +104,10 @@ function UserNode({
     (state) => state.unregisterNodePosition
   );
   const highlightedUserId = useSphereStore((state) => state.highlightedUserId);
+  const focusLockUserId = useSphereStore((state) => state.focusLockUserId);
   const meshRef = useRef<THREE.Mesh>(null);
-  const isHighlighted = highlightedUserId === userId;
+  const isTargeted = highlightedUserId === userId;
+  const isFocusLocked = focusLockUserId === userId;
 
   useEffect(() => {
     registerNodePosition(userId, position);
@@ -108,7 +118,7 @@ function UserNode({
 
   useFrame(() => {
     if (meshRef.current) {
-      const targetScale = isHighlighted ? 1.5 : 1;
+      const targetScale = isFocusLocked ? 1.6 : isTargeted ? 1.25 : 1;
       const currentScale = meshRef.current.scale.x;
       const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.1);
       meshRef.current.scale.setScalar(nextScale);
@@ -132,26 +142,26 @@ function UserNode({
         <meshStandardMaterial
           color={userColor}
           emissive={userColor}
-          emissiveIntensity={isHighlighted ? 1 : isCurrentUser ? 0.8 : 0.5}
+          emissiveIntensity={
+            isFocusLocked ? 1.2 : isTargeted ? 0.9 : isCurrentUser ? 0.8 : 0.5
+          }
         />
       </mesh>
-      {isHighlighted && (
-        <mesh position={[0, 0, 0]}>
-          <ringGeometry args={[NODE_RADIUS * 1.6, NODE_RADIUS * 2, 32]} />
-          <meshBasicMaterial
-            color="#fbbf24"
-            transparent
-            opacity={0.7}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
+      <FocusHighlight
+        radius={NODE_RADIUS}
+        color={HIGHLIGHT_SETTINGS.ringColor}
+        isActive={isFocusLocked}
+        pulseSpeed={HIGHLIGHT_SETTINGS.pulseSpeed}
+        minScale={HIGHLIGHT_SETTINGS.minScale}
+        maxScale={HIGHLIGHT_SETTINGS.maxScale}
+        fadeFactor={HIGHLIGHT_SETTINGS.fadeFactor}
+      />
       <Billboard>
         <group>
           <Text
             position={[0, NODE_RADIUS * 2, 0]}
             fontSize={0.2}
-            color={isHighlighted ? '#fbbf24' : userColor}
+            color={isFocusLocked ? HIGHLIGHT_SETTINGS.ringColor : userColor}
             anchorX="center"
             anchorY="middle"
           >
