@@ -20,6 +20,7 @@ interface ChatState {
   sendMessage: (fromUserId: string, toUserId: string, content: string, options?: { role?: 'user' | 'ai' | 'observer' | 'ally' }) => void;
   getMessagesForChat: (userId1: string, userId2: string) => Message[];
   loadMessagesForChat: (userId1: string, userId2: string) => Promise<void>;
+  purgeUser: (userId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -121,5 +122,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       type: 'sync:heal',
       nodeId: conversationId,
     });
+  },
+  purgeUser: (userId) => {
+    set((state) => ({
+      activeChat: state.activeChat === userId ? null : state.activeChat,
+      messages: state.messages.filter(
+        (message) => message.fromUserId !== userId && message.toUserId !== userId
+      ),
+    }));
   },
 }));
