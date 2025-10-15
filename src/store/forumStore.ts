@@ -9,6 +9,7 @@ import {
 import { useInterestStore } from './interestStore';
 import { useFriendStore } from './friendStore';
 import { useAuthStore } from './authStore';
+import { useNodeResonanceStore } from './nodeResonanceStore';
 
 export type ForumVisibility = 'public' | 'friends' | 'private';
 
@@ -263,6 +264,17 @@ export const useForumStore = create<ForumState>((set, get) => ({
 
     broadcastSync({ type: 'post', post });
 
+    const nodeResonance = useNodeResonanceStore.getState();
+    const resonanceResult = nodeResonance.registerInterestEngagement(authorId, vector, {
+      intensity: 1,
+      timestamp,
+    });
+    if (resonanceResult.dominantCategory) {
+      nodeResonance.registerContentPulse(authorId, resonanceResult.dominantCategory, {
+        timestamp,
+      });
+    }
+
     return post;
   },
 
@@ -313,6 +325,10 @@ export const useForumStore = create<ForumState>((set, get) => ({
     useInterestStore
       .getState()
       .recordInteraction(authorId, vector, { weight: 0.25, timestamp });
+
+    useNodeResonanceStore
+      .getState()
+      .registerInterestEngagement(authorId, vector, { intensity: 0.6, timestamp });
 
     broadcastSync({ type: 'comment', comment });
 
@@ -382,6 +398,14 @@ export const useForumStore = create<ForumState>((set, get) => ({
       .getState()
       .recordInteraction(userId, post.interest_vector, {
         weight: weightMap[type],
+        timestamp,
+      });
+
+    const resonanceIntensity = Math.min(weightMap[type] * 3.2, 1);
+    useNodeResonanceStore
+      .getState()
+      .registerInterestEngagement(userId, post.interest_vector, {
+        intensity: resonanceIntensity,
         timestamp,
       });
 

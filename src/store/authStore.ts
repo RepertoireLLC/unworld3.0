@@ -3,6 +3,34 @@ import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
 import { useThemeStore, type ThemePreferencesSnapshot } from './themeStore';
 import type { ChessGameSummary } from '../types/chess';
+import {
+  useNodeResonanceStore,
+  type NodeColorPreferences,
+} from './nodeResonanceStore';
+
+function mergeNodeColorPreferences(
+  current: NodeColorPreferences | undefined,
+  updates?: Partial<NodeColorPreferences>
+): NodeColorPreferences {
+  const base: NodeColorPreferences = current
+    ? { mode: current.mode, lockedColor: current.lockedColor }
+    : { mode: 'dynamic' };
+
+  if (!updates) {
+    return { ...base };
+  }
+
+  const mode = updates.mode ?? base.mode;
+  const lockedColor =
+    mode === 'locked'
+      ? updates.lockedColor ?? base.lockedColor
+      : base.lockedColor ?? updates.lockedColor;
+
+  return {
+    mode,
+    lockedColor,
+  };
+}
 
 interface User {
   id: string;
@@ -13,6 +41,7 @@ interface User {
   profilePicture?: string;
   bio?: string;
   themePreferences?: ThemePreferencesSnapshot;
+  nodeColorPreferences: NodeColorPreferences;
   status: 'active' | 'deactivated';
   contentPreferences: {
     nsfw: boolean;
@@ -63,6 +92,7 @@ export const useAuthStore = create<AuthState>()(
           password: userData.password,
           color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
           themePreferences: defaultThemePreferences,
+          nodeColorPreferences: mergeNodeColorPreferences(undefined),
           status: 'active',
           contentPreferences: {
             nsfw: false,
@@ -90,6 +120,10 @@ export const useAuthStore = create<AuthState>()(
         });
         setOnlineStatus(newUser.id, true);
 
+        const nodeResonance = useNodeResonanceStore.getState();
+        nodeResonance.hydrateUserColor(newUser.id, newUser.color);
+        nodeResonance.syncManualPreferences(newUser.id, newUser.nodeColorPreferences);
+
         return true;
       },
 
@@ -105,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
             status: 'active',
             contentPreferences: user.contentPreferences ?? { nsfw: false },
             chessProfile: user.chessProfile ?? { history: [] },
+            nodeColorPreferences: mergeNodeColorPreferences(user.nodeColorPreferences),
           };
 
           set((state) => ({
@@ -117,12 +152,20 @@ export const useAuthStore = create<AuthState>()(
                     status: 'active',
                     contentPreferences: restoredUser.contentPreferences,
                     chessProfile: restoredUser.chessProfile,
+                    nodeColorPreferences: restoredUser.nodeColorPreferences,
                   }
                 : registered
             ),
           }));
 
           useThemeStore.getState().hydrateFromPreferences(restoredUser.themePreferences);
+
+          const nodeResonance = useNodeResonanceStore.getState();
+          nodeResonance.hydrateUserColor(restoredUser.id, restoredUser.color);
+          nodeResonance.syncManualPreferences(
+            restoredUser.id,
+            restoredUser.nodeColorPreferences
+          );
 
           // Set user as online
           const { addUser, setOnlineStatus } = useUserStore.getState();
@@ -169,6 +212,11 @@ export const useAuthStore = create<AuthState>()(
                 }
               : state.user.themePreferences;
 
+          const mergedNodeColorPreferences = mergeNodeColorPreferences(
+            state.user.nodeColorPreferences,
+            updates.nodeColorPreferences
+          );
+
           const updatedUser: User = {
             ...state.user,
             ...updates,
@@ -179,6 +227,7 @@ export const useAuthStore = create<AuthState>()(
             },
             status: updates.status ?? state.user.status,
             chessProfile: updates.chessProfile ?? state.user.chessProfile,
+            nodeColorPreferences: mergedNodeColorPreferences,
           };
 
           // Update in registered users list
@@ -191,6 +240,10 @@ export const useAuthStore = create<AuthState>()(
           if (updates.color) {
             updateUserColor(updatedUser.id, updates.color);
           }
+
+          useNodeResonanceStore
+            .getState()
+            .syncManualPreferences(updatedUser.id, mergedNodeColorPreferences);
 
           useThemeStore.getState().hydrateFromPreferences(updatedUser.themePreferences);
 
@@ -253,6 +306,8 @@ export const useAuthStore = create<AuthState>()(
 
         const { removeUser } = useUserStore.getState();
         removeUser(user.id);
+
+        useNodeResonanceStore.getState().removeUser(user.id);
 
         useThemeStore.getState().hydrateFromPreferences(undefined);
 

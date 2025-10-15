@@ -1,5 +1,6 @@
 import { useUserStore } from './userStore';
 import { useAuthStore } from './authStore';
+import { useNodeResonanceStore } from './nodeResonanceStore';
 
 // Helper function to get random position on a sphere
 function getRandomSpherePosition(radius: number = 3): [number, number, number] {
@@ -18,6 +19,7 @@ export function initializeMockData() {
   const updateUserPosition = useUserStore.getState().updateUserPosition;
   const currentUser = useAuthStore.getState().user;
   const registeredUsers = useAuthStore.getState().registeredUsers;
+  const nodeResonance = useNodeResonanceStore.getState();
 
   // Add current user to the sphere
   if (currentUser) {
@@ -28,6 +30,8 @@ export function initializeMockData() {
     });
     setOnlineStatus(currentUser.id, true);
     updateUserPosition(currentUser.id, getRandomSpherePosition());
+    nodeResonance.hydrateUserColor(currentUser.id, currentUser.color);
+    nodeResonance.syncManualPreferences(currentUser.id, currentUser.nodeColorPreferences);
   }
 
   // Add all registered users except current user
@@ -40,5 +44,7 @@ export function initializeMockData() {
         online: false,
       });
       updateUserPosition(user.id, getRandomSpherePosition());
+      nodeResonance.hydrateUserColor(user.id, user.color);
+      nodeResonance.syncManualPreferences(user.id, user.nodeColorPreferences);
     });
 }

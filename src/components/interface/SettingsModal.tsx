@@ -32,6 +32,7 @@ import { useMeshStore } from '../../store/meshStore';
 import { useStorageStore } from '../../store/storageStore';
 import { useAuthStore } from '../../store/authStore';
 import { useReelsStore } from '../../store/reelsStore';
+import type { NodeColorMode } from '../../store/nodeResonanceStore';
 
 type SettingsCategory = 'account' | 'content' | 'privacy' | 'support';
 
@@ -274,6 +275,16 @@ export function SettingsModal() {
 
   const nsfwOptIn = currentUser?.contentPreferences?.nsfw ?? false;
   const accountStatus = currentUser?.status ?? 'active';
+  const nodeColorPreferences = currentUser?.nodeColorPreferences ?? {
+    mode: 'dynamic' as const,
+    lockedColor: undefined,
+  };
+  const isHueLocked = nodeColorPreferences.mode === 'locked';
+  const resolvedLockedHue = nodeColorPreferences.lockedColor ?? currentUser?.color ?? '#6366f1';
+  const normalizedLockedHue = resolvedLockedHue.startsWith('#')
+    ? resolvedLockedHue
+    : `#${resolvedLockedHue}`;
+  const lockedHueLabel = normalizedLockedHue.toUpperCase();
 
   const filteredFaq = useMemo(() => {
     const query = faqQuery.trim().toLowerCase();
@@ -415,6 +426,51 @@ export function SettingsModal() {
       }
     },
     [setSettingsSection]
+  );
+
+  const handleNodeColorModeChange = useCallback(
+    (mode: NodeColorMode) => {
+      if (!currentUser) {
+        addToast({
+          title: 'Sign in to customize node colors',
+          variant: 'error',
+          description: 'Authenticate to adjust your Harmonia node appearance.',
+        });
+        return;
+      }
+
+      updateProfile({
+        nodeColorPreferences:
+          mode === 'locked'
+            ? { mode: 'locked', lockedColor: normalizedLockedHue }
+            : { mode: 'dynamic' },
+      });
+      addToast({
+        title: mode === 'locked' ? 'Node hue locked' : 'Dynamic resonance enabled',
+        variant: mode === 'locked' ? 'success' : 'info',
+        description:
+          mode === 'locked'
+            ? 'Your sphere presence will emit the selected hue until you unlock it.'
+            : 'Your node color now flows with your most recent engagements.',
+      });
+    },
+    [addToast, currentUser, normalizedLockedHue, updateProfile]
+  );
+
+  const handleLockedColorChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const nextColor = event.target.value;
+      if (!nextColor) {
+        return;
+      }
+      updateProfile({ nodeColorPreferences: { mode: 'locked', lockedColor: nextColor } });
+      addToast({
+        title: 'Hue anchored',
+        variant: 'success',
+        description: 'Your Harmonia node now emits the selected color until you return to dynamic mode.',
+      });
+    },
+    [addToast, updateProfile]
   );
 
   const handleDeactivateAccount = useCallback(() => {
@@ -687,6 +743,89 @@ export function SettingsModal() {
                         </div>
                         <p className="mt-3">{preview}</p>
                         <p className="text-xs text-white/50">Updated live every second.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ui-card gap-6">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Node presence</p>
+                      <h3 className="mt-1 text-xl font-semibold text-white">Color resonance behavior</h3>
+                      <p className="mt-2 text-sm text-white/60">
+                        Choose whether your Harmonia node hue shifts with your latest engagements or stays pinned to a single tone.
+                      </p>
+                    </div>
+                    <span
+                      className={`ui-chip ${
+                        isHueLocked
+                          ? 'border-rose-400/60 text-rose-200'
+                          : 'border-sky-400/60 text-sky-200'
+                      }`}
+                    >
+                      {isHueLocked ? 'Locked' : 'Dynamic'}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_300px]">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                      <p className="text-sm font-semibold text-white">Resonance mode</p>
+                      <p className="text-xs text-white/50">
+                        Select how your node hue responds to your activity.
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleNodeColorModeChange('dynamic')}
+                          className={`ui-button ui-button--outline flex items-center gap-2 ${
+                            isHueLocked
+                              ? 'border-white/20 text-white/70 hover:text-white'
+                              : 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200'
+                          }`}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Flow with resonance
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleNodeColorModeChange('locked')}
+                          className={`ui-button ui-button--outline flex items-center gap-2 ${
+                            isHueLocked
+                              ? 'border-rose-400/60 bg-rose-500/10 text-rose-200'
+                              : 'border-white/20 text-white/70 hover:text-white'
+                          }`}
+                        >
+                          <Shield className="h-4 w-4" />
+                          Lock hue
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      className={`rounded-2xl border border-white/10 bg-slate-950/60 p-6 transition ${
+                        isHueLocked ? '' : 'opacity-50'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-white">Locked hue</p>
+                      <p className="text-xs text-white/50">
+                        Pick the exact color that represents your node when locking.
+                      </p>
+                      <div className="mt-4 flex flex-wrap items-center gap-4">
+                        <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5 p-1 shadow-inner">
+                          <span
+                            className="h-full w-full rounded-full shadow-[0_0_30px_rgba(255,255,255,0.12)]"
+                            style={{ background: normalizedLockedHue }}
+                          />
+                        </span>
+                        <input
+                          type="color"
+                          value={normalizedLockedHue}
+                          onChange={handleLockedColorChange}
+                          disabled={!isHueLocked}
+                          className="h-12 w-24 cursor-pointer rounded-xl border border-white/15 bg-white/10 p-1 focus:border-white/40 focus:outline-none disabled:cursor-not-allowed"
+                          aria-label="Select locked node color"
+                        />
+                        <span className="font-mono text-xs text-white/60">{lockedHueLabel}</span>
                       </div>
                     </div>
                   </div>

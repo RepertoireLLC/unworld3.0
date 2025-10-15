@@ -4,6 +4,7 @@ import { generateId } from '../utils/id';
 import { dispatchConsciousEvent } from '../core/consciousCore';
 import { analyzeResonance } from '../utils/resonance';
 import { useResonanceStore } from './resonanceStore';
+import { useNodeResonanceStore } from './nodeResonanceStore';
 
 interface Message {
   id: string;
@@ -41,6 +42,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: [...state.messages, newMessage],
     }));
+
+    useNodeResonanceStore
+      .getState()
+      .registerCategoryEngagement(fromUserId, 'social', { intensity: 0.4, timestamp });
 
     const conversationId = getConversationId(fromUserId, toUserId);
     const role = options?.role ?? 'user';

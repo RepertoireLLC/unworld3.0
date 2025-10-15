@@ -4,6 +4,7 @@ import { generateId } from '../utils/id';
 import { cosineSimilarity, buildInterestVectorFromTags, clamp, normalizeVector } from '../utils/vector';
 import { useInterestStore } from './interestStore';
 import { useMeshStore } from './meshStore';
+import { useNodeResonanceStore } from './nodeResonanceStore';
 import type {
   ReelRecord,
   ReelComposerDraft,
@@ -181,7 +182,8 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
     }
 
     const id = generateId('reel');
-    const timestamp = new Date().toISOString();
+    const createdAtMs = Date.now();
+    const timestamp = new Date(createdAtMs).toISOString();
     const optimized = payload.media.optimized ?? createOptimizedVariants(payload.media.originalUrl);
     const nodeAddress =
       payload.nodeAddress ??
@@ -247,7 +249,18 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
 
     useInterestStore
       .getState()
-      .recordInteraction(creator.id, record.interestVector, { weight: 0.4, timestamp: Date.now() });
+      .recordInteraction(creator.id, record.interestVector, { weight: 0.4, timestamp: createdAtMs });
+
+    const nodeResonance = useNodeResonanceStore.getState();
+    const resonanceResult = nodeResonance.registerInterestEngagement(creator.id, record.interestVector, {
+      intensity: 1,
+      timestamp: createdAtMs,
+    });
+    if (resonanceResult.dominantCategory) {
+      nodeResonance.registerContentPulse(creator.id, resonanceResult.dominantCategory, {
+        timestamp: createdAtMs,
+      });
+    }
 
     persistState(get);
 
@@ -288,6 +301,7 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
       return { liked: false };
     }
     const liked = reel.metrics.likedBy.includes(userId);
+    const eventTimestamp = Date.now();
     const updatedLikedBy = liked
       ? reel.metrics.likedBy.filter((id) => id !== userId)
       : [...reel.metrics.likedBy, userId];
@@ -297,7 +311,7 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
       likes: liked ? Math.max(0, reel.metrics.likes - 1) : reel.metrics.likes + 1,
     };
     const aura = clamp(reel.resonance.auraStrength + (liked ? -0.05 : 0.07), 0.05, 1.2);
-    const frame = { timestamp: Date.now(), amplitude: aura };
+    const frame = { timestamp: eventTimestamp, amplitude: aura };
 
     set((current) => ({
       reels: {
@@ -315,7 +329,14 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
 
     useInterestStore
       .getState()
-      .recordInteraction(userId, reel.interestVector, { weight: liked ? -0.1 : 0.3, timestamp: Date.now() });
+      .recordInteraction(userId, reel.interestVector, { weight: liked ? -0.1 : 0.3, timestamp: eventTimestamp });
+
+    useNodeResonanceStore
+      .getState()
+      .registerInterestEngagement(userId, reel.interestVector, {
+        intensity: liked ? 0.18 : 0.42,
+        timestamp: eventTimestamp,
+      });
 
     persistState(get);
     console.info(`${displayName} ${liked ? 'removed a like from' : 'liked'} reel ${reelId}`);
@@ -332,12 +353,14 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
     }
 
     const commentId = generateId('reel-comment');
+    const eventTimestamp = Date.now();
+    const createdAt = new Date(eventTimestamp).toISOString();
     const comment = {
       id: commentId,
       userId: payload.userId,
       displayName: payload.displayName,
       content: payload.content.trim(),
-      createdAt: new Date().toISOString(),
+      createdAt,
       resonanceScore: clamp(reel.resonance.auraStrength + Math.random() * 0.1, 0.1, 1.5),
     };
 
@@ -357,7 +380,14 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
 
     useInterestStore
       .getState()
-      .recordInteraction(payload.userId, reel.interestVector, { weight: 0.25, timestamp: Date.now() });
+      .recordInteraction(payload.userId, reel.interestVector, { weight: 0.25, timestamp: eventTimestamp });
+
+    useNodeResonanceStore
+      .getState()
+      .registerInterestEngagement(payload.userId, reel.interestVector, {
+        intensity: 0.55,
+        timestamp: eventTimestamp,
+      });
 
     persistState(get);
     return { success: true, commentId };
@@ -369,6 +399,7 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
       return;
     }
     const viewerId = userId ?? 'anonymous';
+    const eventTimestamp = Date.now();
     const hasViewed = reel.metrics.viewers.includes(viewerId);
     const additionalWatch = watchThrough ?? 1;
 
@@ -380,7 +411,7 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
     };
 
     const aura = clamp(reel.resonance.auraStrength + 0.03 * additionalWatch, 0.05, 1.5);
-    const frame = { timestamp: Date.now(), amplitude: aura };
+    const frame = { timestamp: eventTimestamp, amplitude: aura };
 
     set((current) => ({
       reels: {
@@ -399,7 +430,15 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
     if (userId) {
       useInterestStore
         .getState()
-        .integratePublicContent(userId, reel.interestVector, Date.now());
+        .integratePublicContent(userId, reel.interestVector, eventTimestamp);
+
+      const viewIntensity = clamp(0.18 * additionalWatch, 0.1, 0.55);
+      useNodeResonanceStore
+        .getState()
+        .registerInterestEngagement(userId, reel.interestVector, {
+          intensity: viewIntensity,
+          timestamp: eventTimestamp,
+        });
     }
 
     persistState(get);
@@ -422,6 +461,13 @@ export const useReelsStore = create<ReelsState>((set, get) => ({
       },
     }));
     console.info('Reel shared', { reelId, userId, via: payload.channel, note: payload.note });
+
+    useNodeResonanceStore
+      .getState()
+      .registerInterestEngagement(userId, reel.interestVector, {
+        intensity: 0.38,
+        timestamp: Date.now(),
+      });
     persistState(get);
   },
   remixReel: (creator, sourceId, caption) => {

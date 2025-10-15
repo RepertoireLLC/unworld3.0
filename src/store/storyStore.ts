@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useNodeResonanceStore } from './nodeResonanceStore';
 
 export interface Story {
   id: string;
@@ -29,10 +30,14 @@ export const useStoryStore = create<StoryState>((set, get) => ({
       createdAt: now,
       expiresAt: now + 24 * 60 * 60 * 1000, // 24 hours
     };
-    
+
     set((state) => ({
       stories: [...state.stories, newStory],
     }));
+
+    const nodeResonance = useNodeResonanceStore.getState();
+    nodeResonance.registerCategoryEngagement(userId, 'social', { intensity: 0.6, timestamp: now });
+    nodeResonance.registerContentPulse(userId, 'social', { timestamp: now, durationMs: 1800 });
   },
   
   removeStory: (storyId) => {

@@ -5,6 +5,8 @@ import { useUserStore } from '../store/userStore';
 import { useAuthStore } from '../store/authStore';
 import { useModalStore } from '../store/modalStore';
 import { useSphereStore } from '../store/sphereStore';
+import { useNodeResonanceStore, type NodePulseState } from '../store/nodeResonanceStore';
+import { getCategoryConfig } from '../config/nodeResonance';
 import * as THREE from 'three';
 import { FocusHighlight } from './effects/FocusHighlight';
 
@@ -106,8 +108,12 @@ function UserNode({
   const highlightedUserId = useSphereStore((state) => state.highlightedUserId);
   const focusLockUserId = useSphereStore((state) => state.focusLockUserId);
   const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const initialColorRef = useRef(userColor);
+  const targetColorRef = useRef(new THREE.Color(userColor));
   const isTargeted = highlightedUserId === userId;
   const isFocusLocked = focusLockUserId === userId;
+  const pulses = useNodeResonanceStore((state) => state.nodes[userId]?.pulses ?? []);
 
   useEffect(() => {
     registerNodePosition(userId, position);
@@ -116,12 +122,20 @@ function UserNode({
     };
   }, [registerNodePosition, unregisterNodePosition, userId, position]);
 
+  useEffect(() => {
+    targetColorRef.current.set(userColor);
+  }, [userColor]);
+
   useFrame(() => {
     if (meshRef.current) {
       const targetScale = isFocusLocked ? 1.6 : isTargeted ? 1.25 : 1;
       const currentScale = meshRef.current.scale.x;
       const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.1);
       meshRef.current.scale.setScalar(nextScale);
+    }
+    if (materialRef.current) {
+      materialRef.current.color.lerp(targetColorRef.current, 0.08);
+      materialRef.current.emissive.lerp(targetColorRef.current, 0.08);
     }
   });
 
@@ -140,8 +154,9 @@ function UserNode({
       >
         <sphereGeometry args={[NODE_RADIUS, 32, 32]} />
         <meshStandardMaterial
-          color={userColor}
-          emissive={userColor}
+          ref={materialRef}
+          color={initialColorRef.current}
+          emissive={initialColorRef.current}
           emissiveIntensity={
             isFocusLocked ? 1.2 : isTargeted ? 0.9 : isCurrentUser ? 0.8 : 0.5
           }
@@ -156,6 +171,7 @@ function UserNode({
         maxScale={HIGHLIGHT_SETTINGS.maxScale}
         fadeFactor={HIGHLIGHT_SETTINGS.fadeFactor}
       />
+      <NodePulseRings userId={userId} pulses={pulses} />
       <Billboard>
         <group>
           <Text
@@ -177,3 +193,75 @@ function UserNode({
     </group>
   );
 }
+function NodePulseRings({
+  userId,
+  pulses,
+}: {
+  userId: string;
+  pulses: NodePulseState[];
+}) {
+  if (!pulses.length) {
+    return null;
+  }
+
+  return (
+    <group>
+      {pulses.map((pulse) => (
+        <PulseRing key={pulse.id} userId={userId} pulse={pulse} />
+      ))}
+    </group>
+  );
+}
+
+function PulseRing({
+  userId,
+  pulse,
+}: {
+  userId: string;
+  pulse: NodePulseState;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+  const clearPulse = useNodeResonanceStore((state) => state.clearPulse);
+  const clearedRef = useRef(false);
+  const categoryColor = getCategoryConfig(pulse.category).color;
+  const colorRef = useRef(new THREE.Color(categoryColor));
+
+  useEffect(() => {
+    colorRef.current.set(categoryColor);
+  }, [categoryColor]);
+
+  useFrame(() => {
+    const now = Date.now();
+    const progress = (now - pulse.startedAt) / pulse.duration;
+    if (progress >= 1) {
+      if (!clearedRef.current) {
+        clearedRef.current = true;
+        clearPulse(userId, pulse.id);
+      }
+      return;
+    }
+
+    const scale = 1 + progress * 2.1;
+    const opacity = THREE.MathUtils.lerp(0.55, 0, progress);
+    meshRef.current?.scale.setScalar(scale);
+    if (materialRef.current) {
+      materialRef.current.opacity = opacity;
+      materialRef.current.color.copy(colorRef.current);
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} rotation={[Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[NODE_RADIUS * 1.25, NODE_RADIUS * 2.15, 64]} />
+      <meshBasicMaterial
+        ref={materialRef}
+        color={categoryColor}
+        transparent
+        opacity={0.5}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
+}
+
