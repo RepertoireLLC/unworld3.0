@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback, useRef, type ChangeEvent } from 'react';
-import { X, Globe2, RefreshCcw } from 'lucide-react';
+import { X, Globe2, RefreshCcw, Shield, Power } from 'lucide-react';
 import { useModalStore } from '../../store/modalStore';
 import { useTimeStore, getEffectiveTimezone, getSystemTimezone } from '../../store/timeStore';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
@@ -7,6 +7,7 @@ import { useToastStore } from '../../store/toastStore';
 import { ThemeCustomizationPanel } from './ThemeCustomizationPanel';
 import { useMeshStore } from '../../store/meshStore';
 import { useStorageStore } from '../../store/storageStore';
+import { useP2PStore } from '../../store/p2pStore';
 
 const FALLBACK_TIMEZONES = [
   'UTC',
@@ -57,6 +58,11 @@ export function SettingsModal() {
   const hydrateAssets = useStorageStore((state) => state.hydrate);
   const updateAssetVisibility = useStorageStore((state) => state.updateVisibility);
   const deleteAsset = useStorageStore((state) => state.deleteAsset);
+  const p2pStatus = useP2PStore((state) => state.status);
+  const relayMode = useP2PStore((state) => state.relayMode);
+  const toggleRelayMode = useP2PStore((state) => state.toggleRelayMode);
+  const rotateMeshIdentity = useP2PStore((state) => state.rotateIdentity);
+  const burnMeshIdentity = useP2PStore((state) => state.burnIdentity);
 
   const timezoneOptions = useMemo(() => resolveTimezones(), []);
 
@@ -128,6 +134,66 @@ export function SettingsModal() {
         : 'Your node is now private. Only direct invites can connect.',
     });
   }, [addToast, setMeshPreferences]);
+
+  const handleRelayModeToggle = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const nextValue = event.target.checked;
+      try {
+        await toggleRelayMode(nextValue);
+        addToast({
+          title: nextValue ? 'Relay mode activated' : 'Relay mode disabled',
+          variant: 'success',
+          description: nextValue
+            ? 'Your node will donate additional bandwidth and accept routed traffic.'
+            : 'Your node now operates in standard bandwidth conservation mode.',
+        });
+      } catch (error) {
+        console.error('Failed to toggle relay mode', error);
+        addToast({
+          title: 'Relay toggle failed',
+          variant: 'error',
+          description: 'Review console logs for diagnostic details.',
+        });
+      }
+    },
+    [addToast, toggleRelayMode],
+  );
+
+  const handleRotateIdentity = useCallback(async () => {
+    try {
+      await rotateMeshIdentity();
+      addToast({
+        title: 'Identity rotated',
+        variant: 'success',
+        description: 'Fresh cryptographic keys generated for this node.',
+      });
+    } catch (error) {
+      console.error('Failed to rotate identity', error);
+      addToast({
+        title: 'Rotation failed',
+        variant: 'error',
+        description: 'Unable to rotate keys. Inspect console output.',
+      });
+    }
+  }, [addToast, rotateMeshIdentity]);
+
+  const handleBurnIdentity = useCallback(async () => {
+    try {
+      await burnMeshIdentity();
+      addToast({
+        title: 'Identity cleared',
+        variant: 'warning',
+        description: 'All local keys destroyed. Re-authenticate to rejoin the mesh.',
+      });
+    } catch (error) {
+      console.error('Failed to burn identity', error);
+      addToast({
+        title: 'Failed to burn identity',
+        variant: 'error',
+        description: 'Could not remove keys. Check console diagnostics.',
+      });
+    }
+  }, [addToast, burnMeshIdentity]);
 
   const handleAutoAcceptToggle = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const autoAcceptTrusted = event.target.checked;
@@ -349,6 +415,60 @@ export function SettingsModal() {
                     </div>
                   </label>
                 </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-white">Relay Mode</p>
+                    <p className="text-xs text-white/50">
+                      Donate bandwidth and enable onion-routed relaying for other peers.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={relayMode}
+                      onChange={handleRelayModeToggle}
+                      className="peer sr-only"
+                    />
+                    <div className="relative h-6 w-11 rounded-full border border-white/20 bg-white/10 transition peer-checked:border-purple-400/60 peer-checked:bg-purple-500/20">
+                      <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-all duration-300 peer-checked:translate-x-5 peer-checked:bg-purple-300" />
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-emerald-300" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">Mesh Status</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/50">{p2pStatus}</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-white/60">
+                  All Harmonia traffic is end-to-end encrypted and distributed via DHT discovery.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleRotateIdentity}
+                  className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:bg-white/20"
+                >
+                  Rotate Identity
+                  <RefreshCcw className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBurnIdentity}
+                  className="flex w-full items-center justify-between rounded-xl border border-rose-400/60 bg-rose-500/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-rose-200 transition hover:bg-rose-500/20"
+                >
+                  Burn Keys
+                  <Power className="h-4 w-4" />
+                </button>
               </div>
             </div>
 
