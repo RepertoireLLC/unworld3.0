@@ -59,7 +59,7 @@ export function ResonanceFieldPanel() {
         <Sparkles className="h-5 w-5 text-amber-200" />
       </div>
 
-      <div className="ui-grid md:grid-cols-3">
+      <div className="ui-grid ui-grid--balanced">
         <div className="ui-card">
           <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
             <span>Field Integrity</span>

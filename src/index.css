@@ -290,7 +290,7 @@ canvas {
   }
 
   .ui-grid--balanced {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 
   .ui-layout {
@@ -320,6 +320,9 @@ canvas {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .ui-button {
