@@ -141,11 +141,10 @@ export function SettingsModal() {
     });
   }, [addToast, setMeshPreferences]);
 
-  if (!isOpen) {
-    return null;
-  }
-
-  const activeTimezone = getEffectiveTimezone(autoDetect, detectedTimezone, manualTimezone);
+  const activeTimezone = useMemo(
+    () => getEffectiveTimezone(autoDetect, detectedTimezone, manualTimezone),
+    [autoDetect, detectedTimezone, manualTimezone]
+  );
 
   const resolvedTimezone = useMemo(() => {
     try {
@@ -177,6 +176,10 @@ export function SettingsModal() {
       timeZone: resolvedTimezone,
       timeZoneName: 'longGeneric',
     }), [resolvedTimezone]);
+
+  if (!isOpen) {
+    return null;
+  }
 
   const preview = previewFormatter.format(new Date());
   const timezoneLabel = fullNameFormatter
