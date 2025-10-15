@@ -110,3 +110,117 @@ test('node resonance store blends category hues without intensity bias', async (
     'intensity should only inform easing toward the blended hue'
   );
 });
+
+test('chess store orchestrates invites, gameplay, and archival state', async () => {
+  const content = await readSource('src/store/chessStore.ts');
+
+  assert.match(
+    content,
+    /const chessVault = createSecureVault<ChessPersistedState>\({/,
+    'chessStore should persist state through the secure vault'
+  );
+
+  assert.match(
+    content,
+    /sendInvite\(fromUserId, toUserId\)/,
+    'sendInvite should be exposed to coordinate challenges between users'
+  );
+
+  assert.match(
+    content,
+    /acceptInvite: \(/,
+    'acceptInvite should promote pending invites into active games'
+  );
+
+  assert.match(
+    content,
+    /makeMove:\s*\(/,
+    'makeMove should validate and apply moves for multiplayer turns'
+  );
+
+  assert.match(
+    content,
+    /generatePGN\(game, whiteName, blackName\)/,
+    'generatePGN should archive completed games with metadata headers'
+  );
+});
+
+test('reels store manages creation, feed scoring, and retention', async () => {
+  const content = await readSource('src/store/reelsStore.ts');
+
+  assert.match(
+    content,
+    /const reelsVault = createSecureVault<ReelPersistedState>\({/,
+    'reelsStore should encrypt persisted feed state'
+  );
+
+  assert.match(
+    content,
+    /createReel: \(creator, payload\) => {/,
+    'createReel should accept creator context and payload details'
+  );
+
+  assert.match(
+    content,
+    /getFeedForUser: \(options: ReelFeedOptions\) => ReelRecord\[]/,
+    'getFeedForUser should expose recommendation-aware feed assembly'
+  );
+
+  assert.match(
+    content,
+    /toggleLike: \(reelId, userId, displayName\) => {/,
+    'toggleLike should support engagement interactions on reels'
+  );
+
+  assert.match(
+    content,
+    /purgeUserData: \(userId: string\) => void/,
+    'purgeUserData should remove reels when an account is deleted'
+  );
+});
+
+test('settings modal surfaces account, content, privacy, and support hubs', async () => {
+  const content = await readSource('src/components/interface/SettingsModal.tsx');
+
+  assert.match(
+    content,
+    /label: 'Account'/,
+    'settings modal should register the Account category'
+  );
+
+  assert.match(
+    content,
+    /label: 'Content'/,
+    'settings modal should register the Content category'
+  );
+
+  assert.match(
+    content,
+    /label: 'Privacy'/,
+    'settings modal should register the Privacy category'
+  );
+
+  assert.match(
+    content,
+    /label: 'Support'/,
+    'settings modal should register the Support category'
+  );
+
+  assert.match(
+    content,
+    /onSubmit={handleDeleteAccount}/,
+    'settings modal should wire the delete account confirmation form'
+  );
+
+  assert.match(
+    content,
+    /onChange={handleNsfwToggle}/,
+    'settings modal should include the NSFW content toggle control'
+  );
+
+  assert.match(
+    content,
+    /Contact support/,
+    'settings modal should present the contact support form entry point'
+  );
+});
