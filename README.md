@@ -50,6 +50,14 @@ npm run dev
 
 The Vite dev server boots on <http://localhost:5173>. Log in with the mock credentials supplied in the onboarding modal to explore the authenticated experience.
 
+### Linting & Static Integrity Checks
+
+```bash
+npm run lint
+```
+
+Runs Harmonia's lightweight repository guard which verifies that configuration files remain parseable, merge conflict markers do not sneak into commits, and no stray `console.log` statements ship with the client runtime. The check is dependency-free so it operates even in restricted environments.
+
 ### Production Build
 
 ```bash
