@@ -113,3 +113,44 @@ export function generateResonanceRecommendations(
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
+
+export function generateResonantSearchRecommendations(
+  profile: HarmoniaResonanceProfile,
+  videos: YouTubeVideoMetadata[],
+  query: string,
+  limit = 12
+): ResonanceRecommendation[] {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return [];
+  }
+
+  const queryVector = normalizeVector(vectorFromText(trimmedQuery, 1));
+  const recommendations: ResonanceRecommendation[] = [];
+
+  videos.forEach((video) => {
+    const embedding = computeVideoEmbedding(video);
+    const tone = computeToneAlignment(video, profile);
+    const { score: resonanceScore, alignment } = computeResonanceScore(profile, embedding, tone);
+    const queryMatch = clamp(cosineSimilarity(queryVector, embedding), 0, 1);
+
+    if (queryMatch < 0.08) {
+      return;
+    }
+
+    const score = clamp(queryMatch * 0.6 + resonanceScore * 0.4, 0, 1);
+    const threadIntensity = clamp(alignment * 0.4 + queryMatch * 0.6, 0, 1);
+
+    recommendations.push({
+      video,
+      tone,
+      score,
+      alignment,
+      threadIntensity,
+    });
+  });
+
+  return recommendations
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}

@@ -1,6 +1,6 @@
 import { generateOAuthSession, exchangeOAuthCode, refreshAccessToken } from './auth';
 import { YouTubeClient } from './client';
-import { generateResonanceRecommendations } from './recommendations';
+import { generateResonanceRecommendations, generateResonantSearchRecommendations } from './recommendations';
 import type {
   HarmoniaResonanceProfile,
   LinkedYouTubeAccount,
@@ -68,6 +68,34 @@ export class YouTubeIntegration {
     videos: YouTubeVideoMetadata[]
   ): ResonanceRecommendation[] {
     return generateResonanceRecommendations(profile, videos);
+  }
+
+  async searchResonantVideos(
+    profile: HarmoniaResonanceProfile,
+    account: LinkedYouTubeAccount,
+    query: string,
+    options: { limit?: number } = {}
+  ): Promise<ResonanceRecommendation[]> {
+    const client = new YouTubeClient(account.tokens);
+    const maxResults = Math.min(Math.max((options.limit ?? 12) * 2, 12), 50);
+    const searchResults = await client.searchVideos(query, {
+      maxResults,
+      channelId: account.channelId,
+    });
+
+    const enrichedResults = await Promise.all(
+      searchResults.map(async (video) => {
+        const transcript = await client.fetchTranscript(video.id).catch(() => undefined);
+        return { ...video, transcript } as YouTubeVideoMetadata;
+      })
+    );
+
+    return generateResonantSearchRecommendations(
+      profile,
+      enrichedResults,
+      query,
+      options.limit
+    );
   }
 }
 

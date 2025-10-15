@@ -5,13 +5,25 @@ interface FetchVideosOptions {
   maxResults?: number;
 }
 
+interface SearchVideosOptions extends FetchVideosOptions {
+  channelId?: string;
+  publishedAfter?: string;
+}
+
 interface YouTubeListResponse<T> {
   items: T[];
   nextPageToken?: string;
 }
 
+type SearchIdentifier =
+  | string
+  | {
+      videoId?: string;
+      channelId?: string;
+    };
+
 interface SnippetItem {
-  id: string;
+  id: SearchIdentifier;
   snippet: {
     title: string;
     description: string;
@@ -20,7 +32,20 @@ interface SnippetItem {
     channelId?: string;
     channelTitle?: string;
     publishedAt?: string;
+    resourceId?: {
+      channelId?: string;
+    };
   };
+}
+
+function resolveVideoId(item: SnippetItem): string | undefined {
+  if (typeof item.id === 'string') {
+    return item.id;
+  }
+  if (item.id?.videoId) {
+    return item.id.videoId;
+  }
+  return undefined;
 }
 
 export class YouTubeClient {
@@ -58,16 +83,24 @@ export class YouTubeClient {
 
     const response = await this.authorizedFetch<YouTubeListResponse<SnippetItem>>(baseUrl.toString());
 
-    return response.items.map((item) => ({
-      id: item.id,
-      title: item.snippet.title,
-      description: item.snippet.description,
-      tags: item.snippet.tags ?? [],
-      category: item.snippet.categoryId,
-      channelId: item.snippet.channelId,
-      channelTitle: item.snippet.channelTitle,
-      publishedAt: item.snippet.publishedAt,
-    }));
+    return response.items
+      .map((item) => {
+        const id = resolveVideoId(item);
+        if (!id) {
+          return undefined;
+        }
+        return {
+          id,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          tags: item.snippet.tags ?? [],
+          category: item.snippet.categoryId,
+          channelId: item.snippet.channelId,
+          channelTitle: item.snippet.channelTitle,
+          publishedAt: item.snippet.publishedAt,
+        } satisfies YouTubeVideoMetadata;
+      })
+      .filter((video): video is YouTubeVideoMetadata => Boolean(video));
   }
 
   async listLikedVideos(options: FetchVideosOptions = {}): Promise<YouTubeVideoMetadata[]> {
@@ -79,16 +112,24 @@ export class YouTubeClient {
 
     const response = await this.authorizedFetch<YouTubeListResponse<SnippetItem>>(baseUrl.toString());
 
-    return response.items.map((item) => ({
-      id: item.id,
-      title: item.snippet.title,
-      description: item.snippet.description,
-      tags: item.snippet.tags ?? [],
-      category: item.snippet.categoryId,
-      channelId: item.snippet.channelId,
-      channelTitle: item.snippet.channelTitle,
-      publishedAt: item.snippet.publishedAt,
-    }));
+    return response.items
+      .map((item) => {
+        const id = resolveVideoId(item);
+        if (!id) {
+          return undefined;
+        }
+        return {
+          id,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          tags: item.snippet.tags ?? [],
+          category: item.snippet.categoryId,
+          channelId: item.snippet.channelId,
+          channelTitle: item.snippet.channelTitle,
+          publishedAt: item.snippet.publishedAt,
+        } satisfies YouTubeVideoMetadata;
+      })
+      .filter((video): video is YouTubeVideoMetadata => Boolean(video));
   }
 
   async listSubscriptionVideos(options: FetchVideosOptions = {}): Promise<YouTubeVideoMetadata[]> {
@@ -102,7 +143,8 @@ export class YouTubeClient {
 
     const videos: YouTubeVideoMetadata[] = [];
     for (const subscription of subscriptions.items) {
-      const channelId = subscription.snippet.channelId;
+      const channelId =
+        subscription.snippet.resourceId?.channelId ?? subscription.snippet.channelId;
       if (!channelId) {
         continue;
       }
@@ -110,6 +152,51 @@ export class YouTubeClient {
       videos.push(...channelVideos);
     }
     return videos;
+  }
+
+  async searchVideos(query: string, options: SearchVideosOptions = {}): Promise<YouTubeVideoMetadata[]> {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    const maxResults = options.maxResults ?? 25;
+    const apiKey = getYouTubeApiKey();
+    const baseUrl = new URL('https://www.googleapis.com/youtube/v3/search');
+    baseUrl.searchParams.set('part', 'snippet');
+    baseUrl.searchParams.set('type', 'video');
+    baseUrl.searchParams.set('maxResults', String(maxResults));
+    baseUrl.searchParams.set('q', trimmed);
+    baseUrl.searchParams.set('key', apiKey);
+    baseUrl.searchParams.set('order', 'relevance');
+
+    if (options.channelId) {
+      baseUrl.searchParams.set('channelId', options.channelId);
+    }
+    if (options.publishedAfter) {
+      baseUrl.searchParams.set('publishedAfter', options.publishedAfter);
+    }
+
+    const response = await this.authorizedFetch<YouTubeListResponse<SnippetItem>>(baseUrl.toString());
+
+    return response.items
+      .map((item) => {
+        const id = resolveVideoId(item);
+        if (!id) {
+          return undefined;
+        }
+        return {
+          id,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          tags: item.snippet.tags ?? [],
+          category: item.snippet.categoryId,
+          channelId: item.snippet.channelId,
+          channelTitle: item.snippet.channelTitle,
+          publishedAt: item.snippet.publishedAt,
+        } satisfies YouTubeVideoMetadata;
+      })
+      .filter((video): video is YouTubeVideoMetadata => Boolean(video));
   }
 
   async fetchTranscript(videoId: string): Promise<string | undefined> {
