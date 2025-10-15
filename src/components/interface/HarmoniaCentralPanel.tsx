@@ -1,5 +1,5 @@
 import { useAgoraStore } from '../../store/agoraStore';
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { BroadcastPanel } from './BroadcastPanel';
 import { HarmoniaAgoraPanel } from '../agora/HarmoniaAgoraPanel';
 import { RadioTower, Atom, Users } from 'lucide-react';
@@ -24,13 +24,37 @@ const tabs = [
 
 export function HarmoniaCentralPanel() {
   const { activeTab, setActiveTab } = useAgoraStore();
-  const [ensureTab, workspaceActiveTab, openThreadTab, setWorkspaceActiveTab, workspaceTabs] = useWorkspaceStore((state) => [
-    state.ensureTab,
-    state.getActiveTab(),
-    state.openThreadTab,
-    state.setActiveTab,
-    state.tabs,
-  ]);
+  const [ensureTab, activeWorkspaceTabId, openThreadTab, setWorkspaceActiveTab, workspaceTabs] =
+    useWorkspaceStore((state) => [
+      state.ensureTab,
+      state.activeTabId,
+      state.openThreadTab,
+      state.setActiveTab,
+      state.tabs,
+    ]);
+
+  const workspaceActiveTab = useMemo(
+    () => workspaceTabs.find((tab) => tab.id === activeWorkspaceTabId),
+    [workspaceTabs, activeWorkspaceTabId]
+  );
+
+  const syncSourceRef = useRef<'workspace' | 'agora' | null>(null);
+  const previousActiveTabRef = useRef(activeTab);
+  const previousWorkspaceTabIdRef = useRef(activeWorkspaceTabId);
+
+  useEffect(() => {
+    if (previousActiveTabRef.current !== activeTab) {
+      previousActiveTabRef.current = activeTab;
+      syncSourceRef.current = 'agora';
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (previousWorkspaceTabIdRef.current !== activeWorkspaceTabId) {
+      previousWorkspaceTabIdRef.current = activeWorkspaceTabId;
+      syncSourceRef.current = syncSourceRef.current === 'agora' ? null : 'workspace';
+    }
+  }, [activeWorkspaceTabId]);
 
   useEffect(() => {
     ensureTab({ id: 'broadcast', title: 'Quantum Broadcast', type: 'broadcast', closable: false });
@@ -39,24 +63,40 @@ export function HarmoniaCentralPanel() {
 
   useEffect(() => {
     if (!workspaceActiveTab) {
+      syncSourceRef.current = null;
       return;
     }
-    if (workspaceActiveTab.id === 'broadcast' && activeTab !== 'broadcast') {
-      setActiveTab('broadcast');
+    if (workspaceActiveTab.id !== 'broadcast' && workspaceActiveTab.id !== 'agora') {
+      syncSourceRef.current = null;
+      return;
     }
-    if (workspaceActiveTab.id === 'agora' && activeTab !== 'agora') {
-      setActiveTab('agora');
+    if (workspaceActiveTab.id === activeTab) {
+      syncSourceRef.current = null;
+      return;
     }
+    if (syncSourceRef.current === 'agora') {
+      syncSourceRef.current = null;
+      return;
+    }
+    syncSourceRef.current = 'workspace';
+    setActiveTab(workspaceActiveTab.id);
   }, [workspaceActiveTab, activeTab, setActiveTab]);
 
   useEffect(() => {
-    if (activeTab === 'broadcast') {
-      setWorkspaceActiveTab('broadcast');
+    if (!workspaceTabs.some((tab) => tab.id === activeTab)) {
+      return;
     }
-    if (activeTab === 'agora') {
-      setWorkspaceActiveTab('agora');
+    if (workspaceActiveTab?.id === activeTab) {
+      syncSourceRef.current = null;
+      return;
     }
-  }, [activeTab, setWorkspaceActiveTab]);
+    if (syncSourceRef.current === 'workspace') {
+      syncSourceRef.current = null;
+      return;
+    }
+    syncSourceRef.current = 'agora';
+    setWorkspaceActiveTab(activeTab);
+  }, [activeTab, workspaceActiveTab?.id, workspaceTabs, setWorkspaceActiveTab]);
 
   const handleOpenThread = useCallback(
     (postId: string, title: string) => {
