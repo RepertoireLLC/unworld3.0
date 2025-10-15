@@ -23,13 +23,18 @@ export function WorkspaceTabs() {
     [tabs]
   );
 
-  if (sortedTabs.length === 0) {
+  const closableTabs = useMemo(
+    () => sortedTabs.filter((tab) => tab.closable),
+    [sortedTabs]
+  );
+
+  if (closableTabs.length === 0) {
     return null;
   }
 
   return (
     <nav className="flex items-center gap-2 overflow-x-auto pb-2">
-      {sortedTabs.map((tab) => {
+      {closableTabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         return (
           <div key={tab.id} className="flex items-center">
