@@ -2,8 +2,6 @@ import { create } from 'zustand';
 import { useMemoryStore, getConversationId } from './memoryStore';
 import { generateId } from '../utils/id';
 import { dispatchConsciousEvent } from '../core/consciousCore';
-import { analyzeResonance } from '../utils/resonance';
-import { useResonanceStore } from './resonanceStore';
 
 interface Message {
   id: string;
@@ -44,35 +42,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const conversationId = getConversationId(fromUserId, toUserId);
     const role = options?.role ?? 'user';
-    const resonance = analyzeResonance(content, { role });
-    const pulse = useResonanceStore.getState().recordPulse({
-      conversationId,
-      fromUserId,
-      toUserId,
-      magnitude: resonance.magnitude,
-      coherence: resonance.coherence,
-      tone: resonance.tone,
-      spectrum: resonance.spectrum,
-      messagePreview: resonance.preview,
-      timestamp,
-    });
-
     void useMemoryStore.getState().appendMessage({
       conversationId,
       fromUserId,
       toUserId,
       role,
       content,
-    });
-    void dispatchConsciousEvent({
-      type: 'resonance:pulse',
-      nodeId: conversationId,
-      payload: {
-        pulseId: pulse.id,
-        tone: pulse.tone,
-        magnitude: pulse.magnitude,
-        coherence: pulse.coherence,
-      },
     });
     void dispatchConsciousEvent({
       type: 'memory:updated',

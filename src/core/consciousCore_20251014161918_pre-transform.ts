@@ -1,14 +1,12 @@
 import { useAIStore } from '../store/aiStore';
 import { useMemoryStore } from '../store/memoryStore';
 import { logAIIntegration } from '../utils/logger';
-import { useResonanceStore } from '../store/resonanceStore';
 
 export type ConsciousEventType =
   | 'ai:response'
   | 'memory:updated'
   | 'sync:heal'
-  | 'profile:opened'
-  | 'resonance:pulse';
+  | 'profile:opened';
 
 export interface ConsciousEvent<TPayload = unknown> {
   type: ConsciousEventType;
@@ -89,33 +87,6 @@ export async function initializeConsciousCore() {
       }
       if (event.nodeId) {
         await useMemoryStore.getState().selfHeal(event.nodeId);
-      }
-    },
-  });
-
-  registerConsciousModule({
-    id: 'harmonia-resonance-observatory',
-    name: 'Resonance Observatory',
-    description: 'Monitors resonance pulses to keep the field coherent and empathetic.',
-    async onEvent(event) {
-      if (event.type !== 'resonance:pulse') {
-        return;
-      }
-
-      const resonanceState = useResonanceStore.getState();
-      const fieldIntegrity = resonanceState.fieldIntegrity;
-
-      if (event.nodeId) {
-        const nodeSummary = resonanceState.getNodeSummary(event.nodeId);
-        if (nodeSummary.averageCoherence < 0.35) {
-          await logAIIntegration(
-            `Resonance Observatory: low coherence detected on ${event.nodeId}. Initiating reflective harmonics.`
-          );
-        }
-      }
-
-      if (fieldIntegrity < 0.45) {
-        await logAIIntegration('Resonance Observatory: field integrity trending low. Broadcasting unity pulse.');
       }
     },
   });
