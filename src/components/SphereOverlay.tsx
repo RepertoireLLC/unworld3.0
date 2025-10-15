@@ -49,17 +49,82 @@ export function SphereOverlay() {
     }
 
     const element = overlayRef.current;
+    const target = element as (typeof element & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      mozRequestFullScreen?: () => Promise<void> | void;
+      msRequestFullscreen?: () => Promise<void> | void;
+    }) | null;
 
-    if (isFullscreen && element && document.fullscreenElement !== element) {
-      void element
-        .requestFullscreen()
-        .catch((error) => {
-          console.error('Failed to enter fullscreen mode:', error);
-        });
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+      mozCancelFullScreen?: () => Promise<void> | void;
+      msExitFullscreen?: () => Promise<void> | void;
+      webkitFullscreenElement?: Element | null;
+      mozFullScreenElement?: Element | null;
+      msFullscreenElement?: Element | null;
+    };
+
+    const getActiveFullscreenElement = () =>
+      doc.fullscreenElement ??
+      doc.webkitFullscreenElement ??
+      doc.mozFullScreenElement ??
+      doc.msFullscreenElement ??
+      null;
+
+    const requestFullscreen = async () => {
+      if (!target) {
+        return;
+      }
+
+      if (typeof target.requestFullscreen === 'function') {
+        await target.requestFullscreen();
+        return;
+      }
+
+      const fallbackRequest =
+        target.webkitRequestFullscreen ??
+        target.mozRequestFullScreen ??
+        target.msRequestFullscreen;
+
+      if (typeof fallbackRequest === 'function') {
+        const result = fallbackRequest.call(target);
+        if (result instanceof Promise) {
+          await result;
+        }
+        return;
+      }
+
+      console.warn('Fullscreen API is not supported in this browser. Continuing without native fullscreen.');
+    };
+
+    const exitFullscreen = async () => {
+      if (typeof doc.exitFullscreen === 'function') {
+        await doc.exitFullscreen();
+        return;
+      }
+
+      const fallbackExit =
+        doc.webkitExitFullscreen ??
+        doc.mozCancelFullScreen ??
+        doc.msExitFullscreen;
+
+      if (typeof fallbackExit === 'function') {
+        const result = fallbackExit.call(doc);
+        if (result instanceof Promise) {
+          await result;
+        }
+        return;
+      }
+    };
+
+    if (isFullscreen && element && getActiveFullscreenElement() !== element) {
+      void requestFullscreen().catch((error) => {
+        console.error('Failed to enter fullscreen mode:', error);
+      });
     }
 
-    if (!isFullscreen && document.fullscreenElement === element) {
-      void document.exitFullscreen().catch((error) => {
+    if (!isFullscreen && element && getActiveFullscreenElement() === element) {
+      void exitFullscreen().catch((error) => {
         console.error('Failed to exit fullscreen mode:', error);
       });
     }
@@ -70,9 +135,23 @@ export function SphereOverlay() {
       return;
     }
 
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      mozFullScreenElement?: Element | null;
+      msFullscreenElement?: Element | null;
+    };
+
+    const getActiveFullscreenElement = () =>
+      doc.fullscreenElement ??
+      doc.webkitFullscreenElement ??
+      doc.mozFullScreenElement ??
+      doc.msFullscreenElement ??
+      null;
+
     const handleFullscreenChange = () => {
       const element = overlayRef.current;
-      const isActiveFullscreen = document.fullscreenElement === element;
+      const activeElement = getActiveFullscreenElement();
+      const isActiveFullscreen = activeElement === element;
       setIsBrowserFullscreen(isActiveFullscreen);
 
       if (!isActiveFullscreen && isFullscreen) {
@@ -81,9 +160,15 @@ export function SphereOverlay() {
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, [isFullscreen, setFullscreen]);
 
