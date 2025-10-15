@@ -13,7 +13,7 @@ export function HeaderBar() {
   const themeLabel = getThemeDisplayName(currentThemeId, customThemes);
 
   return (
-    <header className="ui-panel ui-panel--muted gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <header className="ui-panel ui-panel--muted ui-panel--allow-overflow gap-6 lg:flex-row lg:items-center lg:justify-between">
       <div className="ui-stack gap-2">
         <span className="ui-section-label">Encrypted Relay // Broadcast</span>
         <h1 className="ui-panel__title">Quantum Link Console</h1>

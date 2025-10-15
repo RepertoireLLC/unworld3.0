@@ -209,6 +209,10 @@ canvas {
     box-shadow: none;
   }
 
+  .ui-panel--allow-overflow {
+    overflow: visible;
+  }
+
   .ui-section-label {
     font-size: 0.68rem;
     text-transform: uppercase;
