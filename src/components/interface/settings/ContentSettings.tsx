@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { EyeOff, Eye } from 'lucide-react';
-import { ThemeCustomizationPanel } from '../ThemeCustomizationPanel';
 import { useAuthStore } from '../../../store/authStore';
 import { useToastStore } from '../../../store/toastStore';
 
@@ -89,21 +88,6 @@ export function ContentSettings({ isActive: _isActive }: ContentSettingsProps) {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.8)]">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Visual Identity</p>
-            <h3 className="mt-1 text-lg font-semibold text-white">Theme Customization Studio</h3>
-          </div>
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
-            Immersive Mode
-          </span>
-        </div>
-
-        <div className="mt-6 rounded-3xl border border-white/10 bg-slate-950/60 p-6">
-          <ThemeCustomizationPanel />
-        </div>
-      </section>
     </div>
   );
 }
