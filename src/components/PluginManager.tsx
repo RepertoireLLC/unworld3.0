@@ -1,5 +1,5 @@
 import { type ChangeEvent, useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff, Search, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Lock, Search, Sparkles } from 'lucide-react';
 import { usePluginRegistry, type PluginModuleMeta } from '../core/pluginRegistry';
 
 const toSentence = (value?: string | null): string => {
@@ -75,10 +75,21 @@ export function PluginManager({ isActive }: PluginManagerProps) {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [categories, filteredPlugins]);
 
-  const hasHiddenPlugin = useMemo(() => plugins.some((plugin) => !plugin.isVisible), [plugins]);
+  const hasToggleablePlugins = useMemo(
+    () => plugins.some((plugin) => !plugin.isProtected),
+    [plugins],
+  );
+
+  const hasHiddenPlugin = useMemo(
+    () => plugins.some((plugin) => !plugin.isVisible && !plugin.isProtected),
+    [plugins],
+  );
   const hasResults = filteredPlugins.length > 0;
 
   const handleShowHideAll = () => {
+    if (!hasToggleablePlugins) {
+      return;
+    }
     setAllPluginsVisibility(hasHiddenPlugin);
   };
 
@@ -103,7 +114,18 @@ export function PluginManager({ isActive }: PluginManagerProps) {
           <button
             type="button"
             onClick={handleShowHideAll}
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
+            className={`inline-flex items-center gap-2 self-start rounded-xl border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+              hasToggleablePlugins
+                ? 'bg-white/10 text-white/70 hover:bg-white/20 focus-visible:outline-white/60'
+                : 'cursor-not-allowed bg-white/5 text-white/40'
+            }`}
+            disabled={!hasToggleablePlugins}
+            aria-disabled={!hasToggleablePlugins}
+            title={
+              hasToggleablePlugins
+                ? undefined
+                : 'All visible modules in this view are protected and cannot be hidden.'
+            }
           >
             {hasHiddenPlugin ? (
               <>
@@ -153,6 +175,7 @@ export function PluginManager({ isActive }: PluginManagerProps) {
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {group.plugins.map((plugin) => {
                 const isVisible = plugin.isVisible !== false;
+                const isProtected = plugin.isProtected;
                 return (
                   <div key={plugin.id} className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-5">
                     <div className="flex items-start justify-between gap-3">
@@ -163,28 +186,53 @@ export function PluginManager({ isActive }: PluginManagerProps) {
                           {toSentence(plugin.origin)} • {plugin.componentPath}
                         </p>
                       </div>
-                      <label className="relative inline-flex cursor-pointer items-center">
+                      <label
+                        className={`relative inline-flex items-center ${
+                          isProtected ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                        }`}
+                        aria-disabled={isProtected}
+                        title={isProtected ? 'Core interface layers cannot be hidden.' : undefined}
+                      >
                         <input
                           type="checkbox"
                           checked={isVisible}
                           onChange={() => togglePlugin(plugin.id)}
                           className="peer sr-only"
+                          disabled={isProtected}
                         />
-                        <div className="relative h-6 w-11 rounded-full border border-white/20 bg-white/10 transition peer-checked:border-emerald-400/60 peer-checked:bg-emerald-500/20">
-                          <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-all duration-300 peer-checked:translate-x-5 peer-checked:bg-emerald-300" />
+                        <div
+                          className={`relative h-6 w-11 rounded-full border border-white/20 bg-white/10 transition ${
+                            isProtected
+                              ? 'border-white/10 bg-white/5'
+                              : 'peer-checked:border-emerald-400/60 peer-checked:bg-emerald-500/20'
+                          }`}
+                        >
+                          <span
+                            className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-all duration-300 ${
+                              isProtected
+                                ? ''
+                                : 'peer-checked:translate-x-5 peer-checked:bg-emerald-300'
+                            }`}
+                          />
                         </div>
                       </label>
                     </div>
-                    <div
-                      className={`mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.35em] ${
-                        isVisible
-                          ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200'
-                          : 'border-white/10 bg-slate-950/60 text-white/50'
-                      }`}
-                    >
-                      {isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      {isVisible ? 'Visible' : 'Hidden'}
-                    </div>
+                    {isProtected ? (
+                      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-200">
+                        <Lock className="h-3.5 w-3.5" /> Protected Core Layer
+                      </div>
+                    ) : (
+                      <div
+                        className={`mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.35em] ${
+                          isVisible
+                            ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200'
+                            : 'border-white/10 bg-slate-950/60 text-white/50'
+                        }`}
+                      >
+                        {isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                        {isVisible ? 'Visible' : 'Hidden'}
+                      </div>
+                    )}
                   </div>
                 );
               })}
