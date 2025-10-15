@@ -22,6 +22,7 @@ import { SettingsModal } from './components/interface/SettingsModal';
 import { useInterestStore } from './store/interestStore';
 import { useForumStore } from './store/forumStore';
 import { useMeshStore } from './store/meshStore';
+import { useInitializePluginRegistry, usePluginVisibility } from './core/pluginRegistry';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -36,6 +37,18 @@ export function App() {
   const ensureInterestProfile = useInterestStore((state) => state.ensureProfile);
   const initializeForumSync = useForumStore((state) => state.initializeSyncChannel);
   const initializeMesh = useMeshStore((state) => state.initialize);
+  useInitializePluginRegistry();
+
+  const showTimeDisplay = usePluginVisibility('time-display');
+  const showHeaderBar = usePluginVisibility('header-bar');
+  const showControlPanel = usePluginVisibility('control-panel');
+  const showCentralPanel = usePluginVisibility('harmonia-central-panel');
+  const showFieldNotesPanel = usePluginVisibility('field-notes-panel');
+  const showSphereOverlay = usePluginVisibility('sphere-overlay');
+  const showProfileModal = usePluginVisibility('profile-modal');
+  const showChatWindow = usePluginVisibility('chat-window');
+  const showAIIntegrationPanel = usePluginVisibility('ai-integration-panel');
+  const showToastStack = usePluginVisibility('toast-stack');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -116,36 +129,36 @@ export function App() {
         />
       ))}
 
-      <TimeDisplay />
+      {showTimeDisplay && <TimeDisplay />}
 
       {isAuthenticated ? (
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
-          <HeaderBar />
+          {showHeaderBar && <HeaderBar />}
 
           <main
             className="grid min-h-0 flex-1 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]"
             style={{ gap: `${tokens.spacing}px` }}
           >
             <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
-              <ControlPanel />
+              {showControlPanel ? <ControlPanel /> : null}
             </div>
             <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
-              <HarmoniaCentralPanel />
+              {showCentralPanel ? <HarmoniaCentralPanel /> : null}
             </div>
             <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
-              <FieldNotesPanel />
+              {showFieldNotesPanel ? <FieldNotesPanel /> : null}
             </div>
           </main>
 
-          <SphereOverlay />
+          {showSphereOverlay && <SphereOverlay />}
 
-          {profileUserId && (
+          {profileUserId && showProfileModal && (
             <ProfileModal
               userId={profileUserId}
               onClose={() => setProfileUserId(null)}
             />
           )}
-          {activeChat && (
+          {activeChat && showChatWindow && (
             <ChatWindow
               userId={activeChat}
               onClose={() => setActiveChat(null)}
@@ -155,8 +168,8 @@ export function App() {
       ) : (
         <AuthModal />
       )}
-      <AIIntegrationPanel />
-      <ToastStack />
+      {showAIIntegrationPanel && <AIIntegrationPanel />}
+      {showToastStack && <ToastStack />}
       <SettingsModal />
     </div>
   );
