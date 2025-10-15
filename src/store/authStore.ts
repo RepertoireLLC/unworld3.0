@@ -10,6 +10,41 @@ import { useChatStore } from './chatStore';
 import { useMemoryStore } from './memoryStore';
 import { useStorageStore } from './storageStore';
 
+const HEX_FULL_PATTERN = /^#?[0-9a-fA-F]{6}$/;
+const HEX_SHORT_PATTERN = /^#?[0-9a-fA-F]{3}$/;
+
+const generateRandomColor = () =>
+  `#${Math.floor(Math.random() * 0xffffff)
+    .toString(16)
+    .padStart(6, '0')}`;
+
+const normalizeHexColor = (input: string | undefined | null, fallback?: string) => {
+  if (!input) {
+    return fallback ?? generateRandomColor();
+  }
+
+  const trimmed = input.trim();
+  if (trimmed.length === 0) {
+    return fallback ?? generateRandomColor();
+  }
+
+  if (HEX_FULL_PATTERN.test(trimmed)) {
+    const normalized = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
+    return `#${normalized.toUpperCase()}`;
+  }
+
+  if (HEX_SHORT_PATTERN.test(trimmed)) {
+    const normalized = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
+    const expanded = normalized
+      .split('')
+      .map((char) => char + char)
+      .join('');
+    return `#${expanded.toUpperCase()}`;
+  }
+
+  return fallback ?? generateRandomColor();
+};
+
 interface UserPreferences {
   nsfwAllowed: boolean;
 }
@@ -65,12 +100,14 @@ export const useAuthStore = create<AuthState>()(
           nsfwAllowed: false,
         };
 
+        const resolvedColor = normalizeHexColor(userData.color);
+
         const newUser: User = {
           id: `user_${Date.now()}`,
           name: userData.name || userData.email.split('@')[0],
           email: userData.email,
           password: userData.password,
-          color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
+          color: resolvedColor,
           themePreferences: defaultThemePreferences,
           preferences: defaultPreferences,
           accountStatus: 'active',
@@ -104,19 +141,21 @@ export const useAuthStore = create<AuthState>()(
         );
 
         if (foundUser) {
+          const normalizedColor = normalizeHexColor(foundUser.color, foundUser.color);
           const normalizedPreferences: UserPreferences = {
             nsfwAllowed: foundUser.preferences?.nsfwAllowed ?? false,
           };
 
           const normalizedUser: User = {
             ...foundUser,
+            color: normalizedColor,
             themePreferences: foundUser.themePreferences,
             preferences: normalizedPreferences,
             accountStatus: foundUser.accountStatus ?? 'active',
           };
 
           const updatedRegisteredUsers = registeredUsers.map((existing) =>
-            existing.id === normalizedUser.id ? normalizedUser : existing
+            existing.id === normalizedUser.id ? { ...normalizedUser } : existing
           );
 
           if (normalizedUser.accountStatus === 'deactivated') {
@@ -158,6 +197,11 @@ export const useAuthStore = create<AuthState>()(
         set((state) => {
           if (!state.user) return state;
 
+          const sanitizedUpdates: Partial<User> = { ...updates };
+          if (updates.color !== undefined) {
+            sanitizedUpdates.color = normalizeHexColor(updates.color, state.user.color);
+          }
+
           const mergedPreferences: UserPreferences = updates.preferences
             ? {
                 ...state.user.preferences,
@@ -181,7 +225,7 @@ export const useAuthStore = create<AuthState>()(
 
           const updatedUser: User = {
             ...state.user,
-            ...updates,
+            ...sanitizedUpdates,
             themePreferences: mergedThemePreferences,
             preferences: mergedPreferences,
             accountStatus: updates.accountStatus ?? state.user.accountStatus ?? 'active',
@@ -194,8 +238,8 @@ export const useAuthStore = create<AuthState>()(
 
           // Update in user store
           const { updateUserColor } = useUserStore.getState();
-          if (updates.color) {
-            updateUserColor(updatedUser.id, updates.color);
+          if (updates.color !== undefined) {
+            updateUserColor(updatedUser.id, updatedUser.color);
           }
 
           useThemeStore.getState().hydrateFromPreferences(updatedUser.themePreferences);
