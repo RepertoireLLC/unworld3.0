@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NotebookPen, Lock, Save, RefreshCcw, Tag } from 'lucide-react';
 import { ResonanceFieldPanel } from './ResonanceFieldPanel';
+import { HarmonicResonanceFeed } from './HarmonicResonanceFeed';
 
 interface SavedLog {
   id: string;
@@ -56,6 +57,7 @@ export function FieldNotesPanel() {
 
   return (
     <aside className="space-y-6">
+      <HarmonicResonanceFeed />
       <ResonanceFieldPanel />
       <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
         <div className="flex items-center justify-between">
