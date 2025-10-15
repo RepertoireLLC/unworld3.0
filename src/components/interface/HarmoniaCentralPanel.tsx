@@ -1,5 +1,5 @@
 import { useAgoraStore } from '../../store/agoraStore';
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { BroadcastPanel } from './BroadcastPanel';
 import { HarmoniaAgoraPanel } from '../agora/HarmoniaAgoraPanel';
 import { RadioTower, Atom, Users } from 'lucide-react';
@@ -31,6 +31,8 @@ export function HarmoniaCentralPanel() {
     state.setActiveTab,
     state.tabs,
   ]);
+  const workspaceActiveTabId = workspaceActiveTab?.id;
+  const activeSyncSource = useRef<'workspace' | 'agora' | null>(null);
 
   useEffect(() => {
     ensureTab({ id: 'broadcast', title: 'Quantum Broadcast', type: 'broadcast', closable: false });
@@ -38,25 +40,37 @@ export function HarmoniaCentralPanel() {
   }, [ensureTab]);
 
   useEffect(() => {
-    if (!workspaceActiveTab) {
+    if (!workspaceActiveTabId) {
       return;
     }
-    if (workspaceActiveTab.id === 'broadcast' && activeTab !== 'broadcast') {
+    if (activeSyncSource.current === 'agora') {
+      activeSyncSource.current = null;
+      return;
+    }
+    if (workspaceActiveTabId === 'broadcast' && activeTab !== 'broadcast') {
+      activeSyncSource.current = 'workspace';
       setActiveTab('broadcast');
     }
-    if (workspaceActiveTab.id === 'agora' && activeTab !== 'agora') {
+    if (workspaceActiveTabId === 'agora' && activeTab !== 'agora') {
+      activeSyncSource.current = 'workspace';
       setActiveTab('agora');
     }
-  }, [workspaceActiveTab, activeTab, setActiveTab]);
+  }, [workspaceActiveTabId, activeTab, setActiveTab]);
 
   useEffect(() => {
-    if (activeTab === 'broadcast') {
+    if (activeSyncSource.current === 'workspace') {
+      activeSyncSource.current = null;
+      return;
+    }
+    if (activeTab === 'broadcast' && workspaceActiveTabId !== 'broadcast') {
+      activeSyncSource.current = 'agora';
       setWorkspaceActiveTab('broadcast');
     }
-    if (activeTab === 'agora') {
+    if (activeTab === 'agora' && workspaceActiveTabId !== 'agora') {
+      activeSyncSource.current = 'agora';
       setWorkspaceActiveTab('agora');
     }
-  }, [activeTab, setWorkspaceActiveTab]);
+  }, [activeTab, workspaceActiveTabId, setWorkspaceActiveTab]);
 
   const handleOpenThread = useCallback(
     (postId: string, title: string) => {
