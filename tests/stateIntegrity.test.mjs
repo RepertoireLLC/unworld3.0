@@ -76,3 +76,37 @@ test('theme catalog exposes multiple builtin themes with gradients', async () =>
     'withAlpha should handle existing rgb color definitions'
   );
 });
+
+test('node resonance store blends category hues without intensity bias', async () => {
+  const content = await readSource('src/store/nodeResonanceStore.ts');
+
+  assert.match(
+    content,
+    /const baselineContribution = 0\.4;/,
+    'baseline contribution should remain at 0.4 to favor recent activity in blends'
+  );
+
+  assert.match(
+    content,
+    /recent\[category] = \(recent\[category] \?\? 0\) \+ weight \* recentContribution;/,
+    'recent weights should accumulate without intensity scaling to honor category ratios'
+  );
+
+  assert.doesNotMatch(
+    content,
+    /weight \* intensity/,
+    'category weights should not multiply by interaction intensity'
+  );
+
+  assert.match(
+    content,
+    /const blendedColor = blendCategoryColors\(normalizedComposite\);/,
+    'normalized composites should resolve through the category blend helper'
+  );
+
+  assert.match(
+    content,
+    /blendWithCurrentColor\(entry, blendedColor, intensity\);/,
+    'intensity should only inform easing toward the blended hue'
+  );
+});
