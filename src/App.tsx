@@ -17,7 +17,6 @@ import { ToastStack } from './components/interface/ToastStack';
 import { initializeAIRouter } from './core/aiRouter';
 import { useAIStore } from './store/aiStore';
 import { initializeConsciousCore, dispatchConsciousEvent } from './core/consciousCore';
-import { TimeDisplay } from './components/interface/TimeDisplay';
 import { SettingsModal } from './components/interface/SettingsModal';
 import { useInterestStore } from './store/interestStore';
 import { useForumStore } from './store/forumStore';
@@ -129,11 +128,9 @@ export function App() {
         />
       ))}
 
-      {showTimeDisplay && <TimeDisplay />}
-
       {isAuthenticated ? (
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
-          {showHeaderBar && <HeaderBar />}
+          {showHeaderBar && <HeaderBar showTimeDisplay={showTimeDisplay} />}
 
           <main
             className="grid min-h-0 flex-1 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]"

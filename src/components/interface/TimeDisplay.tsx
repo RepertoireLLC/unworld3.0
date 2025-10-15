@@ -6,7 +6,11 @@ const formatTimezoneName = (timezone: string) => timezone.replace(/_/g, ' ');
 
 const FALLBACK_TIMEZONE = 'UTC';
 
-export function TimeDisplay() {
+interface TimeDisplayProps {
+  className?: string;
+}
+
+export function TimeDisplay({ className }: TimeDisplayProps = {}) {
   const [now, setNow] = useState(() => new Date());
   const autoDetect = useTimeStore((state) => state.autoDetect);
   const manualTimezone = useTimeStore((state) => state.manualTimezone);
@@ -110,8 +114,10 @@ export function TimeDisplay() {
     fontFamily: tokens.headingFontFamily,
   };
 
+  const wrapperClassName = className ?? 'pointer-events-none fixed top-6 right-6 z-40';
+
   return (
-    <div className="pointer-events-none fixed top-6 right-6 z-40">
+    <div className={wrapperClassName}>
       <div
         className="pointer-events-auto flex items-center gap-4 rounded-2xl border px-5 py-3 transition-colors duration-500"
         style={containerStyle}
