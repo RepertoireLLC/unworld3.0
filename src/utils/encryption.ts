@@ -1,4 +1,10 @@
 import type { AIConnection } from '../store/aiStore';
+import {
+  arrayBufferToBase64,
+  base64ToArrayBuffer,
+  decodeBase64ToBinary,
+  encodeBinaryToBase64,
+} from './base64';
 
 const STORAGE_KEY = 'harmonia.ai.connections';
 const MASTER_KEY_KEY = 'harmonia.ai.masterKey';
@@ -25,24 +31,6 @@ interface PersistedState {
   activeConnectionId: string | null;
 }
 
-function bufferToBase64(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function base64ToArrayBuffer(base64: string) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return bytes.buffer;
-}
-
 async function getOrCreateKey(): Promise<CryptoKey> {
   if (typeof window === 'undefined') {
     throw new Error('Encryption is only available in browser environments.');
@@ -63,7 +51,7 @@ async function getOrCreateKey(): Promise<CryptoKey> {
     'decrypt',
   ]);
   const exported = await crypto.subtle.exportKey('raw', key);
-  window.localStorage.setItem(MASTER_KEY_KEY, bufferToBase64(exported));
+  window.localStorage.setItem(MASTER_KEY_KEY, arrayBufferToBase64(exported));
   return key;
 }
 
@@ -73,17 +61,17 @@ async function encryptString(plainText: string) {
   const encoded = new TextEncoder().encode(plainText);
   const cipherBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
   return {
-    cipherText: bufferToBase64(cipherBuffer),
-    iv: bufferToBase64(iv.buffer),
+    cipherText: arrayBufferToBase64(cipherBuffer),
+    iv: encodeBinaryToBase64(iv),
   };
 }
 
 async function decryptString(cipherText: string, iv: string) {
   const key = await getOrCreateKey();
   const cipherBuffer = base64ToArrayBuffer(cipherText);
-  const ivBuffer = base64ToArrayBuffer(iv);
+  const ivBuffer = decodeBase64ToBinary(iv);
   const plainBuffer = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: new Uint8Array(ivBuffer) },
+    { name: 'AES-GCM', iv: ivBuffer },
     key,
     cipherBuffer
   );

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createSecureVault } from '../utils/encryption';
 import { generateId } from '../utils/id';
+import { encodeStringToBase64 } from '../utils/base64';
 import { cosineSimilarity, buildInterestVectorFromTags, clamp, normalizeVector } from '../utils/vector';
 import { useInterestStore } from './interestStore';
 import { useMeshStore } from './meshStore';
@@ -114,7 +115,7 @@ function buildChecksum(reel: ReelCreationPayload, creatorId: string) {
     reel.media.filter,
     reel.media.audioTrackId ?? 'none',
   ].join('|');
-  return btoa(unescape(encodeURIComponent(raw))).slice(0, 64);
+  return encodeStringToBase64(raw).slice(0, 64);
 }
 
 function createOptimizedVariants(originalUrl: string): ReelMediaVariant[] {
