@@ -3,6 +3,7 @@ import { AlertTriangle, Clock8, Power, RefreshCcw, Trash2 } from 'lucide-react';
 import { useTimeStore, getEffectiveTimezone, getSystemTimezone } from '../../../store/timeStore';
 import { useToastStore } from '../../../store/toastStore';
 import { useAuthStore } from '../../../store/authStore';
+import { useYouTubeIntegrationStore } from '../../../store/youtubeStore';
 
 const FALLBACK_TIMEZONES = [
   'UTC',
@@ -59,6 +60,105 @@ export function AccountSettings({ onClose, isActive }: AccountSettingsProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const userId = user?.id;
+  const youtubeAccount = useYouTubeIntegrationStore((state) =>
+    userId ? state.accounts[userId] : undefined
+  );
+  const youtubeRecommendations = useYouTubeIntegrationStore((state) =>
+    userId ? state.recommendations[userId] ?? [] : []
+  );
+  const beginYouTubeLink = useYouTubeIntegrationStore((state) => state.beginLink);
+  const completeYouTubeLink = useYouTubeIntegrationStore((state) => state.completeLink);
+  const unlinkYouTube = useYouTubeIntegrationStore((state) => state.unlink);
+  const refreshYouTube = useYouTubeIntegrationStore((state) => state.refreshRecommendations);
+  const youtubeLinkError = useYouTubeIntegrationStore((state) => state.linkError);
+  const isLinkingYouTube = useYouTubeIntegrationStore((state) => state.isLinking);
+  const isSyncingYouTube = useYouTubeIntegrationStore((state) =>
+    userId ? state.syncingUserIds.includes(userId) : false
+  );
+  const resonanceVisualizationEnabled = useYouTubeIntegrationStore(
+    (state) => state.resonanceVisualization
+  );
+  const toggleResonanceVisualization = useYouTubeIntegrationStore(
+    (state) => state.toggleResonanceVisualization
+  );
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data || typeof event.data !== 'object') {
+        return;
+      }
+      const payload = event.data as {
+        provider?: string;
+        code?: string;
+        state?: string;
+        channelId?: string;
+      };
+      if (payload.provider !== 'harmonia-youtube-oauth' || !payload.code || !payload.state) {
+        return;
+      }
+      // The redirect view posts a message back to Harmonia with the authorization
+      // code. We only respond to the trusted provider marker to prevent external
+      // pages from injecting arbitrary credentials into the integration.
+      void completeYouTubeLink({
+        userId,
+        code: payload.code,
+        state: payload.state,
+        channelId: payload.channelId,
+      });
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [completeYouTubeLink, userId]);
+
+  const handleYouTubeLink = useCallback(() => {
+    if (!userId) {
+      return;
+    }
+    void beginYouTubeLink(userId);
+  }, [beginYouTubeLink, userId]);
+
+  const handleYouTubeUnlink = useCallback(() => {
+    if (!userId) {
+      return;
+    }
+    unlinkYouTube(userId);
+  }, [unlinkYouTube, userId]);
+
+  const handleYouTubeRefresh = useCallback(() => {
+    if (!userId) {
+      return;
+    }
+    void refreshYouTube(userId);
+  }, [refreshYouTube, userId]);
+
+  const handleResonanceToggle = useCallback(() => {
+    toggleResonanceVisualization(!resonanceVisualizationEnabled);
+  }, [resonanceVisualizationEnabled, toggleResonanceVisualization]);
+
+  const formatSyncTimestamp = useCallback((timestamp?: number) => {
+    if (!timestamp) {
+      return 'Never';
+    }
+    const diff = Date.now() - timestamp;
+    const minutes = Math.round(diff / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes === 1) return '1 minute ago';
+    if (minutes < 60) return `${minutes} minutes ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours === 1) return '1 hour ago';
+    if (hours < 24) return `${hours} hours ago`;
+    const days = Math.round(hours / 24);
+    return days === 1 ? '1 day ago' : `${days} days ago`;
+  }, []);
 
   useEffect(() => {
     if (isActive && autoDetect) {
@@ -213,6 +313,131 @@ export function AccountSettings({ onClose, isActive }: AccountSettingsProps) {
             <p className="text-[10px] uppercase tracking-[0.35em] text-white/40">Node Signature</p>
             <p className="mt-2 text-base font-semibold text-white">{user?.id ?? '—'}</p>
             <p className="text-xs text-white/50">Persistent identifier across Harmonia mesh.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.8)]">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Linked Accounts</p>
+            <h3 className="mt-1 text-lg font-semibold text-white">YouTube Resonance Bridge</h3>
+          </div>
+          <span
+            className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.3em] ${
+              youtubeAccount
+                ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200'
+                : 'border-white/10 bg-white/5 text-white/50'
+            }`}
+          >
+            {youtubeAccount ? 'Linked' : 'Not Linked'}
+          </span>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-white">Connection Status</p>
+                  <p className="text-xs text-white/50">
+                    {youtubeAccount
+                      ? `Synced ${formatSyncTimestamp(youtubeAccount.lastSynced)}`
+                      : 'Link your YouTube account to unlock resonance-powered recommendations.'}
+                  </p>
+                </div>
+                {youtubeAccount && (
+                  <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-emerald-200">
+                    {youtubeRecommendations.length} signals
+                  </span>
+                )}
+              </div>
+
+              {youtubeLinkError && (
+                <div className="mt-4 rounded-xl border border-rose-400/40 bg-rose-500/10 p-3 text-xs text-rose-100">
+                  {youtubeLinkError}
+                </div>
+              )}
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                {youtubeAccount ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleYouTubeRefresh}
+                      disabled={isSyncingYouTube}
+                      className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs uppercase tracking-[0.3em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${
+                        isSyncingYouTube
+                          ? 'cursor-not-allowed border-white/5 bg-white/5 text-white/40'
+                          : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20'
+                      }`}
+                    >
+                      <RefreshCcw className={`h-4 w-4 ${isSyncingYouTube ? 'animate-spin' : ''}`} />
+                      Refresh Feed
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleYouTubeUnlink}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/60 transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+                    >
+                      Unlink
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleYouTubeLink}
+                    disabled={isLinkingYouTube}
+                    className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs uppercase tracking-[0.3em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${
+                      isLinkingYouTube
+                        ? 'cursor-not-allowed border-white/5 bg-white/5 text-white/40'
+                        : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20'
+                    }`}
+                  >
+                    {isLinkingYouTube ? 'Opening OAuth...' : 'Link YouTube'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-white">Resonance Visualization</p>
+                  <p className="text-xs text-white/50">
+                    Render animated energy threads between your node and recommended content.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={resonanceVisualizationEnabled}
+                  onClick={handleResonanceToggle}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.35em] transition ${
+                    resonanceVisualizationEnabled
+                      ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200'
+                      : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10'
+                  }`}
+                >
+                  {resonanceVisualizationEnabled ? 'Threads Enabled' : 'Threads Disabled'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/60 p-5 text-sm text-white/60">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/40">Security Notes</p>
+            <ul className="space-y-3 text-xs leading-relaxed text-white/50">
+              <li>
+                OAuth tokens are held in volatile memory only and cleared when you unlink or sign out.
+              </li>
+              <li>
+                Metadata is stored locally within your Harmonia node; nothing is broadcast externally.
+              </li>
+              <li>
+                Provide the authorization code to Harmonia only via the secure redirect callback window.
+              </li>
+            </ul>
           </div>
         </div>
       </section>
