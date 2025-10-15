@@ -21,6 +21,7 @@ interface StorageState {
   saveAsset: (file: File, options?: { visibility?: StorageVisibility; tags?: string[] }) => Promise<StoredAsset | null>;
   deleteAsset: (assetId: string) => Promise<void>;
   updateVisibility: (assetId: string, visibility: StorageVisibility) => Promise<void>;
+  reset: () => Promise<void>;
 }
 
 const vault = createSecureVault<StoredAsset[]>({
@@ -94,5 +95,9 @@ export const useStorageStore = create<StorageState>((set, get) => ({
       ),
     }));
     await vault.save(get().assets);
+  },
+  reset: async () => {
+    set({ assets: [] });
+    await vault.save([]);
   },
 }));

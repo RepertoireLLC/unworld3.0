@@ -14,6 +14,7 @@ interface FriendState {
   rejectFriendRequest: (requestId: string) => void;
   isFriend: (userId1: string, userId2: string) => boolean;
   hasPendingRequest: (fromUserId: string, toUserId: string) => boolean;
+  removeUser: (userId: string) => void;
 }
 
 export const useFriendStore = create<FriendState>((set, get) => ({
@@ -68,5 +69,12 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         request.fromUserId === fromUserId &&
         request.toUserId === toUserId
     );
+  },
+  removeUser: (userId) => {
+    set((state) => ({
+      friendRequests: state.friendRequests.filter(
+        (request) => request.fromUserId !== userId && request.toUserId !== userId
+      ),
+    }));
   },
 }));

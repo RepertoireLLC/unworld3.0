@@ -25,6 +25,7 @@ export interface ForumPost {
   mediaType: 'text' | 'image' | 'video';
   commentIds: string[];
   metadata?: Record<string, unknown>;
+  contentRating: 'sfw' | 'nsfw';
 }
 
 export interface ForumComment {
@@ -63,6 +64,7 @@ interface ForumState {
     mediaUrl?: string;
     interestVector?: InterestVector;
     metadata?: Record<string, unknown>;
+    contentRating?: 'sfw' | 'nsfw';
   }) => ForumPost;
   addComment: (input: {
     postId: string;
@@ -81,8 +83,9 @@ interface ForumState {
   getCommentsForPost: (postId: string) => ForumComment[];
   getFeedForUser: (
     userId: string,
-    options?: { mode?: FeedMode; limit?: number; curiosityRatio?: number }
+    options?: { mode?: FeedMode; limit?: number; curiosityRatio?: number; includeNSFW?: boolean }
   ) => FeedEntry[];
+  removeUserContent: (userId: string) => void;
   initializeSyncChannel: () => void;
 }
 
@@ -208,6 +211,7 @@ export const useForumStore = create<ForumState>((set, get) => ({
     mediaUrl,
     interestVector,
     metadata,
+    contentRating,
   }) => {
     const postId = generateId('forum_post');
     const timestamp = Date.now();
@@ -217,6 +221,14 @@ export const useForumStore = create<ForumState>((set, get) => ({
         : buildInterestVectorFromTags(tags)
     );
     const mediaType = detectMediaType(mediaUrl);
+    const normalizedTags = tags.map((tag) => tag.toLowerCase());
+    const resolvedRating: 'sfw' | 'nsfw' = contentRating
+      ? contentRating
+      : metadata?.contentRating === 'nsfw'
+        ? 'nsfw'
+        : normalizedTags.some((tag) => tag === 'nsfw' || tag === '18+' || tag === 'mature')
+          ? 'nsfw'
+          : 'sfw';
 
     const post: ForumPost = {
       post_id: postId,
@@ -232,6 +244,7 @@ export const useForumStore = create<ForumState>((set, get) => ({
       mediaType,
       commentIds: [],
       metadata,
+      contentRating: resolvedRating,
     };
 
     set((state) => {
@@ -399,17 +412,26 @@ export const useForumStore = create<ForumState>((set, get) => ({
     const userVector = useInterestStore.getState().getInterestVector(userId);
     const friendStore = useFriendStore.getState();
 
+    const includeNSFW = options?.includeNSFW ?? false;
+
     const visiblePosts = state.postOrder
       .map((postId) => state.posts[postId])
       .filter((post): post is ForumPost => Boolean(post))
       .filter((post) => {
         if (post.visibility === 'public') {
-          return true;
+          return includeNSFW || post.contentRating !== 'nsfw';
         }
         if (post.visibility === 'private') {
           return post.author_id === userId;
         }
-        return friendStore.isFriend(userId, post.author_id) || post.author_id === userId;
+        const isVisibleToFriend = friendStore.isFriend(userId, post.author_id) || post.author_id === userId;
+        if (!isVisibleToFriend) {
+          return false;
+        }
+        if (post.author_id === userId) {
+          return true;
+        }
+        return includeNSFW || post.contentRating !== 'nsfw';
       });
 
     const scored: ScoredEntry[] = visiblePosts.map((post, index) => {
@@ -475,6 +497,33 @@ export const useForumStore = create<ForumState>((set, get) => ({
     return feed
       .slice(0, baseCount)
       .map(({ seed: _seed, ...entry }) => entry);
+  },
+
+  removeUserContent: (userId) => {
+    set((state) => {
+      const retainedPostsEntries = Object.entries(state.posts).filter(
+        ([, post]) => post.author_id !== userId
+      );
+      const posts = Object.fromEntries(retainedPostsEntries);
+      const postOrder = state.postOrder.filter((postId) => Boolean(posts[postId]));
+
+      const retainedCommentsEntries = Object.entries(state.comments).filter(
+        ([, comment]) => comment.author_id !== userId && posts[comment.post_id]
+      );
+      const comments = Object.fromEntries(retainedCommentsEntries);
+
+      const normalizedPosts: Record<string, ForumPost> = {};
+      Object.entries(posts).forEach(([postId, post]) => {
+        const filteredCommentIds = post.commentIds.filter((commentId) => Boolean(comments[commentId]));
+        normalizedPosts[postId] = { ...post, commentIds: filteredCommentIds };
+      });
+
+      return {
+        posts: normalizedPosts,
+        comments,
+        postOrder,
+      };
+    });
   },
 
   initializeSyncChannel: () => {

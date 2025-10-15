@@ -41,6 +41,7 @@ interface HarmoniaAgoraPanelProps {
 
 export function HarmoniaAgoraPanel({ onOpenThread }: HarmoniaAgoraPanelProps) {
   const currentUser = useAuthStore((state) => state.user);
+  const nsfwAllowed = useAuthStore((state) => state.user?.preferences?.nsfwAllowed ?? false);
   const [posts, postOrder] = useForumStore((state) => [state.posts, state.postOrder]);
   const getFeedForUser = useForumStore((state) => state.getFeedForUser);
   const addPost = useForumStore((state) => state.addPost);
@@ -116,8 +117,9 @@ export function HarmoniaAgoraPanel({ onOpenThread }: HarmoniaAgoraPanelProps) {
       mode: feedMode,
       limit: 60,
       curiosityRatio,
+      includeNSFW: nsfwAllowed,
     });
-  }, [currentUser, feedMode, getFeedForUser, curiosityRatio, posts, postOrder]);
+  }, [currentUser, feedMode, getFeedForUser, curiosityRatio, posts, postOrder, nsfwAllowed]);
 
   const displayedFeed = feed.slice(0, visibleCount);
 

@@ -56,7 +56,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   const openCustomizer = () => {
     setIsOpen(false);
     setSettingsOpen(true);
-    setSettingsSection('theme');
+    setSettingsSection('content');
   };
 
   return (

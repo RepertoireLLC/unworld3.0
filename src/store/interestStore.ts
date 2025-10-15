@@ -284,4 +284,13 @@ export const useInterestStore = create<InterestState>((set, get) => ({
       };
     });
   },
+  removeProfile: (userId) => {
+    set((state) => {
+      if (!state.profiles[userId]) {
+        return state;
+      }
+      const { [userId]: _removed, ...rest } = state.profiles;
+      return { profiles: rest };
+    });
+  },
 }));
