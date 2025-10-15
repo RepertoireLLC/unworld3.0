@@ -13,22 +13,21 @@ export function HeaderBar() {
   const themeLabel = getThemeDisplayName(currentThemeId, customThemes);
 
   return (
-    <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="space-y-1">
-        <span className="text-sm uppercase tracking-[0.3em] text-white/50">
-          Encrypted Relay // Broadcast
-        </span>
-        <h1 className="text-3xl font-semibold text-white">
-          Quantum Link Console
-        </h1>
+    <header className="ui-panel ui-panel--muted gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="ui-stack gap-2">
+        <span className="ui-section-label">Encrypted Relay // Broadcast</span>
+        <h1 className="ui-panel__title">Quantum Link Console</h1>
         {currentUser && (
           <p className="text-sm text-white/60">
-            Linked operator: <span className="text-white">{currentUser.name}</span> · Theme vector: <span className="uppercase tracking-[0.2em] text-white/50">{themeLabel}</span>
+            Linked operator: <span className="font-medium text-white">{currentUser.name}</span> · Theme vector:
+            <span className="ml-2 inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/60">
+              {themeLabel}
+            </span>
           </p>
         )}
       </div>
 
-      <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center lg:justify-end">
+      <div className="ui-stack w-full gap-3 lg:w-auto lg:flex-row lg:items-center lg:justify-end">
         <SearchBar className="w-full lg:w-80" />
         <div className="flex items-center justify-end gap-3">
           <AIIntegrationButton />

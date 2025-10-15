@@ -50,31 +50,31 @@ export function ResonanceFieldPanel() {
   }, [users, getNodeSummary]);
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.8)]">
+    <section className="ui-panel">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Resonance Field</p>
-          <h3 className="mt-1 text-lg font-semibold text-white">Harmonic Observatory</h3>
+        <div className="ui-stack gap-1">
+          <span className="ui-section-label">Resonance Field</span>
+          <h3 className="text-lg font-semibold text-white">Harmonic Observatory</h3>
         </div>
         <Sparkles className="h-5 w-5 text-amber-200" />
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+      <div className="ui-grid md:grid-cols-3">
+        <div className="ui-card">
+          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
             <span>Field Integrity</span>
             <Waves className="h-4 w-4 text-sky-300" />
           </div>
-          <p className="mt-3 text-3xl font-semibold text-white">{Math.round(fieldIntegrity * 100)}%</p>
+          <p className="text-3xl font-semibold text-white">{Math.round(fieldIntegrity * 100)}%</p>
           <p className="text-xs text-white/60">{formatIntegrity(fieldIntegrity)}</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+        <div className="ui-card">
+          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
             <span>Active Harmonics</span>
             <Activity className="h-4 w-4 text-emerald-300" />
           </div>
-          <ul className="mt-3 space-y-2">
+          <ul className="space-y-2">
             {harmonicLeads.length > 0 ? (
               harmonicLeads.map(({ user, summary }) => (
                 <li key={user.id} className="flex items-center justify-between text-xs text-white/70">
@@ -90,20 +90,20 @@ export function ResonanceFieldPanel() {
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
+        <div className="ui-card">
+          <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
             <span>Field Advisory</span>
             <Radar className="h-4 w-4 text-fuchsia-300" />
           </div>
-          <p className="mt-3 text-sm text-white/60">
+          <p className="text-sm text-white/60">
             Resonance equilibrium is {fieldIntegrity > 0.7 ? 'stable' : 'seeking alignment'}. Maintain empathetic pulse chains.
           </p>
         </div>
       </div>
 
-      <div className="mt-6 space-y-3">
-        <p className="text-xs uppercase tracking-[0.3em] text-white/50">Recent Pulses</p>
-        <div className="space-y-3">
+      <div className="ui-stack">
+        <span className="ui-section-label">Recent Pulses</span>
+        <div className="ui-stack">
           {recentPulses.length > 0 ? (
             recentPulses.map((pulse) => {
               const fromUser = userLookup.get(pulse.fromUserId);
@@ -112,7 +112,7 @@ export function ResonanceFieldPanel() {
               return (
                 <div
                   key={pulse.id}
-                  className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-4"
+                  className="ui-card"
                 >
                   <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
                     <span className="uppercase tracking-[0.3em] text-white/40">
@@ -131,7 +131,7 @@ export function ResonanceFieldPanel() {
                       {pulse.tone}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-white/50">
+                  <div className="flex flex-col gap-3 text-xs text-white/50 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 font-mono text-[10px] text-white/70">
                         {(pulse.magnitude * 100).toFixed(0)}
@@ -147,7 +147,7 @@ export function ResonanceFieldPanel() {
               );
             })
           ) : (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-xs text-white/50">
+            <div className="ui-card border-dashed text-center text-xs text-white/50">
               Awaiting first resonance pulse.
             </div>
           )}

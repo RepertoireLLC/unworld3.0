@@ -119,20 +119,17 @@ export function App() {
       <TimeDisplay />
 
       {isAuthenticated ? (
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10">
+        <div className="relative z-10 ui-container flex-1">
           <HeaderBar />
 
-          <main
-            className="grid min-h-0 flex-1 lg:grid-cols-[320px_minmax(0,1fr)_320px] xl:grid-cols-[340px_minmax(0,1fr)_340px]"
-            style={{ gap: `${tokens.spacing}px` }}
-          >
-            <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
+          <main className="ui-layout ui-layout--wide" style={{ gap: `${tokens.spacing}px` }}>
+            <div className="ui-column ui-column--scroll">
               <ControlPanel />
             </div>
-            <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
+            <div className="ui-column ui-column--scroll">
               <HarmoniaCentralPanel />
             </div>
-            <div className="min-h-0 overflow-x-hidden overflow-y-auto pr-1">
+            <div className="ui-column ui-column--scroll">
               <FieldNotesPanel />
             </div>
           </main>
