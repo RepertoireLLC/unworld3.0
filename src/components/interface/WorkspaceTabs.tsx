@@ -10,10 +10,12 @@ export function WorkspaceTabs() {
     state.closeTab,
   ]);
 
-  const sortedTabs = useMemo(
-    () => [...tabs].sort((a, b) => a.createdAt - b.createdAt),
-    [tabs]
-  );
+  const sortedTabs = useMemo(() => {
+    const baseTabIds = new Set(['broadcast', 'agora']);
+    return [...tabs]
+      .filter((tab) => !baseTabIds.has(tab.id))
+      .sort((a, b) => a.createdAt - b.createdAt);
+  }, [tabs]);
 
   if (sortedTabs.length === 0) {
     return null;
