@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>YouTube OAuth Redirect • Harmonia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: dark light;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #0f172a, #020617 65%);
+        color: #e2e8f0;
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+      }
+      main {
+        max-width: 32rem;
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        box-shadow: 0 25px 60px rgba(2, 6, 23, 0.45);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        backdrop-filter: blur(14px);
+      }
+      h1 {
+        font-size: 1.25rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 1.5rem;
+        color: #a5b4fc;
+      }
+      p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: 0.75rem 0;
+      }
+      code {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.15);
+        color: #c7d2fe;
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Linking YouTube</h1>
+      <p>Finalizing your resonance bridge&hellip;</p>
+      <p id="status">You can close this window once the connection completes.</p>
+      <p id="hint" hidden>
+        If this window does not close automatically, return to Harmonia and enter the code manually:
+        <br />
+        <code id="code"></code>
+      </p>
+    </main>
+    <script>
+      (function () {
+        const statusEl = document.getElementById('status');
+        const hintEl = document.getElementById('hint');
+        const codeEl = document.getElementById('code');
+
+        function extractParams() {
+          const search = window.location.search ?? '';
+          const hash = window.location.hash ?? '';
+          const query = search || (hash.startsWith('#') ? hash.replace('#', '?') : '');
+          return new URLSearchParams(query);
+        }
+
+        const params = extractParams();
+        const code = params.get('code') || '';
+        const state = params.get('state') || '';
+        const channelId = params.get('channel_id') || params.get('channelId') || undefined;
+        const error = params.get('error');
+
+        if (error) {
+          statusEl.textContent = 'Authorization was cancelled. You can now close this window.';
+          return;
+        }
+
+        if (!code || !state) {
+          statusEl.textContent = 'Missing authorization data. Please close this window and try linking again.';
+          return;
+        }
+
+        const payload = {
+          provider: 'harmonia-youtube-oauth',
+          code,
+          state,
+          channelId,
+        };
+
+        let messageDelivered = false;
+        function notifyTarget(target) {
+          if (!target) {
+            return;
+          }
+          try {
+            target.postMessage(payload, window.location.origin);
+            messageDelivered = true;
+          } catch (postError) {
+            console.warn('Failed to notify opener', postError);
+          }
+        }
+
+        notifyTarget(window.opener);
+        if (!messageDelivered && window.parent && window.parent !== window) {
+          notifyTarget(window.parent);
+        }
+
+        if (messageDelivered) {
+          statusEl.textContent = 'Link established. Closing window&hellip;';
+          setTimeout(() => {
+            try {
+              window.close();
+            } catch (closeError) {
+              console.warn('Unable to close window', closeError);
+            }
+          }, 500);
+        } else {
+          statusEl.textContent = 'Authorization complete, but we could not reach Harmonia automatically.';
+          if (codeEl && hintEl) {
+            codeEl.textContent = code;
+            hintEl.hidden = false;
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
