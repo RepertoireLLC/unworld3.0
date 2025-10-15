@@ -40,6 +40,7 @@ interface MemoryStoreState {
   getThread: (conversationId: string) => MemoryThread | undefined;
   getMessagesBetween: (userId1: string, userId2: string) => MemoryMessage[];
   selfHeal: (conversationId: string) => Promise<MemoryThread | null>;
+  removeUser: (userId: string) => Promise<void>;
 }
 
 const resonanceLibrary: Record<string, ResonanceMetadata> = {
@@ -176,6 +177,12 @@ export const useMemoryStore = create<MemoryStoreState>((set, get) => ({
     await persistMemoryVault(snapshot);
     await vault.save(snapshot);
     return reconciled;
+  },
+  removeUser: async (userId) => {
+    const snapshot = get().threads.filter((thread) => !thread.participants.includes(userId));
+    set({ threads: snapshot });
+    await persistMemoryVault(snapshot);
+    await vault.save(snapshot);
   },
 }));
 

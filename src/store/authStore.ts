@@ -2,6 +2,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './userStore';
 import { useThemeStore, type ThemePreferencesSnapshot } from './themeStore';
+import { useInterestStore } from './interestStore';
+import { useMeshStore } from './meshStore';
+import { useForumStore } from './forumStore';
+import { useFriendStore } from './friendStore';
+import { useChatStore } from './chatStore';
+import { useMemoryStore } from './memoryStore';
+import { useStorageStore } from './storageStore';
+
+interface UserPreferences {
+  nsfwAllowed: boolean;
+}
 
 interface User {
   id: string;
@@ -12,6 +23,8 @@ interface User {
   profilePicture?: string;
   bio?: string;
   themePreferences?: ThemePreferencesSnapshot;
+  preferences: UserPreferences;
+  accountStatus: 'active' | 'deactivated';
 }
 
 interface AuthState {
@@ -22,6 +35,10 @@ interface AuthState {
   register: (userData: { email: string; password: string; name: string; color: string }) => boolean;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => void;
+  updatePreferences: (preferences: Partial<UserPreferences>) => void;
+  deactivateAccount: () => void;
+  reactivateAccount: () => void;
+  deleteAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -44,6 +61,10 @@ export const useAuthStore = create<AuthState>()(
           customThemes: [],
         };
 
+        const defaultPreferences: UserPreferences = {
+          nsfwAllowed: false,
+        };
+
         const newUser: User = {
           id: `user_${Date.now()}`,
           name: userData.name || userData.email.split('@')[0],
@@ -51,6 +72,8 @@ export const useAuthStore = create<AuthState>()(
           password: userData.password,
           color: userData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
           themePreferences: defaultThemePreferences,
+          preferences: defaultPreferences,
+          accountStatus: 'active',
         };
 
         set(state => ({
@@ -76,24 +99,43 @@ export const useAuthStore = create<AuthState>()(
 
       login: (credentials) => {
         const { registeredUsers } = get();
-        const user = registeredUsers.find(
+        const foundUser = registeredUsers.find(
           u => u.email === credentials.email && u.password === credentials.password
         );
 
-        if (user) {
-          set({ user, isAuthenticated: true });
+        if (foundUser) {
+          const normalizedPreferences: UserPreferences = {
+            nsfwAllowed: foundUser.preferences?.nsfwAllowed ?? false,
+          };
 
-          useThemeStore.getState().hydrateFromPreferences(user.themePreferences);
-          
+          const normalizedUser: User = {
+            ...foundUser,
+            themePreferences: foundUser.themePreferences,
+            preferences: normalizedPreferences,
+            accountStatus: foundUser.accountStatus ?? 'active',
+          };
+
+          const updatedRegisteredUsers = registeredUsers.map((existing) =>
+            existing.id === normalizedUser.id ? normalizedUser : existing
+          );
+
+          if (normalizedUser.accountStatus === 'deactivated') {
+            normalizedUser.accountStatus = 'active';
+          }
+
+          set({ user: normalizedUser, isAuthenticated: true, registeredUsers: updatedRegisteredUsers });
+
+          useThemeStore.getState().hydrateFromPreferences(normalizedUser.themePreferences);
+
           // Set user as online
           const { addUser, setOnlineStatus } = useUserStore.getState();
           addUser({
-            id: user.id,
-            name: user.name,
-            color: user.color,
+            id: normalizedUser.id,
+            name: normalizedUser.name,
+            color: normalizedUser.color,
             online: true
           });
-          setOnlineStatus(user.id, true);
+          setOnlineStatus(normalizedUser.id, true);
 
           return true;
         }
@@ -116,6 +158,13 @@ export const useAuthStore = create<AuthState>()(
         set((state) => {
           if (!state.user) return state;
 
+          const mergedPreferences: UserPreferences = updates.preferences
+            ? {
+                ...state.user.preferences,
+                ...updates.preferences,
+              }
+            : state.user.preferences ?? { nsfwAllowed: false };
+
           const mergedThemePreferences: ThemePreferencesSnapshot | undefined =
             updates.themePreferences
               ? {
@@ -134,6 +183,8 @@ export const useAuthStore = create<AuthState>()(
             ...state.user,
             ...updates,
             themePreferences: mergedThemePreferences,
+            preferences: mergedPreferences,
+            accountStatus: updates.accountStatus ?? state.user.accountStatus ?? 'active',
           };
 
           // Update in registered users list
@@ -154,6 +205,72 @@ export const useAuthStore = create<AuthState>()(
             registeredUsers: updatedRegisteredUsers
           };
         }),
+      updatePreferences: (preferences) => {
+        const state = get();
+        if (!state.user) {
+          return;
+        }
+        const nextPreferences: UserPreferences = {
+          ...state.user.preferences,
+          ...preferences,
+        };
+        state.updateProfile({ preferences: nextPreferences });
+      },
+      deactivateAccount: () => {
+        const state = get();
+        const currentUser = state.user;
+        if (!currentUser) {
+          return;
+        }
+
+        const updatedUser: User = {
+          ...currentUser,
+          accountStatus: 'deactivated',
+        };
+
+        const updatedRegisteredUsers = state.registeredUsers.map((entry) =>
+          entry.id === updatedUser.id ? updatedUser : entry
+        );
+
+        const { setOnlineStatus } = useUserStore.getState();
+        setOnlineStatus(updatedUser.id, false);
+
+        set({
+          user: null,
+          isAuthenticated: false,
+          registeredUsers: updatedRegisteredUsers,
+        });
+      },
+      reactivateAccount: () => {
+        const state = get();
+        const currentUser = state.user;
+        if (!currentUser || currentUser.accountStatus === 'active') {
+          return;
+        }
+
+        state.updateProfile({ accountStatus: 'active' });
+      },
+      deleteAccount: async () => {
+        const state = get();
+        const currentUser = state.user;
+        if (!currentUser) {
+          return;
+        }
+
+        const nextRegistered = state.registeredUsers.filter((entry) => entry.id !== currentUser.id);
+
+        const { removeUser } = useUserStore.getState();
+        removeUser(currentUser.id);
+        useInterestStore.getState().removeProfile(currentUser.id);
+        useFriendStore.getState().removeUser(currentUser.id);
+        useForumStore.getState().removeUserContent(currentUser.id);
+        useMeshStore.getState().reset();
+        useChatStore.getState().purgeUser(currentUser.id);
+        await useMemoryStore.getState().removeUser(currentUser.id);
+        await useStorageStore.getState().reset();
+
+        set({ user: null, isAuthenticated: false, registeredUsers: nextRegistered });
+      },
     }),
     {
       name: 'auth-storage',

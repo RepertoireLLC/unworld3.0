@@ -57,6 +57,7 @@ interface MeshState {
   registerChannelListener: (channel: string, handler: (peerId: string, payload: unknown) => void) => () => void;
   disconnectPeer: (peerId: string) => void;
   setPreferences: (preferences: Partial<MeshPreferences>) => void;
+  reset: () => void;
 }
 
 interface PersistedMeshState {
@@ -290,12 +291,22 @@ export const useMeshStore = create<MeshState>((set, get) => ({
     });
   },
   setPreferences: (preferences) => {
-    set((state) => ({
-      preferences: {
-        ...state.preferences,
-        ...preferences,
-      },
-    }));
-    void persistState(get().preferences, get().peers);
+    set((state) => {
+      const next = { ...state.preferences, ...preferences };
+      void persistState(next, state.peers);
+      return { preferences: next };
+    });
+  },
+  reset: () => {
+    const defaults = defaultPreferences();
+    set({
+      initialized: false,
+      localPeerId: null,
+      displayName: null,
+      peers: {},
+      channelListeners: {},
+      preferences: defaults,
+    });
+    void persistState(defaults, {});
   },
 }));
