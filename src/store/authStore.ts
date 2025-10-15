@@ -9,41 +9,7 @@ import { useFriendStore } from './friendStore';
 import { useChatStore } from './chatStore';
 import { useMemoryStore } from './memoryStore';
 import { useStorageStore } from './storageStore';
-
-const HEX_FULL_PATTERN = /^#?[0-9a-fA-F]{6}$/;
-const HEX_SHORT_PATTERN = /^#?[0-9a-fA-F]{3}$/;
-
-const generateRandomColor = () =>
-  `#${Math.floor(Math.random() * 0xffffff)
-    .toString(16)
-    .padStart(6, '0')}`;
-
-const normalizeHexColor = (input: string | undefined | null, fallback?: string) => {
-  if (!input) {
-    return fallback ?? generateRandomColor();
-  }
-
-  const trimmed = input.trim();
-  if (trimmed.length === 0) {
-    return fallback ?? generateRandomColor();
-  }
-
-  if (HEX_FULL_PATTERN.test(trimmed)) {
-    const normalized = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
-    return `#${normalized.toUpperCase()}`;
-  }
-
-  if (HEX_SHORT_PATTERN.test(trimmed)) {
-    const normalized = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
-    const expanded = normalized
-      .split('')
-      .map((char) => char + char)
-      .join('');
-    return `#${expanded.toUpperCase()}`;
-  }
-
-  return fallback ?? generateRandomColor();
-};
+import { normalizeHexColor } from '../utils/color';
 
 interface UserPreferences {
   nsfwAllowed: boolean;

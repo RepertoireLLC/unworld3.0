@@ -1,9 +1,24 @@
-const YT_API_KEY = process.env.YOUTUBE_API_KEY ?? '';
+const viteEnv =
+  typeof import.meta !== 'undefined' && typeof (import.meta as ImportMeta).env !== 'undefined'
+    ? (import.meta as ImportMeta).env
+    : undefined;
+
+const processEnv = typeof process !== 'undefined' ? process.env : undefined;
+
+const DEFAULT_BROWSER_FALLBACK_KEY = 'AIzaSyCCygkNuvosFbZ1v7UkK8THes9v1dNZJCI';
+
+const YT_API_KEY =
+  viteEnv?.VITE_YOUTUBE_API_KEY ??
+  processEnv?.VITE_YOUTUBE_API_KEY ??
+  processEnv?.YOUTUBE_API_KEY ??
+  DEFAULT_BROWSER_FALLBACK_KEY;
 
 if (!YT_API_KEY) {
   console.warn(
     '[YouTube Integration] Missing YOUTUBE_API_KEY environment variable. Personalization will be limited until the key is provided.'
   );
+} else if (YT_API_KEY === DEFAULT_BROWSER_FALLBACK_KEY) {
+  console.info('[YouTube Integration] Using bundled fallback YouTube API key. Configure VITE_YOUTUBE_API_KEY for production.');
 }
 
 export const YOUTUBE_API_KEY = YT_API_KEY;
