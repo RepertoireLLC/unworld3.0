@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+type SettingsSection = 'account' | 'content' | 'privacy' | 'support' | 'theme';
+
 interface ModalState {
   profileUserId: string | null;
   setProfileUserId: (userId: string | null) => void;
@@ -7,8 +9,8 @@ interface ModalState {
   setAIIntegrationOpen: (isOpen: boolean) => void;
   isSettingsOpen: boolean;
   setSettingsOpen: (isOpen: boolean) => void;
-  settingsActiveSection: 'general' | 'theme';
-  setSettingsActiveSection: (section: 'general' | 'theme') => void;
+  settingsActiveSection: SettingsSection;
+  setSettingsActiveSection: (section: SettingsSection) => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -18,6 +20,6 @@ export const useModalStore = create<ModalState>((set) => ({
   setAIIntegrationOpen: (isOpen) => set({ isAIIntegrationOpen: isOpen }),
   isSettingsOpen: false,
   setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
-  settingsActiveSection: 'general',
+  settingsActiveSection: 'account',
   setSettingsActiveSection: (section) => set({ settingsActiveSection: section }),
 }));

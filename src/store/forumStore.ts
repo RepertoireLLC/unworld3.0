@@ -8,6 +8,7 @@ import {
 } from '../utils/vector';
 import { useInterestStore } from './interestStore';
 import { useFriendStore } from './friendStore';
+import { useAuthStore } from './authStore';
 
 export type ForumVisibility = 'public' | 'friends' | 'private';
 
@@ -25,6 +26,7 @@ export interface ForumPost {
   mediaType: 'text' | 'image' | 'video';
   commentIds: string[];
   metadata?: Record<string, unknown>;
+  nsfw?: boolean;
 }
 
 export interface ForumComment {
@@ -63,6 +65,7 @@ interface ForumState {
     mediaUrl?: string;
     interestVector?: InterestVector;
     metadata?: Record<string, unknown>;
+    nsfw?: boolean;
   }) => ForumPost;
   addComment: (input: {
     postId: string;
@@ -208,6 +211,7 @@ export const useForumStore = create<ForumState>((set, get) => ({
     mediaUrl,
     interestVector,
     metadata,
+    nsfw,
   }) => {
     const postId = generateId('forum_post');
     const timestamp = Date.now();
@@ -217,6 +221,13 @@ export const useForumStore = create<ForumState>((set, get) => ({
         : buildInterestVectorFromTags(tags)
     );
     const mediaType = detectMediaType(mediaUrl);
+
+    const inferredNsfw =
+      nsfw ??
+      tags.some((tag) => {
+        const lowered = tag.toLowerCase();
+        return lowered.includes('nsfw') || lowered.includes('mature') || lowered.includes('explicit');
+      });
 
     const post: ForumPost = {
       post_id: postId,
@@ -232,6 +243,7 @@ export const useForumStore = create<ForumState>((set, get) => ({
       mediaType,
       commentIds: [],
       metadata,
+      nsfw: inferredNsfw,
     };
 
     set((state) => {
@@ -399,6 +411,10 @@ export const useForumStore = create<ForumState>((set, get) => ({
     const userVector = useInterestStore.getState().getInterestVector(userId);
     const friendStore = useFriendStore.getState();
 
+    const nsfwPreference = useAuthStore
+      .getState()
+      .registeredUsers.find((candidate) => candidate.id === userId)?.contentPreferences?.nsfw ?? false;
+
     const visiblePosts = state.postOrder
       .map((postId) => state.posts[postId])
       .filter((post): post is ForumPost => Boolean(post))
@@ -410,7 +426,8 @@ export const useForumStore = create<ForumState>((set, get) => ({
           return post.author_id === userId;
         }
         return friendStore.isFriend(userId, post.author_id) || post.author_id === userId;
-      });
+      })
+      .filter((post) => (post.nsfw ? nsfwPreference : true));
 
     const scored: ScoredEntry[] = visiblePosts.map((post, index) => {
       const similarity = cosineSimilarity(userVector, post.interest_vector);
