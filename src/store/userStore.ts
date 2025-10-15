@@ -25,9 +25,28 @@ export const useUserStore = create<UserState>((set, get) => ({
   onlineUsers: new Set<string>(),
 
   addUser: (user) =>
-    set((state) => ({
-      users: state.users.filter(u => u.id !== user.id).concat({ ...user, online: false }),
-    })),
+    set((state) => {
+      const sanitizedUser: User = {
+        ...user,
+        online: user.online === undefined ? false : user.online,
+      };
+
+      const users = state.users
+        .filter((existing) => existing.id !== sanitizedUser.id)
+        .concat(sanitizedUser);
+
+      const onlineUsers = new Set(state.onlineUsers);
+      if (sanitizedUser.online) {
+        onlineUsers.add(sanitizedUser.id);
+      } else {
+        onlineUsers.delete(sanitizedUser.id);
+      }
+
+      return {
+        users,
+        onlineUsers,
+      };
+    }),
 
   removeUser: (userId) =>
     set((state) => ({
