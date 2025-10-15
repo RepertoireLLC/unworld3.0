@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { UserPlus } from 'lucide-react';
 
 export function RegisterForm({ onToggle }: { onToggle: () => void }) {
+  const randomColor = useMemo(() => {
+    const value = Math.floor(Math.random() * 0xffffff);
+    return `#${value.toString(16).padStart(6, '0')}`;
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#' + Math.floor(Math.random()*16777215).toString(16));
+  const [color, setColor] = useState(randomColor);
   const [error, setError] = useState('');
   const register = useAuthStore((state) => state.register);
 
@@ -29,7 +33,7 @@ export function RegisterForm({ onToggle }: { onToggle: () => void }) {
       email,
       password,
       name: name || email.split('@')[0],
-      color
+      color,
     });
 
     if (!success) {
