@@ -60,7 +60,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   };
 
   return (
-    <div className={`relative ${className ?? ''}`}>
+    <div className={`relative z-40 ${className ?? ''}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
@@ -69,7 +69,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-30">
+        <div className="absolute right-0 mt-2 w-48 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg overflow-hidden z-50">
           <div className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
             System Themes
           </div>
