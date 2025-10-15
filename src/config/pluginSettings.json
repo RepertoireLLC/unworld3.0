@@ -24,7 +24,8 @@
       "description": "Displays synchronized time signals that orbit the interface header.",
       "category": "system",
       "componentPath": "components/interface/TimeDisplay.tsx",
-      "isVisible": true
+      "isVisible": true,
+      "isProtected": true
     },
     {
       "id": "header-bar",
@@ -32,7 +33,8 @@
       "description": "Primary navigation band with session indicators and quick actions.",
       "category": "system",
       "componentPath": "components/interface/HeaderBar.tsx",
-      "isVisible": true
+      "isVisible": true,
+      "isProtected": true
     },
     {
       "id": "control-panel",
@@ -40,7 +42,8 @@
       "description": "Left rail of orchestration controls, filters, and quick calibrations.",
       "category": "system",
       "componentPath": "components/interface/ControlPanel.tsx",
-      "isVisible": true
+      "isVisible": true,
+      "isProtected": true
     },
     {
       "id": "harmonia-central-panel",
@@ -48,7 +51,8 @@
       "description": "Core feed nexus surfacing Agora activity and harmonic insights.",
       "category": "system",
       "componentPath": "components/interface/HarmoniaCentralPanel.tsx",
-      "isVisible": true
+      "isVisible": true,
+      "isProtected": true
     },
     {
       "id": "field-notes-panel",
@@ -56,7 +60,8 @@
       "description": "Right rail of captured impressions, drafts, and exploration prompts.",
       "category": "system",
       "componentPath": "components/interface/FieldNotesPanel.tsx",
-      "isVisible": true
+      "isVisible": true,
+      "isProtected": true
     },
     {
       "id": "sphere-overlay",
@@ -96,7 +101,8 @@
       "description": "Transient notification layer for ambient status updates.",
       "category": "system",
       "componentPath": "components/interface/ToastStack.tsx",
-      "isVisible": true
+      "isVisible": true,
+      "isProtected": true
     }
   ],
   "directoryDefaults": [

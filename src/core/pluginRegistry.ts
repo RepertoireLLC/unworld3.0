@@ -20,6 +20,7 @@ type PluginSettingsEntry = {
   category?: string;
   componentPath: string;
   isVisible?: boolean;
+  isProtected?: boolean;
 };
 
 type PluginSettingsDirectoryRule = {
@@ -53,6 +54,7 @@ export type PluginModuleMeta = {
   componentPath: string;
   isVisible: boolean;
   origin: PluginOrigin;
+  isProtected: boolean;
 };
 
 type PluginRegistryState = {
@@ -246,16 +248,22 @@ const buildRegistryEntries = (): { plugins: PluginModuleMeta[]; categories: Plug
     }
 
     const baseName = stripExtension(normalizedPath.split('/').pop() ?? entry.id);
+    const isProtected = entry.isProtected === true;
+    const isVisible = isProtected
+      ? true
+      : hasStoredVisibility(storedVisibility, entry.id)
+          ? storedVisibility[entry.id]
+          : entry.isVisible !== false;
+
     const resolvedEntry: PluginModuleMeta = {
       id: entry.id,
       name: entry.name ?? startCase(baseName),
       description: entry.description ?? pluginSettings.autoDescription ?? DEFAULT_AUTO_DESCRIPTION,
       category,
       componentPath: normalizedPath,
-      isVisible: hasStoredVisibility(storedVisibility, entry.id)
-        ? storedVisibility[entry.id]
-        : entry.isVisible !== false,
+      isVisible,
       origin,
+      isProtected,
     };
 
     if (existingEntry) {
@@ -354,18 +362,52 @@ export const usePluginRegistryStore = create<PluginRegistryState>((set, get) => 
   },
   togglePlugin: (id: string) => {
     set((state) => {
-      const plugins = state.plugins.map((plugin) =>
-        plugin.id === id ? { ...plugin, isVisible: !plugin.isVisible } : plugin,
-      );
-      persistVisibility(plugins);
-      return { ...state, plugins };
+      let didChange = false;
+      const plugins = state.plugins.map((plugin) => {
+        if (plugin.id !== id) {
+          return plugin;
+        }
+
+        if (plugin.isProtected) {
+          return plugin;
+        }
+
+        didChange = true;
+        return { ...plugin, isVisible: !plugin.isVisible };
+      });
+
+      if (didChange) {
+        persistVisibility(plugins);
+      }
+
+      return didChange ? { ...state, plugins } : state;
     });
   },
   setAllPluginsVisibility: (isVisible: boolean) => {
     set((state) => {
-      const plugins = state.plugins.map((plugin) => ({ ...plugin, isVisible }));
-      persistVisibility(plugins);
-      return { ...state, plugins };
+      let didChange = false;
+      const plugins = state.plugins.map((plugin) => {
+        if (plugin.isProtected) {
+          if (!plugin.isVisible) {
+            didChange = true;
+            return { ...plugin, isVisible: true };
+          }
+          return plugin;
+        }
+
+        if (plugin.isVisible !== isVisible) {
+          didChange = true;
+        }
+
+        return { ...plugin, isVisible };
+      });
+
+      if (didChange) {
+        persistVisibility(plugins);
+        return { ...state, plugins };
+      }
+
+      return state;
     });
   },
 }));
