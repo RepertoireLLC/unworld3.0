@@ -109,7 +109,10 @@ export function HarmoniaCentralPanel() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                activeSyncSource.current = 'agora';
+                setActiveTab(tab.id);
+              }}
               className={`flex flex-1 min-w-[180px] items-center justify-between gap-2 rounded-2xl px-4 py-3 transition ${
                 isActive
                   ? 'border border-emerald-400/60 bg-emerald-500/10 text-emerald-200 shadow-[0_10px_30px_-20px_rgba(16,185,129,0.8)]'
