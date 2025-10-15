@@ -12,13 +12,17 @@ interface AgoraState {
   setCuriosityRatio: (ratio: number) => void;
 }
 
-export const useAgoraStore = create<AgoraState>((set) => ({
+export const useAgoraStore = create<AgoraState>((set, get) => ({
   activeTab: 'broadcast',
   feedMode: 'resonant',
   transparencyEnabled: false,
   curiosityRatio: 0.2,
 
-  setActiveTab: (tab) => set({ activeTab: tab }),
+  setActiveTab: (tab) => {
+    if (get().activeTab !== tab) {
+      set({ activeTab: tab });
+    }
+  },
   setFeedMode: (mode) => set({ feedMode: mode }),
   setTransparencyEnabled: (value) => set({ transparencyEnabled: value }),
   setCuriosityRatio: (ratio) => set({ curiosityRatio: Math.min(Math.max(ratio, 0.05), 0.5) }),

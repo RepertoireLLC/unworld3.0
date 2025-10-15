@@ -48,7 +48,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
   },
   setActiveTab: (tabId) => {
-    const { tabs } = get();
+    const { tabs, activeTabId } = get();
+    if (activeTabId === tabId) {
+      return;
+    }
     if (tabs.some((tab) => tab.id === tabId)) {
       set({ activeTabId: tabId });
     }
