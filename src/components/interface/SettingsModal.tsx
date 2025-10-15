@@ -1,11 +1,12 @@
 import { useCallback, useEffect } from 'react';
-import { X, UserCog, Sparkles, ShieldCheck, LifeBuoy } from 'lucide-react';
+import { X, UserCog, Sparkles, ShieldCheck, LifeBuoy, Puzzle } from 'lucide-react';
 import { useModalStore } from '../../store/modalStore';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { AccountSettings } from './settings/AccountSettings';
 import { ContentSettings } from './settings/ContentSettings';
 import { PrivacySettings } from './settings/PrivacySettings';
 import { SupportSettings } from './settings/SupportSettings';
+import { PluginManager } from '../PluginManager';
 
 const categories = [
   {
@@ -19,6 +20,12 @@ const categories = [
     label: 'Content',
     description: 'Feed calibration and visual customization.',
     icon: Sparkles,
+  },
+  {
+    id: 'plugins' as const,
+    label: 'Plugins & Modules',
+    description: 'Feature visibility and component orchestration.',
+    icon: Puzzle,
   },
   {
     id: 'privacy' as const,
@@ -72,6 +79,8 @@ export function SettingsModal() {
         return <PrivacySettings isActive={activeCategory === 'privacy'} />;
       case 'support':
         return <SupportSettings isActive={activeCategory === 'support'} />;
+      case 'plugins':
+        return <PluginManager isActive={activeCategory === 'plugins'} />;
       default:
         return null;
     }

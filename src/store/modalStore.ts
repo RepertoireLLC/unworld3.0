@@ -7,8 +7,8 @@ interface ModalState {
   setAIIntegrationOpen: (isOpen: boolean) => void;
   isSettingsOpen: boolean;
   setSettingsOpen: (isOpen: boolean) => void;
-  settingsActiveSection: 'account' | 'content' | 'privacy' | 'support';
-  setSettingsActiveSection: (section: 'account' | 'content' | 'privacy' | 'support') => void;
+  settingsActiveSection: 'account' | 'content' | 'plugins' | 'privacy' | 'support';
+  setSettingsActiveSection: (section: 'account' | 'content' | 'plugins' | 'privacy' | 'support') => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({

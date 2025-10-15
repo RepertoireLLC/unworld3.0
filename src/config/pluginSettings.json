@@ -1,0 +1,149 @@
+{
+  "categories": {
+    "system": {
+      "label": "System",
+      "description": "Core Harmonia surfaces that structure the primary interface."
+    },
+    "social": {
+      "label": "Social",
+      "description": "Presence, messaging, and community driven modules."
+    },
+    "visual": {
+      "label": "Visual",
+      "description": "Atmospheric overlays and ambient visualization layers."
+    },
+    "tools": {
+      "label": "Tools",
+      "description": "Assistant capabilities and actionable utility panes."
+    }
+  },
+  "coreComponents": [
+    {
+      "id": "time-display",
+      "name": "Time Display",
+      "description": "Displays synchronized time signals that orbit the interface header.",
+      "category": "system",
+      "componentPath": "components/interface/TimeDisplay.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "header-bar",
+      "name": "Header Bar",
+      "description": "Primary navigation band with session indicators and quick actions.",
+      "category": "system",
+      "componentPath": "components/interface/HeaderBar.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "control-panel",
+      "name": "Control Panel",
+      "description": "Left rail of orchestration controls, filters, and quick calibrations.",
+      "category": "system",
+      "componentPath": "components/interface/ControlPanel.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "harmonia-central-panel",
+      "name": "Harmonia Central Panel",
+      "description": "Core feed nexus surfacing Agora activity and harmonic insights.",
+      "category": "system",
+      "componentPath": "components/interface/HarmoniaCentralPanel.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "field-notes-panel",
+      "name": "Field Notes Panel",
+      "description": "Right rail of captured impressions, drafts, and exploration prompts.",
+      "category": "system",
+      "componentPath": "components/interface/FieldNotesPanel.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "sphere-overlay",
+      "name": "Sphere Overlay",
+      "description": "Ambient resonance sphere overlaying the interface canvas.",
+      "category": "visual",
+      "componentPath": "components/SphereOverlay.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "profile-modal",
+      "name": "Profile Modal",
+      "description": "Expanded identity lens for any Harmonia community member.",
+      "category": "social",
+      "componentPath": "components/profile/ProfileModal.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "chat-window",
+      "name": "Chat Window",
+      "description": "Direct resonance channel for one-to-one or small group messaging.",
+      "category": "social",
+      "componentPath": "components/chat/ChatWindow.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "ai-integration-panel",
+      "name": "AI Integration Panel",
+      "description": "Persistent bridge to Harmonia's AI collaborations and copilots.",
+      "category": "tools",
+      "componentPath": "components/ai/AIIntegrationPanel.tsx",
+      "isVisible": true
+    },
+    {
+      "id": "toast-stack",
+      "name": "Toast Stack",
+      "description": "Transient notification layer for ambient status updates.",
+      "category": "system",
+      "componentPath": "components/interface/ToastStack.tsx",
+      "isVisible": true
+    }
+  ],
+  "directoryDefaults": [
+    {
+      "path": "components/interface",
+      "category": "system"
+    },
+    {
+      "path": "components/chat",
+      "category": "social"
+    },
+    {
+      "path": "components/profile",
+      "category": "social"
+    },
+    {
+      "path": "components/ai",
+      "category": "tools"
+    },
+    {
+      "path": "components",
+      "category": "visual"
+    }
+  ],
+  "defaultCategory": "tools",
+  "autoDescription": "Automatically registered Harmonia module.",
+  "includeDirectories": [
+    "components/interface",
+    "components/ai",
+    "components/chat",
+    "components/profile"
+  ],
+  "includeFiles": [
+    "components/SphereOverlay.tsx"
+  ],
+  "includeNameSuffixes": [
+    "Panel",
+    "Modal",
+    "Overlay",
+    "Display",
+    "Window",
+    "Bar",
+    "Stack"
+  ],
+  "ignoredPaths": [
+    "components/interface/SettingsModal.tsx",
+    "components/interface/settings",
+    "components/PluginManager.tsx"
+  ]
+}
