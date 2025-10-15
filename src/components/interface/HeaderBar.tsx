@@ -5,8 +5,13 @@ import { ProfileIcon } from '../ProfileIcon';
 import { AIIntegrationButton } from '../ai/AIIntegrationButton';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore, getThemeDisplayName } from '../../store/themeStore';
+import { TimeDisplay } from './TimeDisplay';
 
-export function HeaderBar() {
+interface HeaderBarProps {
+  showTimeDisplay?: boolean;
+}
+
+export function HeaderBar({ showTimeDisplay = true }: HeaderBarProps) {
   const currentUser = useAuthStore((state) => state.user);
   const currentThemeId = useThemeStore((state) => state.currentThemeId);
   const customThemes = useThemeStore((state) => state.customThemes);
@@ -30,11 +35,16 @@ export function HeaderBar() {
 
       <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center lg:justify-end">
         <SearchBar className="w-full lg:w-80" />
-        <div className="flex items-center justify-end gap-3">
-          <AIIntegrationButton />
-          <FriendRequests />
-          <ThemeSelector />
-          <ProfileIcon />
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-4">
+          <div className="flex items-center justify-end gap-3">
+            <AIIntegrationButton />
+            <FriendRequests />
+            <ThemeSelector />
+            <ProfileIcon />
+          </div>
+          {showTimeDisplay ? (
+            <TimeDisplay className="pointer-events-auto flex-shrink-0 sm:self-auto" />
+          ) : null}
         </div>
       </div>
     </header>
