@@ -147,6 +147,19 @@ export function SettingsModal() {
 
   const activeTimezone = getEffectiveTimezone(autoDetect, detectedTimezone, manualTimezone);
 
+  const resolvedTimezone = useMemo(() => {
+    try {
+      new Intl.DateTimeFormat(undefined, { timeZone: activeTimezone }).format(new Date());
+      return activeTimezone;
+    } catch (error) {
+      console.warn(
+        `Invalid timezone "${activeTimezone}" detected in settings. Falling back to UTC.`,
+        error
+      );
+      return 'UTC';
+    }
+  }, [activeTimezone]);
+
   const previewFormatter = useMemo(() =>
     new Intl.DateTimeFormat(undefined, {
       hour: '2-digit',
@@ -155,20 +168,20 @@ export function SettingsModal() {
       weekday: 'short',
       month: 'short',
       day: '2-digit',
-      timeZone: activeTimezone,
+      timeZone: resolvedTimezone,
       hour12: false,
-    }), [activeTimezone]);
+    }), [resolvedTimezone]);
 
   const fullNameFormatter = useMemo(() =>
     new Intl.DateTimeFormat(undefined, {
-      timeZone: activeTimezone,
+      timeZone: resolvedTimezone,
       timeZoneName: 'longGeneric',
-    }), [activeTimezone]);
+    }), [resolvedTimezone]);
 
   const preview = previewFormatter.format(new Date());
   const timezoneLabel = fullNameFormatter
     .formatToParts(new Date())
-    .find((part) => part.type === 'timeZoneName')?.value ?? activeTimezone;
+    .find((part) => part.type === 'timeZoneName')?.value ?? resolvedTimezone;
 
   return (
     <div
