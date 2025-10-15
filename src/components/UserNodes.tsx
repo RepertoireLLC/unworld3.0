@@ -97,6 +97,9 @@ function UserNode({
   );
   const highlightedUserId = useSphereStore((state) => state.highlightedUserId);
   const meshRef = useRef<THREE.Mesh>(null);
+  const highlightRingRef = useRef<THREE.Mesh>(null);
+  const highlightMaterialRef = useRef<THREE.MeshBasicMaterial | null>(null);
+  const highlightTimerRef = useRef(0);
   const isHighlighted = highlightedUserId === userId;
 
   useEffect(() => {
@@ -106,12 +109,50 @@ function UserNode({
     };
   }, [registerNodePosition, unregisterNodePosition, userId, position]);
 
-  useFrame(() => {
+  useEffect(() => {
+    if (highlightMaterialRef.current) {
+      highlightMaterialRef.current.opacity = 0;
+    }
+  }, []);
+
+  useFrame((state, delta) => {
     if (meshRef.current) {
       const targetScale = isHighlighted ? 1.5 : 1;
       const currentScale = meshRef.current.scale.x;
       const nextScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.1);
       meshRef.current.scale.setScalar(nextScale);
+    }
+
+    if (highlightRingRef.current && highlightMaterialRef.current) {
+      const material = highlightMaterialRef.current;
+      if (isHighlighted) {
+        highlightTimerRef.current = Math.min(highlightTimerRef.current + delta, 2);
+      } else {
+        highlightTimerRef.current = Math.max(
+          highlightTimerRef.current - delta * 2.5,
+          0
+        );
+      }
+
+      const highlightReady = highlightTimerRef.current > 0.55;
+      const targetOpacity = highlightReady ? 0.85 : 0;
+      material.opacity = THREE.MathUtils.lerp(material.opacity, targetOpacity, 0.2);
+      material.needsUpdate = true;
+
+      const shouldShow = material.opacity > 0.02;
+      highlightRingRef.current.visible = shouldShow;
+
+      if (shouldShow) {
+        const pulse = 1 + Math.sin(state.clock.elapsedTime * 3.2) * 0.12;
+        const baseScale = isHighlighted ? 1.9 : 1.1;
+        const currentScale = highlightRingRef.current.scale.x || 1;
+        const nextScale = THREE.MathUtils.lerp(
+          currentScale,
+          baseScale * pulse,
+          0.18
+        );
+        highlightRingRef.current.scale.setScalar(nextScale);
+      }
     }
   });
 
@@ -135,17 +176,22 @@ function UserNode({
           emissiveIntensity={isHighlighted ? 1 : isCurrentUser ? 0.8 : 0.5}
         />
       </mesh>
-      {isHighlighted && (
-        <mesh position={[0, 0, 0]}>
-          <ringGeometry args={[NODE_RADIUS * 1.6, NODE_RADIUS * 2, 32]} />
-          <meshBasicMaterial
-            color="#fbbf24"
-            transparent
-            opacity={0.7}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
+      <mesh
+        ref={highlightRingRef}
+        position={[0, 0, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+        visible={false}
+      >
+        <torusGeometry args={[NODE_RADIUS * 1.8, NODE_RADIUS * 0.2, 32, 96]} />
+        <meshBasicMaterial
+          ref={highlightMaterialRef}
+          color="#fbbf24"
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
       <Billboard>
         <group>
           <Text

@@ -3,12 +3,13 @@ import { OrbitControls, Stars } from '@react-three/drei';
 import { Sphere } from './Sphere';
 import { UserNodes } from './UserNodes';
 import { AINodes } from './ai/AINodes';
-import { Component, ReactNode, Suspense, useMemo, useRef } from 'react';
+import { Component, ReactNode, Suspense, useEffect, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
 import { useThemeStore, type BuiltInThemeId } from '../store/themeStore';
 import { useSphereStore } from '../store/sphereStore';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { createNodeFocusManager, type NodeFocusManager } from '../utils/nodeFocusManager';
 
 interface SceneProps {
   variant?: 'fullscreen' | 'embedded';
@@ -146,20 +147,35 @@ function CameraSynchronizer({
 }) {
   const highlightedUserId = useSphereStore((state) => state.highlightedUserId);
   const nodePositions = useSphereStore((state) => state.nodePositions);
-  const targetRef = useRef(new THREE.Vector3());
-  const desiredTargetRef = useRef(new THREE.Vector3());
-  const desiredCameraPositionRef = useRef(new THREE.Vector3());
   const defaultCameraPositionRef = useRef(
     new THREE.Vector3(0, 0, isEmbedded ? 9 : 10)
   );
   const defaultTargetRef = useRef(new THREE.Vector3(0, 0, 0));
-  const isReturningRef = useRef(false);
   const { camera } = useThree();
+  const focusManagerRef = useRef<NodeFocusManager | null>(null);
+  const lastTargetIdRef = useRef<string | null>(null);
+  const lastTargetVectorRef = useRef(new THREE.Vector3());
+  const hasLastVectorRef = useRef(false);
 
   defaultCameraPositionRef.current.set(0, 0, isEmbedded ? 9 : 10);
 
-  useFrame(() => {
-    if (isEmbedded) {
+  useEffect(() => {
+    focusManagerRef.current = isEmbedded
+      ? null
+      : createNodeFocusManager({
+          camera: camera as THREE.PerspectiveCamera,
+          controlsRef,
+          defaultCameraPosition: defaultCameraPositionRef.current.clone(),
+          defaultTarget: defaultTargetRef.current.clone(),
+          focusDistanceOffset: 2.5,
+          duration: 1.1,
+        });
+    lastTargetIdRef.current = null;
+    hasLastVectorRef.current = false;
+  }, [camera, controlsRef, isEmbedded]);
+
+  useEffect(() => {
+    if (isEmbedded || !focusManagerRef.current) {
       return;
     }
 
@@ -167,33 +183,40 @@ function CameraSynchronizer({
       ? nodePositions[highlightedUserId]
       : undefined;
 
-    if (activeTargetTuple) {
-      desiredTargetRef.current.set(...activeTargetTuple);
-      desiredCameraPositionRef.current
-        .set(...activeTargetTuple)
-        .normalize()
-        .multiplyScalar(6.5);
-      isReturningRef.current = true;
-    } else if (isReturningRef.current) {
-      desiredTargetRef.current.copy(defaultTargetRef.current);
-      desiredCameraPositionRef.current.copy(defaultCameraPositionRef.current);
-    } else {
+    if (!activeTargetTuple && lastTargetIdRef.current) {
+      focusManagerRef.current.clearHighlight();
+      lastTargetIdRef.current = null;
+      hasLastVectorRef.current = false;
       return;
     }
 
-    targetRef.current.lerp(desiredTargetRef.current, 0.08);
-    camera.position.lerp(desiredCameraPositionRef.current, 0.06);
+    if (activeTargetTuple) {
+      const [x, y, z] = activeTargetTuple;
+      const targetVector = new THREE.Vector3(x, y, z);
+      const hasChanged =
+        !hasLastVectorRef.current ||
+        lastTargetVectorRef.current.x !== x ||
+        lastTargetVectorRef.current.y !== y ||
+        lastTargetVectorRef.current.z !== z ||
+        lastTargetIdRef.current !== highlightedUserId;
 
-    controlsRef.current?.target.copy(targetRef.current);
-    controlsRef.current?.update();
+      if (!hasChanged) {
+        return;
+      }
 
-    if (
-      !activeTargetTuple &&
-      isReturningRef.current &&
-      camera.position.distanceTo(defaultCameraPositionRef.current) < 0.05
-    ) {
-      isReturningRef.current = false;
+      focusManagerRef.current.focusOnNode(targetVector);
+      lastTargetIdRef.current = highlightedUserId;
+      lastTargetVectorRef.current.copy(targetVector);
+      hasLastVectorRef.current = true;
     }
+  }, [highlightedUserId, isEmbedded, nodePositions]);
+
+  useFrame((_, delta) => {
+    if (isEmbedded) {
+      return;
+    }
+
+    focusManagerRef.current?.update(delta);
   });
 
   return null;

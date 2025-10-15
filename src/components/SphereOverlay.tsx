@@ -4,11 +4,11 @@ import { Scene } from './Scene';
 import { useSphereStore } from '../store/sphereStore';
 import { useUserStore } from '../store/userStore';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { clearHighlight, focusOnNode } from '../utils/nodeFocusActions';
 
 export function SphereOverlay() {
   const isFullscreen = useSphereStore((state) => state.isFullscreen);
   const setFullscreen = useSphereStore((state) => state.setFullscreen);
-  const focusUser = useSphereStore((state) => state.focusUser);
   const setFocusError = useSphereStore((state) => state.setFocusError);
   const focusError = useSphereStore((state) => state.focusError);
   const clearFocusState = useSphereStore((state) => state.clearFocusState);
@@ -113,13 +113,12 @@ export function SphereOverlay() {
 
   const handleSelectUser = (userId: string, online: boolean) => {
     if (!online) {
-      focusUser(null);
+      clearHighlight();
       setFocusError('Node is offline. Awaiting reconnection.');
       return;
     }
 
-    focusUser(userId);
-    setFocusError(null);
+    focusOnNode(userId);
   };
 
   const activeUser = highlightedUserId
