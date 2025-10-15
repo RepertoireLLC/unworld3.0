@@ -182,10 +182,6 @@ export function SphereOverlay() {
     );
   }, [users, query]);
 
-  if (!shouldRender) {
-    return null;
-  }
-
   const handleClose = useCallback(() => {
     setIsActive(false);
     setTimeout(() => {
@@ -195,6 +191,10 @@ export function SphereOverlay() {
   }, [clearFocusState, setFullscreen]);
 
   useEscapeKey(handleClose, isFullscreen);
+
+  if (!shouldRender) {
+    return null;
+  }
 
   const handleSelectUser = (userId: string, online: boolean) => {
     if (!online) {
