@@ -213,6 +213,20 @@ canvas {
     overflow: visible;
   }
 
+  .ui-popover {
+    position: relative;
+    border-radius: clamp(0.75rem, 0.6rem + 0.4vw, 1rem);
+    background: color-mix(in srgb, var(--theme-surface) 94%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-border) 92%, transparent);
+    box-shadow: 0 28px 48px -18px rgba(2, 6, 23, 0.65);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+  }
+
+  .ui-popover--elevated {
+    z-index: 160;
+  }
+
   .ui-section-label {
     font-size: 0.68rem;
     text-transform: uppercase;
