@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { EyeOff, Eye } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { useToastStore } from '../../../store/toastStore';
+import { ThemeCustomizationPanel } from '../ThemeCustomizationPanel';
 
 interface ContentSettingsProps {
   isActive: boolean;
@@ -87,7 +88,7 @@ export function ContentSettings({ isActive: _isActive }: ContentSettingsProps) {
           </div>
         </div>
       </section>
-
+      <ThemeCustomizationPanel />
     </div>
   );
 }

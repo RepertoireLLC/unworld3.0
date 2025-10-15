@@ -1,4 +1,14 @@
-const YT_API_KEY = process.env.YOUTUBE_API_KEY ?? '';
+const viteEnv =
+  typeof import.meta !== 'undefined' && typeof (import.meta as ImportMeta).env !== 'undefined'
+    ? (import.meta as ImportMeta).env
+    : undefined;
+
+const processEnv = typeof process !== 'undefined' ? process.env : undefined;
+
+const YT_API_KEY =
+  viteEnv?.VITE_YOUTUBE_API_KEY ??
+  processEnv?.YOUTUBE_API_KEY ??
+  '';
 
 if (!YT_API_KEY) {
   console.warn(
