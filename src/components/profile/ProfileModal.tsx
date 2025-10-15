@@ -28,17 +28,17 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   const [showStoryCreator, setShowStoryCreator] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  useEscapeKey(handleClose, Boolean(!showStoryCreator && user && currentUser));
+
   if (!user || !currentUser) return null;
 
   const isOwnProfile = currentUser.id === userId;
   const areFriends = isFriend(currentUser.id, userId);
   const hasPending = hasPendingRequest(currentUser.id, userId);
-
-  const handleClose = useCallback(() => {
-    onClose();
-  }, [onClose]);
-
-  useEscapeKey(handleClose, !showStoryCreator);
 
   const handleFriendRequest = () => {
     if (!hasPending) {

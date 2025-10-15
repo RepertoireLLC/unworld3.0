@@ -60,6 +60,60 @@ export function SettingsModal() {
 
   const timezoneOptions = useMemo(() => resolveTimezones(), []);
 
+  const activeTimezone = useMemo(
+    () => getEffectiveTimezone(autoDetect, detectedTimezone, manualTimezone),
+    [autoDetect, detectedTimezone, manualTimezone]
+  );
+
+  const resolvedTimezone = useMemo(() => {
+    const candidate = activeTimezone;
+
+    if (!candidate) {
+      return 'UTC';
+    }
+
+    try {
+      new Intl.DateTimeFormat(undefined, { timeZone: candidate }).format(new Date());
+      return candidate;
+    } catch (error) {
+      console.warn(
+        `Invalid timezone "${candidate}" detected in settings. Falling back to UTC.`,
+        error
+      );
+      return 'UTC';
+    }
+  }, [activeTimezone]);
+
+  const previewFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        weekday: 'short',
+        month: 'short',
+        day: '2-digit',
+        timeZone: resolvedTimezone,
+        hour12: false,
+      }),
+    [resolvedTimezone]
+  );
+
+  const fullNameFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        timeZone: resolvedTimezone,
+        timeZoneName: 'longGeneric',
+      }),
+    [resolvedTimezone]
+  );
+
+  const preview = previewFormatter.format(new Date());
+  const timezoneLabel =
+    fullNameFormatter
+      .formatToParts(new Date())
+      .find((part) => part.type === 'timeZoneName')?.value ?? resolvedTimezone;
+
   useEffect(() => {
     if (isOpen && autoDetect) {
       setDetectedTimezone(getSystemTimezone());
@@ -144,31 +198,6 @@ export function SettingsModal() {
   if (!isOpen) {
     return null;
   }
-
-  const activeTimezone = getEffectiveTimezone(autoDetect, detectedTimezone, manualTimezone);
-
-  const previewFormatter = useMemo(() =>
-    new Intl.DateTimeFormat(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      weekday: 'short',
-      month: 'short',
-      day: '2-digit',
-      timeZone: activeTimezone,
-      hour12: false,
-    }), [activeTimezone]);
-
-  const fullNameFormatter = useMemo(() =>
-    new Intl.DateTimeFormat(undefined, {
-      timeZone: activeTimezone,
-      timeZoneName: 'longGeneric',
-    }), [activeTimezone]);
-
-  const preview = previewFormatter.format(new Date());
-  const timezoneLabel = fullNameFormatter
-    .formatToParts(new Date())
-    .find((part) => part.type === 'timeZoneName')?.value ?? activeTimezone;
 
   return (
     <div
