@@ -189,6 +189,7 @@ export function SettingsModal() {
   const currentUser = useAuthStore((state) => state.user);
   const deactivateAccount = useAuthStore((state) => state.deactivateAccount);
   const deleteAccount = useAuthStore((state) => state.deleteAccount);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
   const updateContentPreferences = useAuthStore((state) => state.updateContentPreferences);
   const getReelMetrics = useReelsStore((state) => state.getMetricsForUser);
   const purgeReelsForUser = useReelsStore((state) => state.purgeUserData);
