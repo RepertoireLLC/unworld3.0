@@ -13,6 +13,8 @@ interface ModalState {
   setSettingsActiveSection: (section: SettingsSection) => void;
   isChessOverlayOpen: boolean;
   setChessOverlayOpen: (isOpen: boolean) => void;
+  isReelsOverlayOpen: boolean;
+  setReelsOverlayOpen: (isOpen: boolean) => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -26,4 +28,6 @@ export const useModalStore = create<ModalState>((set) => ({
   setSettingsActiveSection: (section) => set({ settingsActiveSection: section }),
   isChessOverlayOpen: false,
   setChessOverlayOpen: (isOpen) => set({ isChessOverlayOpen: isOpen }),
+  isReelsOverlayOpen: false,
+  setReelsOverlayOpen: (isOpen) => set({ isReelsOverlayOpen: isOpen }),
 }));

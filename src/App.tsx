@@ -25,6 +25,8 @@ import { useMeshStore } from './store/meshStore';
 import { useChessStore } from './store/chessStore';
 import { ChessOverlay } from './components/chess/ChessOverlay';
 import { ChessInviteToast } from './components/chess/ChessInviteToast';
+import { useReelsStore } from './store/reelsStore';
+import { ReelsOverlay } from './components/reels/ReelsOverlay';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -40,6 +42,7 @@ export function App() {
   const initializeForumSync = useForumStore((state) => state.initializeSyncChannel);
   const initializeMesh = useMeshStore((state) => state.initialize);
   const hydrateChess = useChessStore((state) => state.hydrate);
+  const hydrateReels = useReelsStore((state) => state.hydrate);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -65,6 +68,10 @@ export function App() {
   useEffect(() => {
     void hydrateAI();
   }, [hydrateAI]);
+
+  useEffect(() => {
+    void hydrateReels();
+  }, [hydrateReels]);
 
   useEffect(() => {
     if (isAIHydrated) {
@@ -163,6 +170,7 @@ export function App() {
       <AIIntegrationPanel />
       <ToastStack />
       <SettingsModal />
+      <ReelsOverlay />
       <ChessOverlay />
       <ChessInviteToast />
     </div>

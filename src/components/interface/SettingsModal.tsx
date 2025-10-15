@@ -31,6 +31,7 @@ import { ThemeCustomizationPanel } from './ThemeCustomizationPanel';
 import { useMeshStore } from '../../store/meshStore';
 import { useStorageStore } from '../../store/storageStore';
 import { useAuthStore } from '../../store/authStore';
+import { useReelsStore } from '../../store/reelsStore';
 
 type SettingsCategory = 'account' | 'content' | 'privacy' | 'support';
 
@@ -168,6 +169,7 @@ export function SettingsModal() {
   const setIsOpen = useModalStore((state) => state.setSettingsOpen);
   const settingsSection = useModalStore((state) => state.settingsActiveSection);
   const setSettingsSection = useModalStore((state) => state.setSettingsActiveSection);
+  const setReelsOverlayOpen = useModalStore((state) => state.setReelsOverlayOpen);
   const autoDetect = useTimeStore((state) => state.autoDetect);
   const manualTimezone = useTimeStore((state) => state.manualTimezone);
   const detectedTimezone = useTimeStore((state) => state.detectedTimezone);
@@ -187,6 +189,9 @@ export function SettingsModal() {
   const deactivateAccount = useAuthStore((state) => state.deactivateAccount);
   const deleteAccount = useAuthStore((state) => state.deleteAccount);
   const updateContentPreferences = useAuthStore((state) => state.updateContentPreferences);
+  const getReelMetrics = useReelsStore((state) => state.getMetricsForUser);
+  const purgeReelsForUser = useReelsStore((state) => state.purgeUserData);
+  const reelsState = useReelsStore((state) => state.reels);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
@@ -200,6 +205,13 @@ export function SettingsModal() {
     message: '',
   });
   const [isSendingSupport, setIsSendingSupport] = useState(false);
+
+  const reelsMetrics = useMemo(() => {
+    if (!currentUser) {
+      return null;
+    }
+    return getReelMetrics(currentUser.id);
+  }, [currentUser, getReelMetrics, reelsState]);
 
   const timezoneOptions = useMemo(() => resolveTimezones(), []);
 
@@ -440,8 +452,10 @@ export function SettingsModal() {
 
       setIsDeletingAccount(true);
       try {
+        const userId = currentUser.id;
         const success = deleteAccount();
         if (success) {
+          purgeReelsForUser(userId);
           addToast({
             title: 'Account deleted',
             variant: 'success',
@@ -460,7 +474,7 @@ export function SettingsModal() {
         setDeleteConfirmationInput('');
       }
     },
-    [addToast, currentUser, deleteAccount, deleteConfirmationInput, handleClose]
+    [addToast, currentUser, deleteAccount, deleteConfirmationInput, handleClose, purgeReelsForUser]
   );
 
   const handleSupportSubmit = useCallback(
@@ -801,6 +815,68 @@ export function SettingsModal() {
                         Opting in surfaces mature artwork, language, and simulations directly inside the Agora feed.
                       </p>
                     </div>
+                  </div>
+
+                  <div className="ui-card gap-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="ui-stack gap-1">
+                        <span className="ui-section-label">Reels analytics</span>
+                        <h3 className="text-lg font-semibold text-white">Performance snapshot</h3>
+                        <p className="text-sm text-white/60">
+                          Monitor how your Harmonia reels resonate across the mesh at a glance.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setReelsOverlayOpen(true)}
+                        className="ui-button ui-button--ghost text-xs uppercase tracking-[0.3em]"
+                      >
+                        Open Reels
+                      </button>
+                    </div>
+
+                    {reelsMetrics ? (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Total reels</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">{reelsMetrics.totalReels}</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Views</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">{reelsMetrics.views}</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Likes</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">{reelsMetrics.likes}</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Comments</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">{reelsMetrics.comments}</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Shares</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">{reelsMetrics.shares}</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Remixes</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">{reelsMetrics.remixes}</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Avg. watch-through</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">
+                            {(reelsMetrics.averageWatchThrough * 100).toFixed(0)}%
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Updated</p>
+                          <p className="mt-2 text-xs text-white/70">{new Date(reelsMetrics.lastUpdated).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-white/60">
+                        Publish a reel to populate metrics.
+                      </p>
+                    )}
                   </div>
                 </div>
 
