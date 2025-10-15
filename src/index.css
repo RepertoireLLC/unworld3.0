@@ -216,15 +216,38 @@ canvas {
   .ui-popover {
     position: relative;
     border-radius: clamp(0.75rem, 0.6rem + 0.4vw, 1rem);
-    background: color-mix(in srgb, var(--theme-surface) 94%, transparent);
+    background-color: color-mix(
+      in srgb,
+      var(--theme-surface) 88%,
+      rgba(4, 6, 18, 0.98)
+    );
     border: 1px solid color-mix(in srgb, var(--theme-border) 92%, transparent);
-    box-shadow: 0 28px 48px -18px rgba(2, 6, 23, 0.65);
-    backdrop-filter: blur(20px);
+    box-shadow: 0 28px 48px -18px rgba(2, 6, 23, 0.7);
+    backdrop-filter: blur(24px);
+    isolation: isolate;
     overflow: hidden;
   }
 
+  .ui-popover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.02) 60%,
+      rgba(0, 0, 0, 0.12) 100%
+    );
+    pointer-events: none;
+  }
+
+  .ui-popover > * {
+    position: relative;
+    z-index: 1;
+  }
+
   .ui-popover--elevated {
-    z-index: 160;
+    z-index: 480;
   }
 
   .ui-section-label {

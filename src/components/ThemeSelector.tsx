@@ -60,7 +60,7 @@ export function ThemeSelector({ className }: ThemeSelectorProps) {
   };
 
   return (
-    <div className={`relative z-[200] ${className ?? ''}`}>
+    <div className={`relative z-[520] ${className ?? ''}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
