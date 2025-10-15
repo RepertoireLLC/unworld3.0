@@ -16,16 +16,17 @@ const HEX_SHORT_PATTERN = /^#?[0-9a-fA-F]{3}$/;
 const generateRandomColor = () =>
   `#${Math.floor(Math.random() * 0xffffff)
     .toString(16)
-    .padStart(6, '0')}`;
+    .padStart(6, '0')
+    .toUpperCase()}`;
 
-const normalizeHexColor = (input: string | undefined | null, fallback?: string) => {
-  if (!input) {
-    return fallback ?? generateRandomColor();
+const coerceHexColor = (candidate: unknown): string | null => {
+  if (typeof candidate !== 'string') {
+    return null;
   }
 
-  const trimmed = input.trim();
+  const trimmed = candidate.trim();
   if (trimmed.length === 0) {
-    return fallback ?? generateRandomColor();
+    return null;
   }
 
   if (HEX_FULL_PATTERN.test(trimmed)) {
@@ -42,8 +43,11 @@ const normalizeHexColor = (input: string | undefined | null, fallback?: string) 
     return `#${expanded.toUpperCase()}`;
   }
 
-  return fallback ?? generateRandomColor();
+  return null;
 };
+
+const normalizeHexColor = (input: unknown, fallback?: unknown) =>
+  coerceHexColor(input) ?? coerceHexColor(fallback) ?? generateRandomColor();
 
 interface UserPreferences {
   nsfwAllowed: boolean;

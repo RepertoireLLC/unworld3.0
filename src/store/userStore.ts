@@ -1,5 +1,19 @@
 import { create } from 'zustand';
 
+const DEFAULT_USER_COLOR = '#38BDF8';
+
+const sanitizeColor = (color: unknown, fallback?: string): string => {
+  if (typeof color === 'string' && color.trim().length > 0) {
+    return color;
+  }
+
+  if (fallback && fallback.trim().length > 0) {
+    return fallback;
+  }
+
+  return DEFAULT_USER_COLOR;
+};
+
 interface User {
   id: string;
   name: string;
@@ -26,13 +40,19 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   addUser: (user) =>
     set((state) => {
+      const existing = state.users.find((entry) => entry.id === user.id);
+      const mergedOnline = user.online ?? existing?.online ?? false;
       const sanitizedUser: User = {
+        ...(existing ?? {}),
         ...user,
-        online: user.online === undefined ? false : user.online,
+        color: sanitizeColor(user.color, existing?.color),
+        online: mergedOnline,
+        position: user.position ?? existing?.position,
+        lastSeen: mergedOnline ? undefined : user.lastSeen ?? existing?.lastSeen,
       };
 
       const users = state.users
-        .filter((existing) => existing.id !== sanitizedUser.id)
+        .filter((entry) => entry.id !== sanitizedUser.id)
         .concat(sanitizedUser);
 
       const onlineUsers = new Set(state.onlineUsers);
@@ -83,7 +103,9 @@ export const useUserStore = create<UserState>((set, get) => ({
   updateUserColor: (userId, color) =>
     set((state) => ({
       users: state.users.map((user) =>
-        user.id === userId ? { ...user, color } : user
+        user.id === userId
+          ? { ...user, color: sanitizeColor(color, user.color) }
+          : user
       ),
     })),
 
