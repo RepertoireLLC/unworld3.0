@@ -1,14 +1,16 @@
-import { X, UserPlus, MessageCircle, UserCheck, UserX, Camera, Edit2 } from 'lucide-react';
+import { X, UserPlus, MessageCircle, UserCheck, UserX, Camera, Edit2, Swords } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
 import { useFriendStore } from '../../store/friendStore';
 import { useChatStore } from '../../store/chatStore';
 import { useStoryStore } from '../../store/storyStore';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { StoryViewer } from './StoryViewer';
 import { StoryCreator } from './StoryCreator';
 import { InterestVectorEditor } from './InterestVectorEditor';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useChessStore } from '../../store/chessStore';
+import { ChessArchiveSection } from '../chess/ChessArchiveSection';
 
 interface ProfileModalProps {
   userId: string;
@@ -22,11 +24,190 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
   const { sendFriendRequest, isFriend, hasPendingRequest } = useFriendStore();
   const setActiveChat = useChatStore((state) => state.setActiveChat);
   const stories = useStoryStore((state) => state.getActiveStoriesForUser(userId));
+  const [
+    challenges,
+    sendChessChallenge,
+    acceptChessChallenge,
+    declineChessChallenge,
+    cancelChessChallenge,
+    setActiveMatch,
+    setActiveReplay,
+  ] = useChessStore((state) => [
+    state.challenges,
+    state.sendChallenge,
+    state.acceptChallenge,
+    state.declineChallenge,
+    state.cancelChallenge,
+    state.setActiveMatch,
+    state.setActiveReplay,
+  ]);
+  const games = useChessStore((state) => state.games);
   
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [showStoryCreator, setShowStoryCreator] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const challengeBetween = useMemo(() => {
+    if (!currentUser) {
+      return null;
+    }
+    return (
+      challenges.find(
+        (challenge) =>
+          (challenge.challengerId === currentUser.id && challenge.opponentId === userId) ||
+          (challenge.challengerId === userId && challenge.opponentId === currentUser.id),
+      ) ?? null
+    );
+  }, [challenges, currentUser, userId]);
+
+  const linkedGame = challengeBetween?.gameId ? games[challengeBetween.gameId] : undefined;
+  const isChallengeInitiator = Boolean(currentUser && challengeBetween?.challengerId === currentUser.id);
+  const isChallengeRecipient = Boolean(currentUser && challengeBetween?.opponentId === currentUser.id);
+
+  const handleInitiateChallenge = () => {
+    if (!currentUser) {
+      return;
+    }
+    sendChessChallenge(currentUser.id, userId);
+  };
+
+  const handleAcceptChallenge = () => {
+    if (!currentUser || !challengeBetween) {
+      return;
+    }
+    acceptChessChallenge(challengeBetween.id, currentUser.id);
+  };
+
+  const handleDeclineChallenge = () => {
+    if (!currentUser || !challengeBetween) {
+      return;
+    }
+    declineChessChallenge(challengeBetween.id, currentUser.id);
+  };
+
+  const handleCancelChallenge = () => {
+    if (!currentUser || !challengeBetween) {
+      return;
+    }
+    cancelChessChallenge(challengeBetween.id, currentUser.id);
+  };
+
+  const handleViewChessGame = (gameId: string) => {
+    const record = games[gameId];
+    if (!record) {
+      return;
+    }
+    if (
+      currentUser &&
+      (record.whiteId === currentUser.id || record.blackId === currentUser.id) &&
+      record.status === 'active'
+    ) {
+      setActiveMatch(gameId);
+    } else {
+      setActiveReplay(gameId);
+    }
+  };
+
+  const challengeControls = (() => {
+    if (!currentUser || isOwnProfile) {
+      return null;
+    }
+    if (!challengeBetween) {
+      return (
+        <button
+          type="button"
+          onClick={handleInitiateChallenge}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
+        >
+          <Swords className="h-4 w-4" />
+          Challenge to Chess
+        </button>
+      );
+    }
+
+    if (challengeBetween.status === 'pending') {
+      if (isChallengeInitiator) {
+        return (
+          <div className="flex items-center justify-between rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-100">
+            <span>Challenge sent. Awaiting response.</span>
+            <button
+              type="button"
+              onClick={handleCancelChallenge}
+              className="rounded-lg border border-cyan-300/30 px-3 py-1 text-xs uppercase tracking-[0.3em] text-cyan-100 transition hover:bg-cyan-500/20"
+            >
+              Cancel
+            </button>
+          </div>
+        );
+      }
+      if (isChallengeRecipient) {
+        return (
+          <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+            <p className="font-semibold">Incoming chess challenge detected.</p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleAcceptChallenge}
+                className="flex-1 rounded-lg bg-emerald-500/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-900 transition hover:bg-emerald-500/40"
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                onClick={handleDeclineChallenge}
+                className="flex-1 rounded-lg bg-rose-500/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-rose-100 transition hover:bg-rose-500/40"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    if (challengeBetween.status === 'accepted' && linkedGame) {
+      const isActive = linkedGame.status === 'active';
+      return (
+        <button
+          type="button"
+          onClick={() => handleViewChessGame(linkedGame.id)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/50 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20"
+        >
+          <Swords className="h-4 w-4" />
+          {isActive ? 'Enter Match' : 'View Match Result'}
+        </button>
+      );
+    }
+
+    if ((challengeBetween.status === 'declined' || challengeBetween.status === 'cancelled') && isChallengeInitiator) {
+      return (
+        <button
+          type="button"
+          onClick={handleInitiateChallenge}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
+        >
+          <Swords className="h-4 w-4" />
+          Re-issue Challenge
+        </button>
+      );
+    }
+
+    if (linkedGame) {
+      return (
+        <button
+          type="button"
+          onClick={() => handleViewChessGame(linkedGame.id)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/20"
+        >
+          <Swords className="h-4 w-4" />
+          View Chess Game
+        </button>
+      );
+    }
+
+    return null;
+  })();
 
   if (!user || !currentUser) return null;
 
@@ -203,35 +384,40 @@ export function ProfileModal({ userId, onClose }: ProfileModalProps) {
           )}
 
           {!isOwnProfile && (
-            <div className="flex space-x-4">
-              {areFriends ? (
-                <button className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-emerald-500/20 text-emerald-300 rounded-lg cursor-default">
-                  <UserCheck className="w-5 h-5" />
-                  <span>Friends</span>
-                </button>
-              ) : hasPending ? (
-                <button className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-amber-500/20 text-amber-300 rounded-lg cursor-default">
-                  <UserX className="w-5 h-5" />
-                  <span>Request Pending</span>
-                </button>
-              ) : (
+            <div className="space-y-3">
+              <div className="flex space-x-4">
+                {areFriends ? (
+                  <button className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-emerald-500/20 text-emerald-300 rounded-lg cursor-default">
+                    <UserCheck className="w-5 h-5" />
+                    <span>Friends</span>
+                  </button>
+                ) : hasPending ? (
+                  <button className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-amber-500/20 text-amber-300 rounded-lg cursor-default">
+                    <UserX className="w-5 h-5" />
+                    <span>Request Pending</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleFriendRequest}
+                    className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    <span>Add Friend</span>
+                  </button>
+                )}
                 <button
-                  onClick={handleFriendRequest}
+                  onClick={handleMessage}
                   className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
                 >
-                  <UserPlus className="w-5 h-5" />
-                  <span>Add Friend</span>
+                  <MessageCircle className="w-5 h-5" />
+                  <span>Message</span>
                 </button>
-              )}
-              <button
-                onClick={handleMessage}
-                className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span>Message</span>
-              </button>
+              </div>
+              {challengeControls ? <div>{challengeControls}</div> : null}
             </div>
           )}
+
+          <ChessArchiveSection userId={userId} onViewGame={handleViewChessGame} />
         </div>
 
         {showStoryCreator && (

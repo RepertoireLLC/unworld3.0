@@ -22,6 +22,9 @@ import { useInterestStore } from './store/interestStore';
 import { useForumStore } from './store/forumStore';
 import { useMeshStore } from './store/meshStore';
 import { useInitializePluginRegistry, usePluginVisibility } from './core/pluginRegistry';
+import { ChessMatchModal } from './components/chess/ChessMatchModal';
+import { ChessReplayModal } from './components/chess/ChessReplayModal';
+import { ChessOrchestrator } from './components/chess/ChessOrchestrator';
 
 export function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -167,6 +170,9 @@ export function App() {
       )}
       {showAIIntegrationPanel && <AIIntegrationPanel />}
       {showToastStack && <ToastStack />}
+      <ChessOrchestrator />
+      <ChessMatchModal />
+      <ChessReplayModal />
       <SettingsModal />
     </div>
   );
