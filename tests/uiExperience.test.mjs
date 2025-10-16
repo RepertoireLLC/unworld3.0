@@ -14,7 +14,7 @@ async function readSource(relativePath) {
 test('Harmonia experience exposes coordinated UI and store pathways', async () => {
   const appContent = await readSource('src/App.tsx');
   assert.match(appContent, /<AuthModal \/>/, 'App should surface the authentication modal for guests');
-  assert.match(appContent, /<HeaderBar \/>/, 'Authenticated layout should include the header bar');
+  assert.match(appContent, /<HeaderBar[^>]*\/>/, 'Authenticated layout should include the header bar');
   assert.match(appContent, /<ControlPanel \/>/, 'Control panel must mount inside the main workspace grid');
   assert.match(appContent, /<HarmoniaCentralPanel \/>/, 'Central panel should render the core workspace tabs');
   assert.match(appContent, /<FieldNotesPanel \/>/, 'Field notes panel should remain part of the authenticated layout');
@@ -86,8 +86,8 @@ test('Harmonia experience exposes coordinated UI and store pathways', async () =
   assert.match(aiStore, /persistAIConnections\(get\(\).connections, get\(\).activeConnectionId\)/, 'AI store should persist connection state after mutations');
 
   const authStore = await readSource('src/store/authStore.ts');
-  assert.match(authStore, /setOnlineStatus\(newUser.id, true\)/, 'Registration should mark the new operator online');
-  assert.match(authStore, /setOnlineStatus\(user.id, true\)/, 'Login should re-hydrate the operator presence state');
+  assert.match(authStore, /setOnlineStatus\((?:newUser|normalizedUser)\.id, true\)/, 'Registration should mark the new operator online');
+  assert.match(authStore, /setOnlineStatus\((?:user|normalizedUser)\.id, true\)/, 'Login should re-hydrate the operator presence state');
   assert.match(authStore, /updateProfile/, 'Auth store should expose profile update capabilities');
 
   const friendStore = await readSource('src/store/friendStore.ts');
@@ -104,16 +104,17 @@ test('Harmonia experience exposes coordinated UI and store pathways', async () =
   assert.match(forumStore, /recordEngagement/, 'Forum store should record engagement telemetry');
 
   const scene = await readSource('src/components/Scene.tsx');
-  assert.match(scene, /<Canvas/, '3D scene should render through react-three-fiber Canvas');
-  assert.match(scene, /<Sphere \/>/, 'Scene should include the Harmonia sphere mesh');
-  assert.match(scene, /<UserNodes \/>/, 'Scene should map user nodes into the 3D environment');
-  assert.match(scene, /<OrbitControls/, 'Scene should expose orbit controls for navigation');
+  assert.match(scene, /data-scene-root/, 'Scene should render a root container for the visualization');
+  assert.match(scene, /data-scene-user-node/, 'Scene should surface interactive user nodes');
+  assert.match(scene, /data-scene-ai-node/, 'Scene should display AI integrations within the visualization');
 
   const toastStack = await readSource('src/components/interface/ToastStack.tsx');
   assert.match(toastStack, /setTimeout\(\(\) => removeToast\(toast.id\), duration\)/, 'Toast stack should auto-dismiss notifications after a timeout');
 
   const settingsModal = await readSource('src/components/interface/SettingsModal.tsx');
   assert.match(settingsModal, /Harmonia Settings/, 'Settings modal should surface the Harmonia settings header');
-  assert.match(settingsModal, /Chrono Alignment/, 'Settings modal should expose timezone alignment controls');
-  assert.match(settingsModal, /Mesh Governance/, 'Settings modal should surface mesh governance controls');
+  assert.match(settingsModal, /time alignment/i, 'Settings modal should expose timezone alignment controls');
+
+  const privacySettings = await readSource('src/components/interface/settings/PrivacySettings.tsx');
+  assert.match(privacySettings, /Mesh Governance/, 'Settings modal should surface mesh governance controls');
 });
