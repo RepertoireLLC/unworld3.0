@@ -127,16 +127,16 @@ export function AIIntegrationPanel() {
     [connections, activeConnectionId]
   );
 
-  if (!shouldRender) {
-    return null;
-  }
-
   const handleClose = useCallback(() => {
     setIsAnimating(false);
     setTimeout(() => setOpen(false), 200);
   }, [setOpen]);
 
   useEscapeKey(handleClose, isOpen);
+
+  if (!shouldRender) {
+    return null;
+  }
 
   const handleModelTypeChange = (modelType: AIModelType) => {
     setForm((prev) => ({
